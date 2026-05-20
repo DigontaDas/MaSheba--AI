@@ -76,7 +76,18 @@ vercel env add SUPABASE_SERVICE_ROLE_KEY
 vercel deploy
 ```
 
-Deployment verification is `BLOCKED` until Vercel auth and `VERCEL_PROJECT_NAME` are available.
+Production dashboard URL:
+
+```text
+https://maasheba-admin.vercel.app/dashboard
+```
+
+Deployment verification on May 20, 2026:
+
+- `npx vercel --version` returned `54.2.0`.
+- `npx vercel env ls production` listed `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+- `npx vercel --prod --yes` completed and aliased the deployment to `https://maasheba-admin.vercel.app`.
+- `GET https://maasheba-admin.vercel.app/dashboard` returned HTTP `200` and contained `CHW_A` and `CHW_B`.
 
 ## Required Verification Gates
 
