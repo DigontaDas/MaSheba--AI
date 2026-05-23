@@ -18,7 +18,9 @@ export function PrimaryButton({
   const inactive = disabled || loading;
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
+      accessibilityState={{ disabled: inactive, busy: loading }}
       disabled={inactive}
       onPress={onPress}
       style={({ pressed }) => [

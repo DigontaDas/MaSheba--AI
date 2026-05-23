@@ -19,11 +19,11 @@ export function OfflineBanner({
   }
 
   return (
-    <View style={styles.banner}>
+    <View accessibilityRole="alert" style={styles.banner}>
       <Icon name="wifi-off" color={colors.onSecondaryFixedVariant} size={18} />
       <Text style={styles.text}>
         {copy.common.offlineNotice}
-        {pendingCount ? ` • ${pendingCount}` : ""}
+        {pendingCount != null ? ` • ${pendingCount}` : ""}
       </Text>
     </View>
   );

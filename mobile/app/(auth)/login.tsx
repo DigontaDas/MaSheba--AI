@@ -21,6 +21,28 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const getLoginErrorMessage = (loginError: unknown) => {
+    if (!(loginError instanceof Error)) {
+      return copy.login.invalid;
+    }
+
+    const message = loginError.message.toLowerCase();
+    if (message.includes("network") || message.includes("fetch") || message.includes("internet")) {
+      return "ইন্টারনেট সংযোগ পরীক্ষা করুন";
+    }
+    if (message.includes("chws") || message.includes("active chw")) {
+      return "এই অ্যাকাউন্টে স্বাস্থ্যকর্মীর অনুমতি নেই";
+    }
+    if (message.includes("mothers") || message.includes("active mother")) {
+      return "এই অ্যাকাউন্টে মায়ের প্রোফাইল পাওয়া যায়নি";
+    }
+    if (message.includes("credentials") || message.includes("password") || message.includes("sign in")) {
+      return copy.login.invalid;
+    }
+
+    return loginError.message;
+  };
+
   const chooseRole = (nextRole: UserRole) => {
     setRole(nextRole);
     setError(null);
@@ -41,7 +63,7 @@ export default function LoginScreen() {
       await loginMother(email.trim(), password);
       router.replace("/(mother-tabs)/home");
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : copy.login.invalid);
+      setError(getLoginErrorMessage(loginError));
     } finally {
       setLoading(false);
     }
@@ -90,6 +112,7 @@ export default function LoginScreen() {
             </View>
             <TextInput
               autoCapitalize="none"
+              accessibilityLabel={copy.login.emailPlaceholder}
               keyboardType="email-address"
               onChangeText={setEmail}
               placeholder={copy.login.emailPlaceholder}
@@ -98,6 +121,7 @@ export default function LoginScreen() {
               value={email}
             />
             <TextInput
+              accessibilityLabel={copy.login.passwordPlaceholder}
               onChangeText={setPassword}
               placeholder={copy.login.passwordPlaceholder}
               placeholderTextColor={colors.outline}

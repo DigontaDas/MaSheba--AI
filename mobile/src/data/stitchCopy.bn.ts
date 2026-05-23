@@ -3,6 +3,9 @@ export const copy = {
     appName: "মাশেবা AI",
     online: "অনলাইন",
     synced: "সিঙ্ক হয়েছে",
+    loading: "লোড হচ্ছে...",
+    retry: "আবার চেষ্টা করুন",
+    loadFailed: "তথ্য লোড করা যায়নি",
     offlineNotice: "ইন্টারনেট ছাড়াও কাজ করে",
     emergency: "জরুরি",
     warning: "সতর্কতা",
@@ -55,6 +58,13 @@ export const copy = {
     title: "স্বাস্থ্য সতর্কতা",
     instructions: "দয়া করে নিচে দেওয়া নির্দেশিকা অনুসরণ করুন।",
     riskMessage: "আপনার লক্ষণগুলো থেকে বোঝা যাচ্ছে আপনার দ্রুত চিকিৎসা পরামর্শ নেওয়া প্রয়োজন।",
+    patientMissing: "রোগীর তথ্য পাওয়া যায়নি",
+    patientNotFound: "নির্বাচিত রোগী পাওয়া যায়নি",
+    sessionRequired: "চালিয়ে যেতে লগইন করুন",
+    fillAllFields: "সব তথ্য পূরণ করুন",
+    loadFailed: "রোগীর তথ্য লোড করা যায়নি",
+    predictFailed: "ঝুঁকির ফলাফল নির্ণয় করা যায়নি",
+    saveFailed: "ভিজিট সংরক্ষণ করা যায়নি",
     normal: "স্বাভাবিক",
     warning: "সতর্কতা",
     emergency: "জরুরি",
@@ -106,7 +116,9 @@ export const copy = {
     syncStatus: "সিঙ্ক স্ট্যাটাস",
     waiting: "অপেক্ষমাণ",
     waitingRecords: "১২টি রেকর্ড সিঙ্কের জন্য অপেক্ষা করছে",
-    pendingSync: "অপেক্ষারত সিঙ্ক"
+    pendingSync: "অপেক্ষারত সিঙ্ক",
+    loadFailed: "সিঙ্ক অবস্থা লোড করা যায়নি",
+    syncFailed: "সিঙ্ক করা যায়নি"
   },
   qa: {
     greeting: "আসসালামু আলাইকুম, রহিমা আপা। আজ কেমন আছেন? কোনো শারীরিক অসুবিধা বোধ করছেন কি?",
@@ -115,7 +127,9 @@ export const copy = {
     highRiskTitle: "উচ্চ ঝুঁকি সতর্কতা",
     highRiskBody: "মাথা ঘোরা এবং চোখে ঝাপসা দেখা উচ্চ রক্তচাপের লক্ষণ হতে পারে। যদি আধা ঘন্টার মধ্যে অবস্থার উন্নতি না হয়, তবে দ্রুত নিকটস্থ স্বাস্থ্যকেন্দ্রে যোগাযোগ করুন।",
     sms: "SMS-এও কাজ করে:",
-    askPlaceholder: "মাশেবা AIকে জিজ্ঞেস করুন..."
+    askPlaceholder: "মাশেবা AIকে জিজ্ঞেস করুন...",
+    noCategories: "এ মুহূর্তে কোনো প্রশ্নের বিভাগ পাওয়া যায়নি",
+    noQuestions: "এই বিভাগের জন্য এখন কোনো প্রশ্ন নেই"
   },
   nutrition: {
     title: "পুষ্টি ও যত্ন",
@@ -164,6 +178,7 @@ export const copy = {
     notifications: "নোটিফিকেশন সেটআপ",
     security: "নিরাপত্তা ও পাসওয়ার্ড",
     help: "সাহায্য ও সাপোর্ট",
-    logout: "লগ আউট"
+    logout: "লগ আউট",
+    logoutFailed: "লগ আউট করা যায়নি"
   }
 } as const;

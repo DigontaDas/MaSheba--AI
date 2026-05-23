@@ -14,7 +14,7 @@ export function ProgressBar({
 }) {
   const percent = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
-    <View style={styles.wrap}>
+    <View accessibilityRole="progressbar" accessibilityValue={{ now: percent, min: 0, max: 100 }} style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${percent}%` }]} />

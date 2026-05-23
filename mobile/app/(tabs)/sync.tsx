@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useNetworkState } from "expo-network";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { OfflineStatusPanel } from "@/components/offline/OfflineStatusPanel";
 import { SyncStatusBar } from "@/components/sync/SyncStatusBar";
 import { ScreenShell } from "@/components/ui/ScreenShell";
@@ -21,10 +22,16 @@ export default function SyncScreen() {
   const network = useNetworkState();
   const [summary, setSummary] = useState<Summary>({ pending: 0, failed: 0, lastSyncedAt: null });
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const offline = network.isConnected === false || network.isInternetReachable === false;
 
   const load = useCallback(async () => {
-    setSummary(await getOutboxSummary());
+    try {
+      setLoadError(null);
+      setSummary(await getOutboxSummary());
+    } catch (loadError) {
+      setLoadError(loadError instanceof Error ? loadError.message : copy.sync.loadFailed);
+    }
   }, []);
 
   useEffect(() => {
@@ -36,6 +43,8 @@ export default function SyncScreen() {
     try {
       await runOutboxSync();
       await load();
+    } catch (syncError) {
+      setLoadError(syncError instanceof Error ? syncError.message : copy.sync.syncFailed);
     } finally {
       setLoading(false);
     }
@@ -44,6 +53,13 @@ export default function SyncScreen() {
   return (
     <ScreenShell>
       <OfflineBanner isOffline={offline} pendingCount={summary.pending} />
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>{copy.common.loadFailed}</Text>
+          <Text style={styles.errorText}>{loadError}</Text>
+          <PrimaryButton label={copy.common.retry} onPress={load} />
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.title}>{copy.sync.syncStatus}</Text>
         <Text style={styles.subtitle}>{copy.sync.dataSafe}</Text>
@@ -91,5 +107,21 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...typography.h2,
     color: colors.onSurface
+  },
+  errorCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.cardPadding
+  },
+  errorTitle: {
+    ...typography.h2,
+    color: colors.onSurface
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.onSurfaceVariant
   }
 });

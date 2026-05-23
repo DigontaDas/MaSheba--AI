@@ -61,7 +61,7 @@ export function MotherDashboard({
         <ActionCard icon="local-hospital" title={copy.mother.emergencyHelp} onPress={() => undefined} />
       </View>
 
-      <Pressable style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
+      <Pressable accessibilityLabel={copy.mother.askAi} accessibilityRole="button" style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
         <Icon name="mic" color={colors.onPrimary} />
         <Text style={styles.askText}>{copy.mother.askAi}</Text>
       </Pressable>
@@ -79,7 +79,7 @@ function ActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable style={styles.actionCard} onPress={onPress}>
+    <Pressable accessibilityLabel={title} accessibilityRole="button" style={styles.actionCard} onPress={onPress}>
       <Icon name={icon} color={colors.primary} />
       <Text style={styles.actionText}>{title}</Text>
     </Pressable>

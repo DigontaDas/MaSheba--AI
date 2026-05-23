@@ -30,7 +30,7 @@ export function SyncStatusBar({
         <Text style={styles.label}>ব্যর্থ</Text>
         <Text style={styles.value}>{toBanglaNumber(failed)}</Text>
       </View>
-      <Pressable accessibilityRole="button" onPress={onSync} disabled={loading} style={styles.button}>
+      <Pressable accessibilityLabel="সিঙ্ক করুন" accessibilityRole="button" onPress={onSync} disabled={loading} style={styles.button}>
         {loading ? <ActivityIndicator color={colors.onPrimary} /> : <Icon name="sync" color={colors.onPrimary} size={18} />}
       </Pressable>
     </View>
@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.primary,
     borderRadius: radius.full,
-    height: 42,
+    height: 44,
     justifyContent: "center",
-    width: 42
+    width: 44
   }
 });

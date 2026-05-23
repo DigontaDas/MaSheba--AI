@@ -22,6 +22,9 @@ export function VitalInputField({
       <Text style={styles.label}>{label}</Text>
       <View style={[styles.inputWrap, error && styles.inputError]}>
         <TextInput
+          accessibilityLabel={label}
+          accessibilityHint={unit ? `${unit} এককে লিখুন` : undefined}
+           accessibilityState={error ? ({ invalid: true } as never) : undefined}
           keyboardType={keyboardType}
           onChangeText={onChangeText}
           placeholderTextColor={colors.outline}

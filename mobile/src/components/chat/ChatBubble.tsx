@@ -14,7 +14,7 @@ export function ChatBubble({
 }) {
   const isUser = role === "user";
   return (
-    <View style={[styles.wrap, isUser && styles.userWrap]}>
+    <View accessibilityLabel={isUser ? `ব্যবহারকারীর বার্তা: ${text}` : `এআইয়ের বার্তা: ${text}`} style={[styles.wrap, isUser && styles.userWrap]}>
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
         <Text style={[styles.text, isUser && styles.userText]}>{text}</Text>
         {warningCard ? (

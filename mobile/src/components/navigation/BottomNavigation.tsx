@@ -42,6 +42,7 @@ export function BottomNavigation({ state, descriptors, navigation }: BottomTabBa
 
         return (
           <Pressable
+            accessibilityLabel={label}
             accessibilityRole="button"
             accessibilityState={focused ? { selected: true } : {}}
             key={route.key}
@@ -81,6 +82,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     flex: 1,
     gap: 2,
+    minHeight: 44,
     justifyContent: "center",
     minWidth: 0
   },

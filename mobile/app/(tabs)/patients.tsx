@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PatientCard } from "@/components/patient/PatientCard";
 import { ProgressBar } from "@/components/progress/ProgressBar";
@@ -26,11 +27,17 @@ export default function PatientDashboardScreen() {
   const [summary, setSummary] = useState<Summary>({ pending: 0, failed: 0, lastSyncedAt: null });
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [nextPatients, nextSummary] = await Promise.all([getPatients(), getOutboxSummary()]);
-    setPatients(nextPatients);
-    setSummary(nextSummary);
+    try {
+      setLoadError(null);
+      const [nextPatients, nextSummary] = await Promise.all([getPatients(), getOutboxSummary()]);
+      setPatients(nextPatients);
+      setSummary(nextSummary);
+    } catch (loadError) {
+      setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);
+    }
   }, []);
 
   useFocusEffect(
@@ -53,6 +60,8 @@ export default function PatientDashboardScreen() {
     try {
       await runOutboxSync();
       await load();
+    } catch (syncError) {
+      setLoadError(syncError instanceof Error ? syncError.message : copy.sync.syncFailed);
     } finally {
       setSyncing(false);
     }
@@ -73,6 +82,13 @@ export default function PatientDashboardScreen() {
         ListHeaderComponent={
           <View style={styles.headerContent}>
             <OfflineBanner pendingCount={summary.pending} />
+            {loadError ? (
+              <View style={styles.errorCard}>
+                <Text style={styles.errorTitle}>{copy.common.loadFailed}</Text>
+                <Text style={styles.errorText}>{loadError}</Text>
+                <PrimaryButton label={copy.common.retry} onPress={load} />
+              </View>
+            ) : null}
             <View style={styles.topBar}>
               <Pressable style={styles.iconButton}>
                 <Icon name="menu" color={colors.onSurface} />
@@ -326,5 +342,21 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     padding: spacing.base,
     textAlign: "center"
+  },
+  errorCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.cardPadding
+  },
+  errorTitle: {
+    ...typography.h2,
+    color: colors.onSurface
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.onSurfaceVariant
   }
 });

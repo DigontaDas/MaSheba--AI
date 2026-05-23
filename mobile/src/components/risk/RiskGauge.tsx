@@ -1,3 +1,4 @@
+import { useId } from "react";
 import Svg, { Circle, Defs, LinearGradient, Stop, Text as SvgText } from "react-native-svg";
 import { colors } from "@/theme";
 import type { RiskLevel } from "@/types/schema";
@@ -11,6 +12,7 @@ export function RiskGauge({
   level: RiskLevel;
   size?: number;
 }) {
+  const gradientId = `riskGradient-${useId().replace(/:/g, "")}`;
   const normalized = Math.max(0, Math.min(1, score));
   const strokeWidth = Math.max(12, Math.round(size * 0.09));
   const radius = (size - strokeWidth) / 2;
@@ -23,7 +25,7 @@ export function RiskGauge({
   return (
     <Svg width={size} height={size / 2 + strokeWidth + 28} viewBox={`0 0 ${size} ${size / 2 + strokeWidth + 28}`}>
       <Defs>
-        <LinearGradient id="riskGradient" x1="0" x2="1" y1="0" y2="0">
+        <LinearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
           <Stop offset="0" stopColor={colors.secondary} />
           <Stop offset="0.52" stopColor={colors.primaryContainer} />
           <Stop offset="1" stopColor={colors.primary} />
@@ -45,7 +47,7 @@ export function RiskGauge({
         cx={center}
         cy={center}
         r={radius}
-        stroke="url(#riskGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth={strokeWidth}
         fill="none"
         strokeDasharray={`${half} ${circumference}`}

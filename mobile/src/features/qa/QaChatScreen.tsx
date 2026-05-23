@@ -23,6 +23,7 @@ export function QaChatScreen() {
   const [topic, setTopic] = useState(categories[0] ?? "");
   const [items, setItems] = useState<OfflineQa[]>([]);
   const [input, setInput] = useState("");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     { id: "hello", role: "ai", text: copy.qa.greeting },
     { id: "sample-user", role: "user", text: copy.qa.sampleQuestion },
@@ -49,7 +50,14 @@ export function QaChatScreen() {
       setItems([]);
       return;
     }
-    setItems(await getOfflineQaByTopic({ topic, trimester: trim }));
+    try {
+      setLoadError(null);
+      const nextItems = await getOfflineQaByTopic({ topic, trimester: trim });
+      setItems(nextItems);
+    } catch (loadError) {
+      setItems([]);
+      setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);
+    }
   }, [topic]);
 
   useEffect(() => {
@@ -90,7 +98,7 @@ export function QaChatScreen() {
         <Icon name="arrow-back" color={colors.onSurface} />
         <View style={styles.topTitle}>
           <Text style={styles.title}>{copy.common.appName}</Text>
-          <Text style={styles.online}>{copy.common.online}</Text>
+          <Text style={styles.online}>{copy.common.offlineNotice}</Text>
         </View>
         <View style={styles.urgent}>
           <Icon name="warning" color={colors.error} size={16} />
@@ -98,18 +106,31 @@ export function QaChatScreen() {
         </View>
       </View>
 
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
-        {categories.map((category) => (
-          <Pressable
-            key={category}
-            onPress={() => setTopic(category)}
-            style={[styles.category, topic === category && styles.categoryActive]}
-          >
-            <Text style={[styles.categoryText, topic === category && styles.categoryTextActive]} numberOfLines={1}>
-              {category}
-            </Text>
-          </Pressable>
-        ))}
+        {categories.length ? (
+          categories.map((category) => (
+            <Pressable
+              key={category}
+              accessibilityLabel={category}
+              accessibilityRole="button"
+              accessibilityState={topic === category ? { selected: true } : {}}
+              onPress={() => setTopic(category)}
+              style={[styles.category, topic === category && styles.categoryActive]}
+            >
+              <Text style={[styles.categoryText, topic === category && styles.categoryTextActive]} numberOfLines={1}>
+                {category}
+              </Text>
+            </Pressable>
+          ))
+        ) : (
+          <Text style={styles.empty}>{copy.qa.noCategories}</Text>
+        )}
       </ScrollView>
 
       <View style={styles.messages}>
@@ -129,11 +150,15 @@ export function QaChatScreen() {
       </View>
 
       <View style={styles.questionList}>
-        {items.slice(0, 5).map((item) => (
-          <Pressable key={item.id} onPress={() => askItem(item)} style={styles.question}>
-            <Text style={styles.questionText}>{item.question_bn}</Text>
-          </Pressable>
-        ))}
+        {items.length ? (
+          items.slice(0, 5).map((item) => (
+            <Pressable key={item.id} accessibilityLabel={item.question_bn} accessibilityRole="button" onPress={() => askItem(item)} style={styles.question}>
+              <Text style={styles.questionText}>{item.question_bn}</Text>
+            </Pressable>
+          ))
+        ) : (
+          <Text style={styles.empty}>{copy.qa.noQuestions}</Text>
+        )}
       </View>
 
       <EmergencyBanner title={copy.qa.highRiskTitle} message={copy.qa.highRiskBody} />
@@ -145,6 +170,7 @@ export function QaChatScreen() {
 
       <View style={styles.inputRow}>
         <TextInput
+          accessibilityLabel={copy.qa.askPlaceholder}
           onChangeText={setInput}
           onSubmitEditing={submitInput}
           placeholder={copy.qa.askPlaceholder}
@@ -152,7 +178,7 @@ export function QaChatScreen() {
           style={styles.input}
           value={input}
         />
-        <Pressable onPress={submitInput} style={styles.send}>
+        <Pressable accessibilityLabel="প্রশ্ন পাঠান" accessibilityRole="button" onPress={submitInput} style={styles.send}>
           <Icon name="mic" color={colors.onPrimary} />
         </Pressable>
       </View>
@@ -196,6 +222,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.onErrorContainer
   },
+  errorCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginHorizontal: spacing.marginMobile,
+    padding: spacing.base
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.onSurfaceVariant
+  },
   categories: {
     gap: spacing.sm,
     paddingHorizontal: spacing.marginMobile
@@ -229,6 +267,7 @@ const styles = StyleSheet.create({
     borderColor: colors.outlineVariant,
     borderRadius: radius.lg,
     borderWidth: 1,
+    minHeight: 44,
     padding: spacing.base
   },
   questionText: {
@@ -283,5 +322,11 @@ const styles = StyleSheet.create({
   secureText: {
     ...typography.caption,
     color: colors.onSurfaceVariant
+  },
+  empty: {
+    ...typography.body,
+    color: colors.onSurfaceVariant,
+    paddingHorizontal: spacing.marginMobile,
+    paddingVertical: spacing.sm
   }
 });

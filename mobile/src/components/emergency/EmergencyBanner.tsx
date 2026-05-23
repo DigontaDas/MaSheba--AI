@@ -14,14 +14,14 @@ export function EmergencyBanner({
   onAction?: () => void;
 }) {
   return (
-    <View style={styles.banner}>
+    <View accessibilityRole="alert" style={styles.banner}>
       <View style={styles.header}>
         <Icon name="warning" color={colors.error} size={20} />
         <Text style={styles.title}>{title}</Text>
       </View>
       <Text style={styles.message}>{message}</Text>
       {actionLabel && onAction ? (
-        <Pressable accessibilityRole="button" onPress={onAction} style={styles.button}>
+        <Pressable accessibilityLabel={actionLabel} accessibilityRole="button" onPress={onAction} style={styles.button}>
           <Text style={styles.buttonText}>{actionLabel}</Text>
         </Pressable>
       ) : null}
@@ -57,6 +57,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     backgroundColor: colors.error,
     borderRadius: radius.full,
+    minHeight: 44,
+    justifyContent: "center",
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm
   },

@@ -12,7 +12,9 @@ export function SecondaryButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}

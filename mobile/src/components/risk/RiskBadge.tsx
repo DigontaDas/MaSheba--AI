@@ -9,15 +9,15 @@ const tone = {
 } satisfies Record<RiskLevel, { backgroundColor: string; color: string }>;
 
 const label = {
-  LOW: "LOW",
-  MODERATE: "MODERATE",
-  HIGH: "HIGH"
+  LOW: "নিম্ন",
+  MODERATE: "মধ্যম",
+  HIGH: "উচ্চ"
 } satisfies Record<RiskLevel, string>;
 
 export function RiskBadge({ level, compact = false }: { level: RiskLevel; compact?: boolean }) {
   return (
-    <View style={[styles.badge, compact && styles.compact, { backgroundColor: tone[level].backgroundColor }]}>
-      <Text style={[styles.text, compact && styles.compactText, { color: tone[level].color }]}>
+    <View accessibilityLabel={`ঝুঁকি ${label[level]}`} accessibilityRole="text" style={[styles.badge, compact && styles.compact, { backgroundColor: tone[level].backgroundColor }]}> 
+      <Text style={[styles.text, compact && styles.compactText, { color: tone[level].color }]}> 
         {label[level]}
       </Text>
     </View>

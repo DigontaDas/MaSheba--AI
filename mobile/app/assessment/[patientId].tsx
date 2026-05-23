@@ -52,22 +52,75 @@ const symptomLabels: Record<string, string> = {
 export default function RiskAssessmentScreen() {
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [loadingPatient, setLoadingPatient] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [prediction, setPrediction] = useState<RiskPrediction | null>(null);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    setLoadingPatient(true);
+    setLoadError(null);
+    setPatient(null);
+    setPrediction(null);
+    setPredictionError(null);
+
     if (!patientId) {
+      setLoadingPatient(false);
+      setLoadError(copy.assessment.patientMissing);
       return;
     }
-    getPatient(patientId).then(setPatient).catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : "রোগী লোড করা যায়নি");
-    });
-  }, [patientId]);
+
+    (async () => {
+      try {
+        const session = await getSession();
+        if (!session) {
+          throw new Error(copy.assessment.sessionRequired);
+        }
+
+        const nextPatient = await getPatient(patientId);
+        if (!nextPatient) {
+          throw new Error(copy.assessment.patientNotFound);
+        }
+
+        if (active) {
+          setPatient(nextPatient);
+        }
+      } catch (loadError) {
+        if (active) {
+          setLoadError(loadError instanceof Error ? loadError.message : copy.assessment.loadFailed);
+        }
+      } finally {
+        if (active) {
+          setLoadingPatient(false);
+        }
+      }
+    })().catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [patientId, reloadVersion]);
+
+  const reload = () => {
+    setReloadVersion((current) => current + 1);
+  };
+
+  const requiredFieldsFilled = useMemo(
+    () => [form.bp_systolic, form.bp_diastolic, form.weight_kg, form.hemoglobin].every((value) => value.trim().length > 0),
+    [form]
+  );
 
   const parsedInput = useMemo<VisitInput | null>(() => {
+    if (!requiredFieldsFilled) {
+      return null;
+    }
+
     const input = {
       bp_systolic: Number(form.bp_systolic),
       bp_diastolic: Number(form.bp_diastolic),
@@ -79,26 +132,47 @@ export default function RiskAssessmentScreen() {
 
     if (
       !Number.isFinite(input.bp_systolic) ||
+      input.bp_systolic <= 0 ||
       !Number.isFinite(input.bp_diastolic) ||
+      input.bp_diastolic <= 0 ||
       !Number.isFinite(input.weight_kg) ||
-      !Number.isFinite(input.hemoglobin)
+      input.weight_kg <= 0 ||
+      !Number.isFinite(input.hemoglobin) ||
+      input.hemoglobin <= 0
     ) {
       return null;
     }
 
     return input;
-  }, [form]);
+  }, [form, requiredFieldsFilled]);
 
   useEffect(() => {
     if (!patient || !parsedInput) {
       setPrediction(null);
+      setPredictionError(null);
       return;
     }
 
+    let active = true;
+    setPredictionError(null);
+
     riskModel
       .predict({ ...parsedInput, gestational_age_weeks: patient.gestational_age_weeks })
-      .then(setPrediction)
-      .catch(() => setPrediction(null));
+      .then((nextPrediction) => {
+        if (active) {
+          setPrediction(nextPrediction);
+        }
+      })
+      .catch((predictError) => {
+        if (active) {
+          setPrediction(null);
+          setPredictionError(predictError instanceof Error ? predictError.message : copy.assessment.predictFailed);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [patient, parsedInput]);
 
   const updateField = (key: keyof FormState, value: string | boolean | SymptomFlags) => {
@@ -118,8 +192,18 @@ export default function RiskAssessmentScreen() {
   };
 
   const save = async () => {
-    if (!patient || !parsedInput || !prediction) {
-      setError("সব তথ্য পূরণ করুন");
+    if (!patient) {
+      setError(copy.assessment.patientNotFound);
+      return;
+    }
+
+    if (!requiredFieldsFilled || !parsedInput) {
+      setError(copy.assessment.fillAllFields);
+      return;
+    }
+
+    if (!prediction) {
+      setError(predictionError ?? copy.assessment.predictFailed);
       return;
     }
 
@@ -140,13 +224,13 @@ export default function RiskAssessmentScreen() {
       });
       setSaved(true);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "ভিজিট সংরক্ষণ করা যায়নি");
+      setError(saveError instanceof Error ? saveError.message : copy.assessment.saveFailed);
     } finally {
       setSaving(false);
     }
   };
 
-  if (!patient) {
+  if (loadingPatient) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
@@ -154,15 +238,34 @@ export default function RiskAssessmentScreen() {
     );
   }
 
+  if (loadError) {
+    return (
+      <ScreenShell>
+        <OfflineBanner />
+        <View style={styles.errorCard}>
+          <Text style={styles.sectionTitle}>{copy.common.loadFailed}</Text>
+          <Text style={styles.subtitle}>{loadError}</Text>
+          <PrimaryButton label={copy.common.retry} onPress={reload} />
+        </View>
+      </ScreenShell>
+    );
+  }
+
+  const activePatient = patient;
+
+  if (!activePatient) {
+    return null;
+  }
+
   return (
     <ScreenShell>
       <OfflineBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>{patient.name}</Text>
+        <Text style={styles.title}>{activePatient.name}</Text>
         <Text style={styles.subtitle}>
-          {copy.dashboard.pregnancy}: {toBanglaNumber(patient.gestational_age_weeks)} সপ্তাহ
+          {copy.dashboard.pregnancy}: {toBanglaNumber(activePatient.gestational_age_weeks)} সপ্তাহ
         </Text>
-        <ProgressBar value={patient.gestational_age_weeks} max={40} showMarkers />
+        <ProgressBar value={activePatient.gestational_age_weeks} max={40} showMarkers />
       </View>
 
       {!saved ? (
@@ -207,11 +310,13 @@ export default function RiskAssessmentScreen() {
             </View>
           ) : null}
 
+          {predictionError ? <Text style={styles.error}>{predictionError}</Text> : null}
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label={copy.assessment.saveVisit} loading={saving} disabled={!prediction} onPress={save} />
+          <PrimaryButton label={copy.assessment.saveVisit} loading={saving} disabled={!requiredFieldsFilled || !prediction} onPress={save} />
         </View>
       ) : prediction ? (
-        <RiskResult patient={patient} prediction={prediction} />
+        <RiskResult patient={activePatient} prediction={prediction} />
       ) : null}
     </ScreenShell>
   );
@@ -441,5 +546,13 @@ const styles = StyleSheet.create({
     aspectRatio: 1.9,
     borderRadius: radius.lg,
     width: "100%"
+  },
+  errorCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.base,
+    padding: spacing.cardPadding
   }
 });

@@ -18,9 +18,12 @@ export default function ProfileScreen() {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    await Promise.all([clearSession(), clearRoleSession()]);
-    router.replace("/(auth)/login");
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      await Promise.all([clearSession(), clearRoleSession()]);
+      router.replace("/(auth)/login");
+    }
   };
 
   const displayName = profile?.name ?? copy.profile.name;
@@ -69,7 +72,7 @@ export default function ProfileScreen() {
         <SettingsRow icon="notifications" label={copy.profile.notifications} />
         <SettingsRow icon="security" label={copy.profile.security} />
         <SettingsRow icon="help" label={copy.profile.help} />
-        <Pressable style={styles.logout} onPress={logout}>
+        <Pressable accessibilityLabel={copy.profile.logout} accessibilityRole="button" style={styles.logout} onPress={logout}>
           <Icon name="logout" color={colors.error} />
           <Text style={styles.logoutText}>{copy.profile.logout}</Text>
         </Pressable>

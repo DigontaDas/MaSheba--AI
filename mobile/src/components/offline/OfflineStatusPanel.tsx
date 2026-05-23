@@ -34,7 +34,7 @@ export function OfflineStatusPanel({
         </Text>
         <Text style={styles.caption}>{lastSyncedAt ?? copy.sync.waitingRecords}</Text>
       </View>
-      <Pressable accessibilityRole="button" onPress={onSync} style={styles.button}>
+      <Pressable accessibilityLabel="সিঙ্ক করুন" accessibilityRole="button" onPress={onSync} style={styles.button}>
         <Icon name="sync" color={colors.onPrimary} size={18} />
         <Text style={styles.buttonText}>সিঙ্ক</Text>
       </Pressable>
