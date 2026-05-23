@@ -1,0 +1,24 @@
+{
+  "model_input_name": "risk_input",
+  "label_order": ["LOW", "MODERATE", "HIGH"],
+  "mobile_contract": {
+    "risk_input_excludes_age": true,
+    "risk_prediction_unchanged": true
+  },
+  "candidate_features": [
+    "bp_systolic",
+    "bp_diastolic",
+    "weight_kg",
+    "hemoglobin",
+    "gestational_age_weeks"
+  ],
+  "deterministic_rule_features": [
+    "swelling_present",
+    "symptom_headache",
+    "symptom_severe_headache",
+    "symptom_blurred_vision",
+    "symptom_dizziness",
+    "symptom_fatigue",
+    "symptom_abdominal_pain"
+  ]
+}

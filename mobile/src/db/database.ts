@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { OFFLINE_QA_SEED } from "@/data/offlineQaSeed.bn";
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -57,9 +58,43 @@ export async function initDB(): Promise<void> {
       value TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS offline_qa (
+      id TEXT PRIMARY KEY NOT NULL,
+      trimester TEXT NOT NULL CHECK (trimester IN ('T1','T2','T3','POSTPARTUM','ALL')),
+      week_range TEXT NOT NULL,
+      topic TEXT NOT NULL,
+      question_bn TEXT NOT NULL,
+      answer_bn TEXT NOT NULL,
+      severity TEXT NOT NULL CHECK (severity IN ('LOW','MODERATE','HIGH')),
+      see_doctor INTEGER NOT NULL DEFAULT 0,
+      emergency INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE INDEX IF NOT EXISTS patients_chw_id_idx ON patients(chw_id);
     CREATE INDEX IF NOT EXISTS patients_risk_idx ON patients(last_risk_level);
     CREATE INDEX IF NOT EXISTS visits_patient_id_idx ON visits(patient_id);
     CREATE INDEX IF NOT EXISTS outbox_status_idx ON outbox_events(status);
+    CREATE INDEX IF NOT EXISTS offline_qa_topic_trimester_idx ON offline_qa(topic, trimester);
+    CREATE INDEX IF NOT EXISTS offline_qa_emergency_idx ON offline_qa(emergency);
+    CREATE INDEX IF NOT EXISTS offline_qa_severity_idx ON offline_qa(severity);
   `);
+
+  await db.withExclusiveTransactionAsync(async (tx) => {
+    for (const item of OFFLINE_QA_SEED) {
+      await tx.runAsync(
+        `INSERT OR REPLACE INTO offline_qa (
+          id, trimester, week_range, topic, question_bn, answer_bn, severity, see_doctor, emergency
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        item.id,
+        item.trimester,
+        item.week_range,
+        item.topic,
+        item.question_bn,
+        item.answer_bn,
+        item.severity,
+        item.see_doctor ? 1 : 0,
+        item.emergency ? 1 : 0
+      );
+    }
+  });
 }

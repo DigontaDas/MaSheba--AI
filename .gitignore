@@ -29,3 +29,14 @@ PLAN_2_mobile.md
 PLAN.md
 Maasheba_workflow.html
 SKILLS_Main_Added/
+Extra_docs_Useful/mother_question_and_answer_pairs_data.json
+Extra_docs_Useful/Maa sheba data and Backend.docx
+MaaSheba AI Model Execution Plan.md
+model/data/raw/
+model/data/processed/
+model/data/reference/
+model/data/external_validation/
+model/reports/*.json
+model/reports/*.md
+model/artifacts/*.joblib
+frontend/stitch_maasheba_ai_ui_kit/

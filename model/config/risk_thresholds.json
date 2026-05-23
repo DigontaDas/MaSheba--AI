@@ -1,0 +1,14 @@
+{
+  "high": {
+    "bp_systolic_min": 140,
+    "bp_diastolic_min": 90,
+    "hemoglobin_max": 8,
+    "symptom_keys": ["severe_headache", "blurred_vision"]
+  },
+  "moderate": {
+    "bp_systolic_min": 130,
+    "bp_diastolic_min": 85,
+    "hemoglobin_max": 10,
+    "gestational_age_weeks_min": 37
+  }
+}

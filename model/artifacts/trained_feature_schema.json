@@ -1,0 +1,41 @@
+{
+  "model_input_name": "risk_input",
+  "label_order": [
+    "LOW",
+    "MODERATE",
+    "HIGH"
+  ],
+  "learned_features": [
+    "bp_systolic",
+    "bp_diastolic",
+    "weight_kg",
+    "hemoglobin",
+    "gestational_age_weeks"
+  ],
+  "model_features": [
+    "bp_systolic",
+    "bp_diastolic",
+    "weight_kg",
+    "gestational_age_weeks"
+  ],
+  "uncovered_candidate_features": [
+    "hemoglobin",
+    "swelling_present",
+    "symptom_abdominal_pain",
+    "symptom_blurred_vision",
+    "symptom_dizziness",
+    "symptom_fatigue",
+    "symptom_headache",
+    "symptom_severe_headache"
+  ],
+  "deterministic_rule_features": [
+    "swelling_present",
+    "symptom_abdominal_pain",
+    "symptom_blurred_vision",
+    "symptom_dizziness",
+    "symptom_fatigue",
+    "symptom_headache",
+    "symptom_severe_headache"
+  ],
+  "no_silent_zero_fill": true
+}

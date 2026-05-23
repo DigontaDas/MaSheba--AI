@@ -1,0 +1,30 @@
+[project]
+name = "maasheba-risk-model"
+version = "0.1.0"
+description = "MaaSheba maternal risk model training and ONNX export pipeline"
+requires-python = ">=3.11"
+dependencies = [
+  "joblib>=1.4",
+  "numpy>=1.26",
+  "onnx>=1.16",
+  "onnxruntime>=1.18",
+  "onnxmltools>=1.12",
+  "openpyxl>=3.1",
+  "pandas>=2.2",
+  "pyarrow>=16.0",
+  "scikit-learn>=1.5",
+  "skl2onnx>=1.17",
+  "xgboost>=2.1"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "ruff>=0.5"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

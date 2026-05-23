@@ -74,3 +74,19 @@ export type SyncResponse = {
   results: SyncResult[];
   synced_at: string;
 };
+
+export type OfflineQaTrimester = "T1" | "T2" | "T3" | "POSTPARTUM" | "ALL";
+
+export type OfflineQaSeverity = "LOW" | "MODERATE" | "HIGH";
+
+export type OfflineQa = {
+  id: string;
+  trimester: OfflineQaTrimester;
+  week_range: string;
+  topic: string;
+  question_bn: string;
+  answer_bn: string;
+  severity: OfflineQaSeverity;
+  see_doctor: boolean;
+  emergency: boolean;
+};
