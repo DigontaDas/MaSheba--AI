@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "project": "MaaSheba",
+    "artifact_type": "graphify_style_summary",
+    "generated_from": "workspace_summary",
+    "notes": "Created because graphify package was unavailable in the current environment."
+  },
+  "nodes": [
+    {"id": "backend_gateway", "label": "FastAPI Backend Gateway", "group": "service"},
+    {"id": "admin_dashboard", "label": "Admin Dashboard", "group": "presentation"},
+    {"id": "mobile_app", "label": "Mobile App", "group": "presentation"},
+    {"id": "supabase_auth", "label": "Supabase Auth", "group": "data"},
+    {"id": "supabase_db", "label": "Supabase Cloud DB", "group": "data"},
+    {"id": "sync_edge_fn", "label": "Sync Edge Function", "group": "service"},
+    {"id": "risk_model", "label": "Risk Model XGBoost Pipeline", "group": "ml"},
+    {"id": "offline_cache", "label": "Offline SQLite Cache", "group": "presentation"},
+    {"id": "chw", "label": "Community Health Workers", "group": "domain"},
+    {"id": "patients", "label": "Patient Records", "group": "domain"},
+    {"id": "ml_artifacts", "label": "ML Artifacts and Reports", "group": "ml"}
+  ],
+  "edges": [
+    {"source": "mobile_app", "target": "backend_gateway", "type": "sync_http"},
+    {"source": "admin_dashboard", "target": "backend_gateway", "type": "health_http"},
+    {"source": "backend_gateway", "target": "sync_edge_fn", "type": "forward_sync"},
+    {"source": "mobile_app", "target": "supabase_auth", "type": "jwt_auth"},
+    {"source": "admin_dashboard", "target": "supabase_auth", "type": "jwt_auth"},
+    {"source": "mobile_app", "target": "supabase_db", "type": "query"},
+    {"source": "admin_dashboard", "target": "supabase_db", "type": "query"},
+    {"source": "sync_edge_fn", "target": "supabase_db", "type": "validate_and_write"},
+    {"source": "mobile_app", "target": "offline_cache", "type": "offline_first"},
+    {"source": "risk_model", "target": "ml_artifacts", "type": "export"},
+    {"source": "patients", "target": "chw", "type": "owned_by"}
+  ],
+  "communities": [
+    {
+      "id": "presentation",
+      "label": "Presentation Layer",
+      "members": ["mobile_app", "admin_dashboard", "offline_cache"]
+    },
+    {
+      "id": "service_sync",
+      "label": "Service and Sync Layer",
+      "members": ["backend_gateway", "sync_edge_fn", "supabase_auth"]
+    },
+    {
+      "id": "data_ml",
+      "label": "Data and ML Layer",
+      "members": ["supabase_db", "risk_model", "ml_artifacts", "chw", "patients"]
+    }
+  ],
+  "audit": {
+    "strong_edges": [
+      "backend-supabase sync path",
+      "auth flow",
+      "offline sync pattern"
+    ],
+    "uncertain_edges": [
+      "mobile background sync wiring",
+      "admin-to-model runtime integration",
+      "PII logging enforcement"
+    ]
+  }
+}
