@@ -9,6 +9,7 @@ import { RiskGauge } from "@/components/risk/RiskGauge";
 import { SyncStatusBar } from "@/components/sync/SyncStatusBar";
 import { Icon } from "@/components/ui/Icon";
 import { copy } from "@/data/stitchCopy.bn";
+import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getOutboxSummary } from "@/db/outbox";
 import { getPatients } from "@/db/patients";
 import { runOutboxSync } from "@/sync/backgroundSync";
@@ -36,7 +37,7 @@ export default function PatientDashboardScreen() {
       setPatients(nextPatients);
       setSummary(nextSummary);
     } catch (loadError) {
-      setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);
+      setLoadError(getLocalDbErrorMessage(loadError, copy.common.loadFailed));
     }
   }, []);
 
@@ -61,7 +62,7 @@ export default function PatientDashboardScreen() {
       await runOutboxSync();
       await load();
     } catch (syncError) {
-      setLoadError(syncError instanceof Error ? syncError.message : copy.sync.syncFailed);
+      setLoadError(getLocalDbErrorMessage(syncError, copy.sync.syncFailed));
     } finally {
       setSyncing(false);
     }

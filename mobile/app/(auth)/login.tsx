@@ -40,7 +40,7 @@ export default function LoginScreen() {
       return copy.login.invalid;
     }
 
-    return loginError.message;
+    return copy.login.invalid;
   };
 
   const chooseRole = (nextRole: UserRole) => {

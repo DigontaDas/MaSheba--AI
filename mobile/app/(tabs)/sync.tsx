@@ -7,6 +7,7 @@ import { OfflineStatusPanel } from "@/components/offline/OfflineStatusPanel";
 import { SyncStatusBar } from "@/components/sync/SyncStatusBar";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { copy } from "@/data/stitchCopy.bn";
+import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getOutboxSummary } from "@/db/outbox";
 import { runOutboxSync } from "@/sync/backgroundSync";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -30,7 +31,7 @@ export default function SyncScreen() {
       setLoadError(null);
       setSummary(await getOutboxSummary());
     } catch (loadError) {
-      setLoadError(loadError instanceof Error ? loadError.message : copy.sync.loadFailed);
+      setLoadError(getLocalDbErrorMessage(loadError, copy.sync.loadFailed));
     }
   }, []);
 
@@ -44,7 +45,7 @@ export default function SyncScreen() {
       await runOutboxSync();
       await load();
     } catch (syncError) {
-      setLoadError(syncError instanceof Error ? syncError.message : copy.sync.syncFailed);
+      setLoadError(getLocalDbErrorMessage(syncError, copy.sync.syncFailed));
     } finally {
       setLoading(false);
     }

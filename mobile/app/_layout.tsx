@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
-import { initDB } from "@/db/database";
+import { ensureLocalDbReady } from "@/db/localDbAccess";
 import { registerOutboxSyncTask } from "@/sync/registerSyncTask";
 import { colors } from "@/theme";
 
@@ -19,7 +19,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    initDB()
+    ensureLocalDbReady()
       .then(registerOutboxSyncTask)
       .catch((error) => console.warn("Startup initialization failed", error));
   }, []);
@@ -38,7 +38,7 @@ export default function RootLayout() {
     <>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(auth)/login" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(mother-tabs)" />
         <Stack.Screen name="assessment/[patientId]" />

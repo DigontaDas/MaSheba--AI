@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SyncStatusBar } from "./sync/SyncStatusBar";
+import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getOutboxSummary } from "@/db/outbox";
 import { runOutboxSync } from "@/sync/backgroundSync";
 import { colors, spacing, typography } from "@/theme";
+import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { minutesSince } from "@/utils/time";
 
 type Summary = {
@@ -30,10 +32,10 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
     setMessage(null);
     try {
       const result = await runOutboxSync();
-      setMessage(result.skipped ? "সিঙ্ক অপেক্ষমাণ" : `সিঙ্ক সম্পন্ন: ${result.processed}`);
+      setMessage(result.skipped ? "সিঙ্ক অপেক্ষমাণ" : `সিঙ্ক সম্পন্ন: ${toBanglaNumber(result.processed)}`);
       await refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "সিঙ্ক ব্যর্থ হয়েছে");
+      setMessage(getLocalDbErrorMessage(error, "সিঙ্ক ব্যর্থ হয়েছে"));
     } finally {
       setLoading(false);
     }

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { copy } from "@/data/stitchCopy.bn";
-import { getEmergencyOfflineQa, getOfflineQaByTopic, getOfflineQaCategories } from "@/db/offlineQa";
+import { getQaByTopic, getQaCategories, type QaCategory } from "@/features/qa/offlineQaStore";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { OfflineQa, OfflineQaTrimester } from "@/types/schema";
 
@@ -19,50 +19,30 @@ type Message = {
 const trim: OfflineQaTrimester = "T3";
 
 export function QaChatScreen() {
-  const categories = useMemo(() => getOfflineQaCategories().slice(0, 8), []);
-  const [topic, setTopic] = useState(categories[0] ?? "");
+  const categories = useMemo(() => getQaCategories(), []);
+  const [category, setCategory] = useState<QaCategory | null>(null);
   const [items, setItems] = useState<OfflineQa[]>([]);
   const [input, setInput] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "hello", role: "ai", text: copy.qa.greeting },
-    { id: "sample-user", role: "user", text: copy.qa.sampleQuestion },
-    {
-      id: "sample-ai",
-      role: "ai",
-      text: copy.qa.sampleAnswer,
-      item: {
-        id: "sample-warning",
-        trimester: "ALL",
-        week_range: "",
-        topic: "",
-        question_bn: copy.qa.sampleQuestion,
-        answer_bn: copy.qa.highRiskBody,
-        severity: "HIGH",
-        see_doctor: true,
-        emergency: false
-      }
-    }
+    { id: "hello", role: "ai", text: copy.qa.greeting }
   ]);
 
-  const load = useCallback(async () => {
-    if (!topic) {
-      setItems([]);
-      return;
-    }
+  const selectCategory = useCallback(async (nextCategory: QaCategory) => {
+    setCategory(nextCategory);
+    setLoadingQuestions(true);
     try {
       setLoadError(null);
-      const nextItems = await getOfflineQaByTopic({ topic, trimester: trim });
+      const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: trim });
       setItems(nextItems);
     } catch (loadError) {
       setItems([]);
       setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);
+    } finally {
+      setLoadingQuestions(false);
     }
-  }, [topic]);
-
-  useEffect(() => {
-    load().catch(() => setItems([]));
-  }, [load]);
+  }, []);
 
   const askItem = (item: OfflineQa) => {
     setMessages((current) => [
@@ -72,23 +52,16 @@ export function QaChatScreen() {
     ]);
   };
 
-  const submitInput = async () => {
+  const submitInput = () => {
     const question = input.trim();
     if (!question) {
       return;
     }
     setInput("");
-    const emergency = await getEmergencyOfflineQa();
-    const answer = items[0] ?? emergency[0];
     setMessages((current) => [
       ...current,
       { id: `custom-q-${Date.now()}`, role: "user", text: question },
-      {
-        id: `custom-a-${Date.now()}`,
-        role: "ai",
-        text: answer?.answer_bn ?? copy.qa.sampleAnswer,
-        item: answer
-      }
+      { id: `custom-a-${Date.now()}`, role: "ai", text: copy.qa.freeTextUnsupported }
     ]);
   };
 
@@ -114,17 +87,17 @@ export function QaChatScreen() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
         {categories.length ? (
-          categories.map((category) => (
+          categories.map((nextCategory) => (
             <Pressable
-              key={category}
-              accessibilityLabel={category}
+              key={nextCategory.topic}
+              accessibilityLabel={nextCategory.label}
               accessibilityRole="button"
-              accessibilityState={topic === category ? { selected: true } : {}}
-              onPress={() => setTopic(category)}
-              style={[styles.category, topic === category && styles.categoryActive]}
+              accessibilityState={category?.topic === nextCategory.topic ? { selected: true } : {}}
+              onPress={() => selectCategory(nextCategory)}
+              style={[styles.category, category?.topic === nextCategory.topic && styles.categoryActive]}
             >
-              <Text style={[styles.categoryText, topic === category && styles.categoryTextActive]} numberOfLines={1}>
-                {category}
+              <Text style={[styles.categoryText, category?.topic === nextCategory.topic && styles.categoryTextActive]} numberOfLines={1}>
+                {nextCategory.label}
               </Text>
             </Pressable>
           ))
@@ -135,22 +108,22 @@ export function QaChatScreen() {
 
       <View style={styles.messages}>
         {messages.map((message) => (
-          <ChatBubble
-            key={message.id}
-            role={message.role}
-            text={message.text}
-            timestamp={message.role === "ai" ? "১০:৩০ এএম" : "১০:৩২ এএম"}
-            warningCard={
-              message.item?.severity === "HIGH"
-                ? { title: copy.qa.highRiskTitle, description: message.item.answer_bn }
-                : undefined
-            }
-          />
+          <View key={message.id} style={styles.messageWrap}>
+            {message.item?.emergency ? (
+              <EmergencyBanner title={copy.qa.highRiskTitle} message={message.item.answer_bn} />
+            ) : (
+              <ChatBubble role={message.role} text={message.text} />
+            )}
+          </View>
         ))}
       </View>
 
       <View style={styles.questionList}>
-        {items.length ? (
+        {!category ? (
+          <Text style={styles.empty}>{copy.qa.chooseCategory}</Text>
+        ) : loadingQuestions ? (
+          <Text style={styles.empty}>{copy.qa.loadingQuestions}</Text>
+        ) : items.length ? (
           items.slice(0, 5).map((item) => (
             <Pressable key={item.id} accessibilityLabel={item.question_bn} accessibilityRole="button" onPress={() => askItem(item)} style={styles.question}>
               <Text style={styles.questionText}>{item.question_bn}</Text>
@@ -159,13 +132,6 @@ export function QaChatScreen() {
         ) : (
           <Text style={styles.empty}>{copy.qa.noQuestions}</Text>
         )}
-      </View>
-
-      <EmergencyBanner title={copy.qa.highRiskTitle} message={copy.qa.highRiskBody} />
-
-      <View style={styles.smsRow}>
-        <Text style={styles.sms}>{copy.qa.sms}</Text>
-        <Text style={styles.smsNumber}>16789</Text>
       </View>
 
       <View style={styles.inputRow}>
@@ -178,8 +144,8 @@ export function QaChatScreen() {
           style={styles.input}
           value={input}
         />
-        <Pressable accessibilityLabel="প্রশ্ন পাঠান" accessibilityRole="button" onPress={submitInput} style={styles.send}>
-          <Icon name="mic" color={colors.onPrimary} />
+        <Pressable accessibilityLabel={copy.qa.sendQuestion} accessibilityRole="button" onPress={submitInput} style={styles.send}>
+          <Icon name="send" color={colors.onPrimary} />
         </Pressable>
       </View>
       <View style={styles.secure}>
@@ -258,6 +224,9 @@ const styles = StyleSheet.create({
     gap: spacing.base,
     paddingHorizontal: spacing.marginMobile
   },
+  messageWrap: {
+    maxWidth: "100%"
+  },
   questionList: {
     gap: spacing.sm,
     paddingHorizontal: spacing.marginMobile
@@ -273,20 +242,6 @@ const styles = StyleSheet.create({
   questionText: {
     ...typography.label,
     color: colors.onSurface
-  },
-  smsRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "center"
-  },
-  sms: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant
-  },
-  smsNumber: {
-    ...typography.label,
-    color: colors.primary
   },
   inputRow: {
     alignItems: "center",

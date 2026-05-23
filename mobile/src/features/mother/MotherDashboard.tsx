@@ -14,7 +14,14 @@ export function MotherDashboard({
   variant?: "home" | "progress";
   week?: number;
 }) {
-  const title = variant === "progress" ? copy.mother.readyTitle : copy.mother.growthTitle;
+  const title =
+    variant === "progress"
+      ? `সপ্তাহ ${toBanglaNumber(week)}: আপনার গর্ভকালীন অগ্রগতি`
+      : `সপ্তাহ ${toBanglaNumber(week)}: আপনার শিশুর বৃদ্ধি`;
+  const body =
+    variant === "progress"
+      ? "শান্ত থাকুন এবং সাহায্যের জন্য প্রস্তুত থাকুন। কোনো জরুরি লক্ষণ দেখা দিলে দ্রুত স্বাস্থ্যকর্মীকে জানান।"
+      : "এই সপ্তাহে পুষ্টিকর খাবার, বিশ্রাম, ও নিয়মিত চেকআপ চালিয়ে যান। কোনো অস্বস্তি হলে স্বাস্থ্যকর্মীকে জানান।";
   const checklist =
     variant === "progress"
       ? ["প্রসব বেদনা যেকোনো সময় শুরু হতে পারে", "শিশুর নড়াচড়া খেয়াল রাখুন", "আপনার হাসপাতাল ব্যাগ প্রস্তুত রাখুন"]
@@ -51,7 +58,7 @@ export function MotherDashboard({
             <Text style={styles.checkText}>{item}</Text>
           </View>
         ))}
-        <Text style={styles.body}>{variant === "progress" ? "শান্ত থাকুন এবং সাহায্যের জন্য প্রস্তুত থাকুন। আপনার শীঘ্রই দেখা হতে যাচ্ছে!" : copy.mother.secondTrimester}</Text>
+        <Text style={styles.body}>{body}</Text>
       </View>
 
       <View style={styles.grid}>
@@ -62,7 +69,7 @@ export function MotherDashboard({
       </View>
 
       <Pressable accessibilityLabel={copy.mother.askAi} accessibilityRole="button" style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
-        <Icon name="mic" color={colors.onPrimary} />
+        <Icon name="chat-bubble" color={colors.onPrimary} />
         <Text style={styles.askText}>{copy.mother.askAi}</Text>
       </Pressable>
     </ScreenShell>

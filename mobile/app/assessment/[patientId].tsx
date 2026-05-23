@@ -13,6 +13,7 @@ import { ScreenShell } from "@/components/ui/ScreenShell";
 import { Icon } from "@/components/ui/Icon";
 import { getSession } from "@/auth/secureSession";
 import { copy } from "@/data/stitchCopy.bn";
+import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { SYMPTOM_OPTIONS } from "@/db/schema";
 import { getPatient } from "@/db/patients";
 import { insertVisit } from "@/db/visits";
@@ -93,7 +94,7 @@ export default function RiskAssessmentScreen() {
         }
       } catch (loadError) {
         if (active) {
-          setLoadError(loadError instanceof Error ? loadError.message : copy.assessment.loadFailed);
+          setLoadError(getLocalDbErrorMessage(loadError, copy.assessment.loadFailed));
         }
       } finally {
         if (active) {
@@ -224,7 +225,7 @@ export default function RiskAssessmentScreen() {
       });
       setSaved(true);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : copy.assessment.saveFailed);
+      setError(getLocalDbErrorMessage(saveError, copy.assessment.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -345,7 +346,7 @@ function RiskResult({ patient, prediction }: { patient: Patient; prediction: Ris
           <RiskBadge level={prediction.risk_level} />
         </View>
         <RiskGauge score={prediction.score ?? riskScoreForLevel(prediction.risk_level)} level={prediction.risk_level} />
-        {prediction.reasons?.length ? <Text style={styles.subtitle}>{prediction.reasons.join(", ")}</Text> : null}
+        {prediction.reasons?.length ? <Text style={styles.subtitle}>{riskReasonText(prediction.risk_level)}</Text> : null}
       </View>
 
       {high ? (
@@ -392,6 +393,16 @@ function riskScoreForLevel(level: RiskPrediction["risk_level"]): number {
     return 0.58;
   }
   return 0.24;
+}
+
+function riskReasonText(level: RiskPrediction["risk_level"]): string {
+  if (level === "HIGH") {
+    return "রক্তচাপ বা লক্ষণের কারণে জরুরি নজরদারি দরকার।";
+  }
+  if (level === "MODERATE") {
+    return "কিছু লক্ষণ আছে, তাই নিয়মিত পর্যবেক্ষণ দরকার।";
+  }
+  return "বর্তমান তথ্য অনুযায়ী বড় ঝুঁকি দেখা যাচ্ছে না।";
 }
 
 const styles = StyleSheet.create({

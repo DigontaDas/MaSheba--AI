@@ -1,8 +1,6 @@
 import React from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { Text } from "react-native";
 import { QaChatScreen } from "@/features/qa/QaChatScreen";
-import { copy } from "@/data/stitchCopy.bn";
 
 const mockCategories = ["সাধারণ প্রশ্ন", "পুষ্টি"];
 const mockQuestions = [
@@ -19,20 +17,6 @@ const mockQuestions = [
   }
 ];
 
-const mockEmergencyAnswers = [
-  {
-    id: "e-1",
-    trimester: "ALL" as const,
-    week_range: "",
-    topic: "",
-    question_bn: "",
-    answer_bn: copy.qa.highRiskBody,
-    severity: "HIGH" as const,
-    see_doctor: true,
-    emergency: true
-  }
-];
-
 jest.mock("@/components/ui/Icon", () => {
   const React = require("react");
   const { Text } = require("react-native");
@@ -41,16 +25,10 @@ jest.mock("@/components/ui/Icon", () => {
   };
 });
 
-jest.mock("@/db/offlineQa", () => ({
-  getOfflineQaCategories: () => mockCategories,
-  getOfflineQaByTopic: jest.fn(async () => mockQuestions),
-  getEmergencyOfflineQa: jest.fn(async () => mockEmergencyAnswers),
-  trimesterFromWeeks: jest.fn(() => "T3")
+jest.mock("@/features/qa/offlineQaStore", () => ({
+  getQaCategories: () => mockCategories.map((label) => ({ label, topic: label.replace(/\s+/g, "_") })),
+  getQaByTopic: jest.fn(async () => mockQuestions)
 }));
-
-function getText(tree: ReturnType<typeof create>, text: string) {
-  return tree.root.findAllByType(Text).find((node) => (node.children ?? []).join("") === text);
-}
 
 describe("QaChatScreen", () => {
   async function renderTree() {
@@ -61,17 +39,23 @@ describe("QaChatScreen", () => {
     return tree as unknown as ReactTestRenderer;
   }
 
-  it("loads offline categories and shows the emergency banner", async () => {
+  it("loads offline categories and does not show placeholder SMS text", async () => {
     const tree = await renderTree();
 
     const snapshot = JSON.stringify(tree.toJSON());
     expect(snapshot).toContain("সাধারণ প্রশ্ন");
-    expect(snapshot).toContain(copy.qa.highRiskTitle);
-    expect(snapshot).toContain(copy.qa.sms);
+    expect(snapshot).not.toContain("16789");
+    expect(snapshot).not.toContain("SMS-এও কাজ করে");
   });
 
   it("loads questions for the selected category and appends the selected answer", async () => {
     const tree = await renderTree();
+    const categoryNode = tree.root.findByProps({ accessibilityLabel: "সাধারণ প্রশ্ন" });
+
+    await act(async () => {
+      await categoryNode.props.onPress();
+    });
+
     const questionNode = tree.root.findByProps({ accessibilityLabel: "আমার সকাল থেকে একটু মাথা ঘুরছে।" });
 
     await act(async () => {
