@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { SyncStatusBar } from "./sync/SyncStatusBar";
 import { getOutboxSummary } from "@/db/outbox";
 import { runOutboxSync } from "@/sync/backgroundSync";
+import { colors, spacing, typography } from "@/theme";
 import { minutesSince } from "@/utils/time";
 
 type Summary = {
@@ -20,7 +22,7 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
   }, []);
 
   useEffect(() => {
-    refresh();
+    refresh().catch(() => undefined);
   }, [refresh]);
 
   const syncNow = async () => {
@@ -28,73 +30,41 @@ export function SyncStatus({ compact = false }: { compact?: boolean }) {
     setMessage(null);
     try {
       const result = await runOutboxSync();
-      setMessage(result.skipped ? "Sync skipped" : `Processed ${result.processed}`);
+      setMessage(result.skipped ? "সিঙ্ক অপেক্ষমাণ" : `সিঙ্ক সম্পন্ন: ${result.processed}`);
       await refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sync failed");
+      setMessage(error instanceof Error ? error.message : "সিঙ্ক ব্যর্থ হয়েছে");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={compact ? styles.compactContainer : styles.container}>
-      <View>
-        <Text style={styles.label}>Last synced</Text>
-        <Text style={styles.value}>{minutesSince(summary.lastSyncedAt)}</Text>
-      </View>
-      <View>
-        <Text style={styles.label}>Pending</Text>
-        <Text style={styles.value}>{summary.pending}</Text>
-      </View>
-      <View>
-        <Text style={styles.label}>Failed</Text>
-        <Text style={styles.value}>{summary.failed}</Text>
-      </View>
-      <Pressable style={styles.button} onPress={syncNow} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sync</Text>}
-      </Pressable>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+    <View style={compact ? styles.compact : styles.container}>
+      <SyncStatusBar
+        pending={summary.pending}
+        synced={summary.lastSyncedAt ? 1 : 0}
+        failed={summary.failed}
+        loading={loading}
+        onSync={syncNow}
+      />
+      {!compact ? <Text style={styles.caption}>সর্বশেষ সিঙ্ক: {minutesSince(summary.lastSyncedAt)}</Text> : null}
+      {message ? <Text style={styles.caption}>{message}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 14,
-    padding: 16
+    gap: spacing.sm,
+    padding: spacing.base
   },
-  compactContainer: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10
+  compact: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm
   },
-  label: {
-    color: "#64748b",
-    fontSize: 12
-  },
-  value: {
-    color: "#0f172a",
-    fontSize: 16,
-    fontWeight: "700"
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: "#047857",
-    borderRadius: 6,
-    minHeight: 40,
-    justifyContent: "center",
-    paddingHorizontal: 14
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700"
-  },
-  message: {
-    color: "#475569",
-    width: "100%"
+  caption: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant
   }
 });

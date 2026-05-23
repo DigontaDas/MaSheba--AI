@@ -1,23 +1,47 @@
 import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { SecondaryButton } from "@/components/ui/SecondaryButton";
+import { Icon } from "@/components/ui/Icon";
 import { loginAndBootstrap } from "@/auth/supabaseAuth";
+import { loginMother, saveUserRole, type UserRole } from "@/auth/roleSession";
+import { copy } from "@/data/stitchCopy.bn";
+import { colors, radius, spacing, typography } from "@/theme";
+
+type Step = "role" | "credentials";
 
 export default function LoginScreen() {
+  const [step, setStep] = useState<Step>("role");
+  const [role, setRole] = useState<UserRole>("MOTHER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const chooseRole = (nextRole: UserRole) => {
+    setRole(nextRole);
+    setError(null);
+    setStep("credentials");
+  };
+
   const onLogin = async () => {
     setLoading(true);
     setError(null);
     try {
-      await loginAndBootstrap(email.trim(), password);
-      router.replace("/(tabs)/patients");
+      if (role === "CHW") {
+        await loginAndBootstrap(email.trim(), password);
+        await saveUserRole("CHW");
+        router.replace("/(tabs)/patients");
+        return;
+      }
+
+      await loginMother(email.trim(), password);
+      router.replace("/(mother-tabs)/home");
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Unable to log in");
+      setError(loginError instanceof Error ? loginError.message : copy.login.invalid);
     } finally {
       setLoading(false);
     }
@@ -25,29 +49,76 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
-      <OfflineBanner />
       <View style={styles.content}>
-        <Text style={styles.kicker}>MaaSheba AI</Text>
-        <Text style={styles.title}>CHW login</Text>
-        <TextInput
-          autoCapitalize="none"
-          keyboardType="email-address"
-          onChangeText={setEmail}
-          placeholder="Email"
-          style={styles.input}
-          value={email}
-        />
-        <TextInput
-          onChangeText={setPassword}
-          placeholder="Password"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Pressable style={styles.button} onPress={onLogin} disabled={loading || !email || !password}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
-        </Pressable>
+        <OfflineBanner />
+        <View style={styles.hero}>
+          <Image
+            source={require("../../assets/stitch/a_high_quality_professional_realistic_photograph_of_a_young_bangladeshi_mother.png")}
+            style={styles.heroImage}
+            contentFit="cover"
+          />
+          <View style={styles.brandMark}>
+            <Icon name="favorite" color={colors.primary} size={22} />
+          </View>
+        </View>
+
+        <View style={styles.header}>
+          <Text style={styles.title}>{copy.common.appName}</Text>
+          <Text style={styles.subtitle}>{copy.onboarding.tagline}</Text>
+          <View style={styles.languageRow}>
+            <Text style={styles.languageActive}>{copy.onboarding.langBn}</Text>
+            <Text style={styles.language}>{copy.onboarding.langEn}</Text>
+          </View>
+        </View>
+
+        {step === "role" ? (
+          <View style={styles.actions}>
+            <PrimaryButton
+              label={copy.onboarding.continueAsMother}
+              iconName="arrow-forward"
+              onPress={() => chooseRole("MOTHER")}
+            />
+            <SecondaryButton label={copy.onboarding.continueAsChw} onPress={() => chooseRole("CHW")} />
+          </View>
+        ) : (
+          <View style={styles.form}>
+            <View style={styles.formHeader}>
+              <Pressable accessibilityRole="button" onPress={() => setStep("role")} style={styles.backButton}>
+                <Icon name="arrow-back" color={colors.primary} size={20} />
+              </Pressable>
+              <Text style={styles.formTitle}>{role === "CHW" ? copy.login.chwTitle : copy.login.motherTitle}</Text>
+            </View>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder={copy.login.emailPlaceholder}
+              placeholderTextColor={colors.outline}
+              style={styles.input}
+              value={email}
+            />
+            <TextInput
+              onChangeText={setPassword}
+              placeholder={copy.login.passwordPlaceholder}
+              placeholderTextColor={colors.outline}
+              secureTextEntry
+              style={styles.input}
+              value={password}
+            />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <PrimaryButton
+              label={copy.login.loginButton}
+              loading={loading}
+              disabled={!email || !password}
+              onPress={onLogin}
+            />
+          </View>
+        )}
+
+        <View style={styles.footer}>
+          <Icon name="shield" color={colors.secondary} size={18} />
+          <Text style={styles.footerText}>{copy.onboarding.whoGuideline}</Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -55,48 +126,124 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
     flex: 1
   },
   content: {
     flex: 1,
-    gap: 12,
+    gap: spacing.lg,
     justifyContent: "center",
-    padding: 20
+    padding: spacing.marginMobile
   },
-  kicker: {
-    color: "#047857",
-    fontSize: 14,
-    fontWeight: "700"
+  hero: {
+    alignSelf: "center",
+    aspectRatio: 1,
+    borderRadius: radius.xl,
+    maxWidth: 300,
+    overflow: "hidden",
+    width: "86%"
+  },
+  heroImage: {
+    height: "100%",
+    width: "100%"
+  },
+  brandMark: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radius.full,
+    bottom: spacing.base,
+    height: 48,
+    justifyContent: "center",
+    position: "absolute",
+    right: spacing.base,
+    width: 48
+  },
+  header: {
+    alignItems: "center",
+    gap: spacing.sm
   },
   title: {
-    color: "#0f172a",
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 8
+    ...typography.h1,
+    color: colors.onSurface,
+    textAlign: "center"
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.onSurfaceVariant,
+    textAlign: "center"
+  },
+  languageRow: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.full,
+    flexDirection: "row",
+    gap: spacing.xs,
+    padding: spacing.xs
+  },
+  languageActive: {
+    ...typography.label,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radius.full,
+    color: colors.primary,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm
+  },
+  language: {
+    ...typography.label,
+    color: colors.onSurfaceVariant,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm
+  },
+  actions: {
+    gap: spacing.sm
+  },
+  form: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.base,
+    padding: spacing.cardPadding
+  },
+  formHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.full,
+    height: 38,
+    justifyContent: "center",
+    width: 38
+  },
+  formTitle: {
+    ...typography.h2,
+    color: colors.onSurface,
+    flex: 1
   },
   input: {
-    backgroundColor: "#fff",
-    borderColor: "#cbd5e1",
-    borderRadius: 6,
+    ...typography.body,
+    backgroundColor: colors.surfaceContainerLow,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    color: "#0f172a",
-    minHeight: 48,
-    paddingHorizontal: 12
-  },
-  button: {
-    alignItems: "center",
-    backgroundColor: "#047857",
-    borderRadius: 6,
-    justifyContent: "center",
-    minHeight: 48
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700"
+    color: colors.onSurface,
+    minHeight: 52,
+    paddingHorizontal: spacing.base
   },
   error: {
-    color: "#be123c"
+    ...typography.label,
+    color: colors.error
+  },
+  footer: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "center"
+  },
+  footerText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant
   }
 });
