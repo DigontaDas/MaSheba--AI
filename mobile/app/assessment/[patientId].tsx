@@ -257,15 +257,17 @@ export default function RiskAssessmentScreen() {
     return null;
   }
 
+  const patientRecord = activePatient;
+
   return (
     <ScreenShell>
       <OfflineBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>{activePatient.name}</Text>
+        <Text style={styles.title}>{patientRecord.name}</Text>
         <Text style={styles.subtitle}>
-          {copy.dashboard.pregnancy}: {toBanglaNumber(activePatient.gestational_age_weeks)} সপ্তাহ
+          {copy.dashboard.pregnancy}: {toBanglaNumber(patientRecord.gestational_age_weeks)} সপ্তাহ
         </Text>
-        <ProgressBar value={activePatient.gestational_age_weeks} max={40} showMarkers />
+        <ProgressBar value={patientRecord.gestational_age_weeks} max={40} showMarkers />
       </View>
 
       {!saved ? (
@@ -316,7 +318,7 @@ export default function RiskAssessmentScreen() {
           <PrimaryButton label={copy.assessment.saveVisit} loading={saving} disabled={!requiredFieldsFilled || !prediction} onPress={save} />
         </View>
       ) : prediction ? (
-        <RiskResult patient={activePatient} prediction={prediction} />
+        <RiskResult patient={patientRecord} prediction={prediction} />
       ) : null}
     </ScreenShell>
   );

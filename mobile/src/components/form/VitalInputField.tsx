@@ -1,4 +1,4 @@
-import type { KeyboardTypeOptions } from "react-native";
+import type { AccessibilityState, KeyboardTypeOptions } from "react-native";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, radius, spacing, typography } from "@/theme";
 
@@ -24,7 +24,7 @@ export function VitalInputField({
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={unit ? `${unit} এককে লিখুন` : undefined}
-           accessibilityState={error ? ({ invalid: true } as never) : undefined}
+          accessibilityState={error ? ({ invalid: true } as AccessibilityState) : undefined}
           keyboardType={keyboardType}
           onChangeText={onChangeText}
           placeholderTextColor={colors.outline}
