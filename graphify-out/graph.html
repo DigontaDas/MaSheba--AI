@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MaaSheba Graph</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f1ee;
+      --panel: #fffdfb;
+      --panel-alt: #f3ebe7;
+      --text: #231815;
+      --muted: #64524b;
+      --accent: #8f4e36;
+      --accent-soft: #f0d4c7;
+      --border: #dcc8bf;
+      --shadow: 0 18px 48px rgba(47, 30, 22, 0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Tahoma, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(143, 78, 54, 0.16), transparent 32%),
+        radial-gradient(circle at top right, rgba(121, 163, 147, 0.18), transparent 26%),
+        linear-gradient(180deg, #f8f2ef 0%, #efe6e0 100%);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 18px 36px; }
+    .hero {
+      background: linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74));
+      border: 1px solid rgba(220, 200, 191, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    h1 { margin: 0 0 8px; font-size: 2rem; letter-spacing: -0.03em; }
+    .lead { margin: 0; color: var(--muted); max-width: 80ch; line-height: 1.6; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .stat {
+      background: rgba(255,255,255,0.76);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+    .stat .label { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 6px; }
+    .stat .value { font-size: 1.15rem; font-weight: 700; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 18px 0;
+      align-items: center;
+    }
+    input, select {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.94);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      min-width: 220px;
+      box-shadow: 0 8px 18px rgba(47, 30, 22, 0.04);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #5b2f1f;
+      padding: 8px 12px;
+      font-size: .9rem;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      background: rgba(255,255,255,0.8);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.48);
+      font-size: 1.05rem;
+    }
+    .panel .body { padding: 16px 18px 18px; }
+    .node {
+      display: grid;
+      gap: 4px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(220, 200, 191, 0.55);
+    }
+    .node:last-child { border-bottom: 0; }
+    .node .name { font-weight: 700; }
+    .node .source { color: var(--muted); font-size: .92rem; }
+    .edge { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid rgba(220, 200, 191, 0.55); }
+    .edge:last-child { border-bottom: 0; }
+    .edge .line { font-weight: 600; }
+    .edge .detail { color: var(--muted); font-size: .92rem; }
+    details {
+      background: rgba(255,255,255,0.78);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    summary { cursor: pointer; font-weight: 700; }
+    ul { margin: 10px 0 0 18px; padding: 0; color: var(--muted); }
+    .section { margin-top: 18px; }
+    a { color: var(--accent); }
+    .hidden { display: none !important; }
+    .notice {
+      background: rgba(143, 78, 54, 0.08);
+      border: 1px solid rgba(143, 78, 54, 0.22);
+      border-radius: 18px;
+      color: var(--text);
+      margin-top: 16px;
+      padding: 14px 16px;
+    }
+    .recorded-state {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+    .recorded-state h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .recorded-state p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    @media (max-width: 720px) {
+      .wrap { padding: 16px; }
+      .hero { padding: 18px; }
+      h1 { font-size: 1.65rem; }
+      input, select { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>MaaSheba Workspace Graph</h1>
+      <p class="lead">
+        This viewer mirrors the fallback graph artifact in <a href="graph.json">graph.json</a> and the audit report in
+        <a href="GRAPH_REPORT.md">GRAPH_REPORT.md</a>. It is intentionally honest about the missing semantic-backend step
+        while still surfacing the main architecture, data contract, and planning rationale.
+      </p>
+      <div class="recorded-state">
+        <h3>Recorded state for the next model</h3>
+        <p>
+          The workspace now contains a deterministic fallback graph, not a full LLM-extracted graph. It records the
+          main backend, mobile, admin, Supabase, model, docs, and planning relationships discovered from direct file
+          reads. The graph is usable for orientation, but the missing semantic backend means some edges are inferred
+          rather than exhaustively extracted.
+        </p>
+      </div>
+      <div class="meta">
+        <div class="stat"><span class="label">Status</span><span class="value">Deterministic fallback</span></div>
+        <div class="stat"><span class="label">Core layers</span><span class="value">Mobile, backend, Supabase, admin, model</span></div>
+        <div class="stat"><span class="label">Best next question</span><span class="value">Sync acceptance path</span></div>
+      </div>
+      <div class="notice">
+        If the node list looks empty in a preview pane, open this file in a browser that runs JavaScript. The visible
+        node cards are rendered dynamically from the data embedded below.
+      </div>
+    </section>
+
+    <noscript>
+      <div class="notice">
+        JavaScript is disabled, so the dynamic node list cannot render. The graph data still exists in graph.json and
+        the report in GRAPH_REPORT.md.
+      </div>
+    </noscript>
+
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Filter nodes, edges, or community text" />
+      <select id="communityFilter">
+        <option value="all">All communities</option>
+        <option value="Mobile Experience">Mobile Experience</option>
+        <option value="Backend Gateway">Backend Gateway</option>
+        <option value="Supabase Contract and Sync">Supabase Contract and Sync</option>
+        <option value="Admin Observability">Admin Observability</option>
+        <option value="Model and Documentation">Model and Documentation</option>
+      </select>
+      <span class="pill" id="counts">0 nodes shown</span>
+    </div>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>God Nodes</h2>
+        <div class="body" id="godNodes"></div>
+      </article>
+      <article class="panel">
+        <h2>Surprising Connections</h2>
+        <div class="body" id="surprises"></div>
+      </article>
+    </section>
+
+    <section class="section panel">
+      <h2>Suggested Questions</h2>
+      <div class="body" id="questions"></div>
+    </section>
+
+    <section class="section panel">
+      <h2>Communities</h2>
+      <div class="body" id="communities"></div>
+    </section>
+
+    <section class="section grid">
+      <article class="panel">
+        <h2>Key Nodes</h2>
+        <div class="body" id="nodes"></div>
+      </article>
+      <article class="panel">
+        <h2>Key Edges</h2>
+        <div class="body" id="edges"></div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const graph = {
+      nodes: [
+        { label: 'FastAPI Backend App', source: 'backend/app/main.py', group: 'Backend Gateway' },
+        { label: 'Health Router', source: 'backend/app/routers/health.py', group: 'Backend Gateway' },
+        { label: 'Sync Router', source: 'backend/app/routers/sync.py', group: 'Backend Gateway' },
+        { label: 'Chat Router', source: 'backend/app/routers/chat.py', group: 'Backend Gateway' },
+        { label: 'Supabase Gateway Service', source: 'backend/app/services/supabase_client.py', group: 'Backend Gateway' },
+        { label: 'Admin Dashboard Page', source: 'admin/app/dashboard/page.tsx', group: 'Admin Observability' },
+        { label: 'Supabase Admin Client', source: 'admin/utils/supabase/server.ts', group: 'Admin Observability' },
+        { label: 'Risk Summary Chart', source: 'admin/components/RiskSummaryChart.tsx', group: 'Admin Observability' },
+        { label: 'Mobile Root Layout', source: 'mobile/app/_layout.tsx', group: 'Mobile Experience' },
+        { label: 'Mobile Launch Route', source: 'mobile/app/index.tsx', group: 'Mobile Experience' },
+        { label: 'CHW Tabs Layout', source: 'mobile/app/(tabs)/_layout.tsx', group: 'Mobile Experience' },
+        { label: 'CHW Patients Screen', source: 'mobile/app/(tabs)/patients.tsx', group: 'Mobile Experience' },
+        { label: 'CHW Sync Screen', source: 'mobile/app/(tabs)/sync.tsx', group: 'Mobile Experience' },
+        { label: 'CHW QA Screen', source: 'mobile/app/(tabs)/qa.tsx', group: 'Mobile Experience' },
+        { label: 'Mother Home Screen', source: 'mobile/app/(mother-tabs)/home.tsx', group: 'Mobile Experience' },
+        { label: 'Outbox Background Sync', source: 'mobile/src/sync/backgroundSync.ts', group: 'Mobile Experience' },
+        { label: 'Mobile Local Store', source: 'mobile/src/db/outbox.ts', group: 'Mobile Experience' },
+        { label: 'Supabase Core Schema', source: 'supabase/migrations/20260520031500_create_core_schema.sql', group: 'Supabase Contract and Sync' },
+        { label: 'Supabase RLS and Views', source: 'supabase/migrations/20260520031600_rls_policies_and_views.sql', group: 'Supabase Contract and Sync' },
+        { label: 'sync-outbox Edge Function', source: 'supabase/functions/sync-outbox/index.ts', group: 'Supabase Contract and Sync' },
+        { label: 'Risk Model README', source: 'model/README.md', group: 'Model and Documentation' },
+        { label: 'XGBoost Training Pipeline', source: 'model/scripts/train_xgboost.py', group: 'Model and Documentation' }
+      ],
+      edges: [
+        'backend_main includes health/sync/chat routers',
+        'sync router uses Supabase gateway service',
+        'health router uses Supabase gateway service',
+        'admin dashboard queries Supabase views and renders the risk chart',
+        'mobile root layout initializes background sync and mounts shell routes',
+        'launch route rehydrates auth state and chooses CHW vs mother navigation',
+        'patients screen and sync screen both read the local store and can trigger sync',
+        'background sync posts batches to the sync router and applies results',
+        'schema underpins RLS/views; edge function validates and writes into the schema',
+        'model README constrains the XGBoost training pipeline'
+      ],
+      communities: [
+        { name: 'Mobile Experience', members: 8 },
+        { name: 'Backend Gateway', members: 5 },
+        { name: 'Supabase Contract and Sync', members: 3 },
+        { name: 'Admin Observability', members: 3 },
+        { name: 'Model and Documentation', members: 3 }
+      ],
+      questions: [
+        'How many independent layers must agree before a CHW sync event is accepted?',
+        'Where does the app decide CHW versus mother navigation, and what happens if stored auth is stale?',
+        'How do the Supabase views and RLS policies shape what the admin dashboard can see?',
+        'Which parts of the maternal-risk pipeline are learned, and which are deterministic safety rules?',
+        'What is the weakest link in the offline-first sync path?'
+      ],
+      godNodes: [
+        'Supabase Core Schema',
+        'Mobile Launch Route',
+        'Outbox Background Sync',
+        'Sync Router',
+        'sync-outbox Edge Function',
+        'Admin Dashboard Page',
+        'Risk Model README'
+      ],
+      surprises: [
+        'current_chw_id() is the shared trust anchor between RLS and the sync validation path.',
+        'The launch route checks live identity before choosing CHW or mother navigation from stored role data.',
+        'The admin dashboard depends on aggregated views instead of raw tables.',
+        'The backend gateway and the edge function both reject cross-CHW payloads before writes.',
+        'The model README refuses silent zero-filling of unsupported clinical inputs.'
+      ]
+    };
+
+    const graphSummary = document.createElement('div');
+    graphSummary.className = 'recorded-state';
+    graphSummary.innerHTML = `
+      <h3>What is recorded here</h3>
+      <p>
+        ${graph.nodes.length} nodes, ${graph.edges.length} edge summaries, and five communities are embedded in this
+        file so another model can reconstruct the project state quickly. The strongest evidence is in the backend,
+        mobile launch/sync path, Supabase schema and RLS, admin dashboard, and risk-model documentation.
+      </p>
+    `;
+    document.querySelector('.wrap').insertBefore(graphSummary, document.getElementById('search').parentElement);
+
+    const nodesEl = document.getElementById('nodes');
+    const edgesEl = document.getElementById('edges');
+    const questionsEl = document.getElementById('questions');
+    const communitiesEl = document.getElementById('communities');
+    const godNodesEl = document.getElementById('godNodes');
+    const surprisesEl = document.getElementById('surprises');
+    const searchEl = document.getElementById('search');
+    const communityFilterEl = document.getElementById('communityFilter');
+    const countsEl = document.getElementById('counts');
+
+    function renderList(target, items) {
+      target.innerHTML = items.map((item) => `<div class="node"><div class="name">${item}</div></div>`).join('');
+    }
+
+    function render() {
+      const search = searchEl.value.trim().toLowerCase();
+      const community = communityFilterEl.value;
+      const filteredNodes = graph.nodes.filter((node) => {
+        const haystack = `${node.label} ${node.source} ${node.group}`.toLowerCase();
+        const matchesSearch = !search || haystack.includes(search);
+        const matchesCommunity = community === 'all' || node.group === community;
+        return matchesSearch && matchesCommunity;
+      });
+
+      countsEl.textContent = `${filteredNodes.length} node${filteredNodes.length === 1 ? '' : 's'} shown`;
+      nodesEl.innerHTML = filteredNodes.map((node) => `
+        <div class="node">
+          <div class="name">${node.label}</div>
+          <div class="source">${node.source}</div>
+          <div class="source">${node.group}</div>
+        </div>
+      `).join('') || '<div class="node"><div class="name">No matches.</div></div>';
+
+      edgesEl.innerHTML = graph.edges
+        .filter((edge) => !search || edge.toLowerCase().includes(search))
+        .map((edge) => `<div class="edge"><div class="line">${edge}</div></div>`)
+        .join('') || '<div class="edge"><div class="line">No matches.</div></div>';
+
+      questionsEl.innerHTML = graph.questions.map((question) => `<div class="node"><div class="name">${question}</div></div>`).join('');
+      godNodesEl.innerHTML = graph.godNodes.map((node) => `<div class="node"><div class="name">${node}</div></div>`).join('');
+      surprisesEl.innerHTML = graph.surprises.map((item) => `<div class="node"><div class="name">${item}</div></div>`).join('');
+      communitiesEl.innerHTML = graph.communities.map((community) => `
+        <details>
+          <summary>${community.name}</summary>
+          <ul><li>${community.members} members in the fallback graph</li></ul>
+        </details>
+      `).join('');
+    }
+
+    searchEl.addEventListener('input', render);
+    communityFilterEl.addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

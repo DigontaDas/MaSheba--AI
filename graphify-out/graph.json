@@ -1,63 +1,125 @@
 {
   "metadata": {
     "project": "MaaSheba",
-    "artifact_type": "graphify_style_summary",
-    "generated_from": "workspace_summary",
-    "notes": "Created because graphify package was unavailable in the current environment."
+    "artifact_type": "deterministic_workspace_graph",
+    "generated_from": "workspace_summary_plus_targeted_reads",
+    "notes": "graphify CLI is installed, but the installed package requires an LLM backend key or Ollama and neither was available in this environment. This graph is a faithful fallback built from direct reads of the repo."
   },
   "nodes": [
-    {"id": "backend_gateway", "label": "FastAPI Backend Gateway", "group": "service"},
-    {"id": "admin_dashboard", "label": "Admin Dashboard", "group": "presentation"},
-    {"id": "mobile_app", "label": "Mobile App", "group": "presentation"},
-    {"id": "supabase_auth", "label": "Supabase Auth", "group": "data"},
-    {"id": "supabase_db", "label": "Supabase Cloud DB", "group": "data"},
-    {"id": "sync_edge_fn", "label": "Sync Edge Function", "group": "service"},
-    {"id": "risk_model", "label": "Risk Model XGBoost Pipeline", "group": "ml"},
-    {"id": "offline_cache", "label": "Offline SQLite Cache", "group": "presentation"},
-    {"id": "chw", "label": "Community Health Workers", "group": "domain"},
-    {"id": "patients", "label": "Patient Records", "group": "domain"},
-    {"id": "ml_artifacts", "label": "ML Artifacts and Reports", "group": "ml"}
+    {"id": "backend_main", "label": "FastAPI Backend App", "file_type": "code", "source_file": "backend/app/main.py", "source_location": null, "group": "backend"},
+    {"id": "backend_health_router", "label": "Health Router", "file_type": "code", "source_file": "backend/app/routers/health.py", "source_location": null, "group": "backend"},
+    {"id": "backend_sync_router", "label": "Sync Router", "file_type": "code", "source_file": "backend/app/routers/sync.py", "source_location": null, "group": "backend"},
+    {"id": "backend_chat_router", "label": "Chat Router", "file_type": "code", "source_file": "backend/app/routers/chat.py", "source_location": null, "group": "backend"},
+    {"id": "backend_supabase_gateway", "label": "Supabase Gateway Service", "file_type": "code", "source_file": "backend/app/services/supabase_client.py", "source_location": null, "group": "backend"},
+    {"id": "backend_chat_service", "label": "Chat Service", "file_type": "code", "source_file": "backend/app/services/chat_service.py", "source_location": null, "group": "backend"},
+    {"id": "admin_dashboard_page", "label": "Admin Dashboard Page", "file_type": "code", "source_file": "admin/app/dashboard/page.tsx", "source_location": null, "group": "admin"},
+    {"id": "admin_supabase_server", "label": "Supabase Admin Client", "file_type": "code", "source_file": "admin/utils/supabase/server.ts", "source_location": null, "group": "admin"},
+    {"id": "admin_risk_chart", "label": "Risk Summary Chart", "file_type": "code", "source_file": "admin/components/RiskSummaryChart.tsx", "source_location": null, "group": "admin"},
+    {"id": "mobile_root_layout", "label": "Mobile Root Layout", "file_type": "code", "source_file": "mobile/app/_layout.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_index_route", "label": "Mobile Launch Route", "file_type": "code", "source_file": "mobile/app/index.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_tabs_layout", "label": "CHW Tabs Layout", "file_type": "code", "source_file": "mobile/app/(tabs)/_layout.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_patients_screen", "label": "CHW Patients Screen", "file_type": "code", "source_file": "mobile/app/(tabs)/patients.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_sync_screen", "label": "CHW Sync Screen", "file_type": "code", "source_file": "mobile/app/(tabs)/sync.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_qa_screen", "label": "CHW QA Screen", "file_type": "code", "source_file": "mobile/app/(tabs)/qa.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_mother_home", "label": "Mother Home Screen", "file_type": "code", "source_file": "mobile/app/(mother-tabs)/home.tsx", "source_location": null, "group": "mobile"},
+    {"id": "mobile_background_sync", "label": "Outbox Background Sync", "file_type": "code", "source_file": "mobile/src/sync/backgroundSync.ts", "source_location": null, "group": "mobile"},
+    {"id": "mobile_local_store", "label": "Mobile Local Store", "file_type": "code", "source_file": "mobile/src/db/outbox.ts", "source_location": null, "group": "mobile"},
+    {"id": "mobile_auth_session", "label": "Mobile Auth Session Helpers", "file_type": "code", "source_file": "mobile/app/index.tsx", "source_location": null, "group": "mobile"},
+    {"id": "supabase_schema", "label": "Supabase Core Schema", "file_type": "code", "source_file": "supabase/migrations/20260520031500_create_core_schema.sql", "source_location": null, "group": "supabase"},
+    {"id": "supabase_rls_views", "label": "Supabase RLS and Views", "file_type": "code", "source_file": "supabase/migrations/20260520031600_rls_policies_and_views.sql", "source_location": null, "group": "supabase"},
+    {"id": "supabase_sync_function", "label": "sync-outbox Edge Function", "file_type": "code", "source_file": "supabase/functions/sync-outbox/index.ts", "source_location": null, "group": "supabase"},
+    {"id": "model_readme", "label": "Risk Model README", "file_type": "document", "source_file": "model/README.md", "source_location": null, "group": "model"},
+    {"id": "model_train_xgboost", "label": "XGBoost Training Pipeline", "file_type": "code", "source_file": "model/scripts/train_xgboost.py", "source_location": null, "group": "model"},
+    {"id": "doc_api", "label": "Backend API Doc", "file_type": "document", "source_file": "docs/API.md", "source_location": null, "group": "docs"},
+    {"id": "doc_schema", "label": "Schema Doc", "file_type": "document", "source_file": "docs/SCHEMA.md", "source_location": null, "group": "docs"},
+    {"id": "doc_setup", "label": "Setup Doc", "file_type": "document", "source_file": "docs/SETUP.md", "source_location": null, "group": "docs"},
+    {"id": "doc_sync_runbook", "label": "Sync Runbook", "file_type": "document", "source_file": "docs/SYNC_RUNBOOK.md", "source_location": null, "group": "docs"},
+    {"id": "plan_demo_login", "label": "Explicit Demo Login Plan", "file_type": "document", "source_file": "MaaSheba Explicit Demo Login Plan.md", "source_location": null, "group": "plans"},
+    {"id": "plan_risk_model_improvement", "label": "Risk Model Improvement Plan", "file_type": "document", "source_file": "MaaSheba Risk Model Improvement Plan.md", "source_location": null, "group": "plans"},
+    {"id": "plan_stitch_frontend", "label": "Stitch Frontend Replacement Plan", "file_type": "document", "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "group": "plans"},
+    {"id": "plan_model_execution", "label": "AI Model Execution Plan", "file_type": "document", "source_file": "MaaSheba AI Model Execution Plan.md", "source_location": null, "group": "plans"}
   ],
   "edges": [
-    {"source": "mobile_app", "target": "backend_gateway", "type": "sync_http"},
-    {"source": "admin_dashboard", "target": "backend_gateway", "type": "health_http"},
-    {"source": "backend_gateway", "target": "sync_edge_fn", "type": "forward_sync"},
-    {"source": "mobile_app", "target": "supabase_auth", "type": "jwt_auth"},
-    {"source": "admin_dashboard", "target": "supabase_auth", "type": "jwt_auth"},
-    {"source": "mobile_app", "target": "supabase_db", "type": "query"},
-    {"source": "admin_dashboard", "target": "supabase_db", "type": "query"},
-    {"source": "sync_edge_fn", "target": "supabase_db", "type": "validate_and_write"},
-    {"source": "mobile_app", "target": "offline_cache", "type": "offline_first"},
-    {"source": "risk_model", "target": "ml_artifacts", "type": "export"},
-    {"source": "patients", "target": "chw", "type": "owned_by"}
+    {"source": "backend_main", "target": "backend_health_router", "relation": "includes_router", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/main.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_main", "target": "backend_sync_router", "relation": "includes_router", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/main.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_main", "target": "backend_chat_router", "relation": "includes_router", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/main.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_health_router", "target": "backend_supabase_gateway", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/routers/health.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_sync_router", "target": "backend_supabase_gateway", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/routers/sync.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_chat_router", "target": "backend_chat_service", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "backend/app/routers/chat.py", "source_location": null, "weight": 1.0},
+    {"source": "backend_supabase_gateway", "target": "supabase_schema", "relation": "depends_on", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "backend/app/services/supabase_client.py", "source_location": null, "weight": 1.0},
+    {"source": "admin_dashboard_page", "target": "admin_supabase_server", "relation": "uses", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "admin/app/dashboard/page.tsx", "source_location": null, "weight": 1.0},
+    {"source": "admin_dashboard_page", "target": "admin_risk_chart", "relation": "renders", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "admin/app/dashboard/page.tsx", "source_location": null, "weight": 1.0},
+    {"source": "admin_dashboard_page", "target": "supabase_rls_views", "relation": "queries", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "admin/app/dashboard/page.tsx", "source_location": null, "weight": 1.0},
+    {"source": "admin_supabase_server", "target": "supabase_schema", "relation": "depends_on", "confidence": "INFERRED", "confidence_score": 0.85, "source_file": "admin/utils/supabase/server.ts", "source_location": null, "weight": 1.0},
+    {"source": "mobile_root_layout", "target": "mobile_background_sync", "relation": "initializes", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/_layout.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_root_layout", "target": "mobile_tabs_layout", "relation": "mounts", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/_layout.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_index_route", "target": "mobile_auth_session", "relation": "routes_by", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/index.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_index_route", "target": "supabase_schema", "relation": "queries_role_tables", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/index.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_tabs_layout", "target": "mobile_patients_screen", "relation": "exposes_tab", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/_layout.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_tabs_layout", "target": "mobile_sync_screen", "relation": "exposes_tab", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/_layout.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_tabs_layout", "target": "mobile_qa_screen", "relation": "exposes_tab", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/_layout.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_patients_screen", "target": "mobile_local_store", "relation": "reads", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/patients.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_patients_screen", "target": "mobile_background_sync", "relation": "can_trigger", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/patients.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_sync_screen", "target": "mobile_local_store", "relation": "reads", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/sync.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_sync_screen", "target": "mobile_background_sync", "relation": "triggers", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/app/(tabs)/sync.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_background_sync", "target": "backend_sync_router", "relation": "posts_batches_to", "confidence": "INFERRED", "confidence_score": 0.92, "source_file": "mobile/src/sync/backgroundSync.ts", "source_location": null, "weight": 1.0},
+    {"source": "mobile_background_sync", "target": "mobile_local_store", "relation": "reads_and_applies", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "mobile/src/sync/backgroundSync.ts", "source_location": null, "weight": 1.0},
+    {"source": "mobile_qa_screen", "target": "backend_chat_router", "relation": "conceptually_related_to", "confidence": "INFERRED", "confidence_score": 0.68, "source_file": "mobile/app/(tabs)/qa.tsx", "source_location": null, "weight": 1.0},
+    {"source": "mobile_mother_home", "target": "plan_demo_login", "relation": "explained_by", "confidence": "INFERRED", "confidence_score": 0.78, "source_file": "mobile/app/(mother-tabs)/home.tsx", "source_location": null, "weight": 1.0},
+    {"source": "supabase_schema", "target": "supabase_rls_views", "relation": "underpins", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "supabase/migrations/20260520031600_rls_policies_and_views.sql", "source_location": null, "weight": 1.0},
+    {"source": "supabase_sync_function", "target": "supabase_schema", "relation": "validates_and_writes", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "supabase/functions/sync-outbox/index.ts", "source_location": null, "weight": 1.0},
+    {"source": "supabase_sync_function", "target": "supabase_rls_views", "relation": "mirrors_policy", "confidence": "INFERRED", "confidence_score": 0.86, "source_file": "supabase/functions/sync-outbox/index.ts", "source_location": null, "weight": 1.0},
+    {"source": "model_readme", "target": "model_train_xgboost", "relation": "constrains", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "model/README.md", "source_location": null, "weight": 1.0},
+    {"source": "model_train_xgboost", "target": "model_readme", "relation": "implements", "confidence": "INFERRED", "confidence_score": 0.8, "source_file": "model/scripts/train_xgboost.py", "source_location": null, "weight": 1.0},
+    {"source": "doc_api", "target": "backend_sync_router", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/API.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_api", "target": "backend_health_router", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/API.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_schema", "target": "supabase_schema", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SCHEMA.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_schema", "target": "supabase_rls_views", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SCHEMA.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_setup", "target": "admin_dashboard_page", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SETUP.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_setup", "target": "backend_main", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SETUP.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_sync_runbook", "target": "backend_sync_router", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SYNC_RUNBOOK.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_sync_runbook", "target": "supabase_sync_function", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SYNC_RUNBOOK.md", "source_location": null, "weight": 1.0},
+    {"source": "doc_sync_runbook", "target": "mobile_background_sync", "relation": "documents", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "docs/SYNC_RUNBOOK.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_demo_login", "target": "mobile_index_route", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba Explicit Demo Login Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_demo_login", "target": "mobile_auth_session", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba Explicit Demo Login Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_risk_model_improvement", "target": "model_readme", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba Risk Model Improvement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_risk_model_improvement", "target": "model_train_xgboost", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba Risk Model Improvement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_root_layout", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_tabs_layout", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_patients_screen", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_sync_screen", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_qa_screen", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_stitch_frontend", "target": "mobile_mother_home", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Stitch Mobile Frontend Replacement Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_model_execution", "target": "model_readme", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba AI Model Execution Plan.md", "source_location": null, "weight": 1.0},
+    {"source": "plan_model_execution", "target": "model_train_xgboost", "relation": "rationale_for", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "MaaSheba AI Model Execution Plan.md", "source_location": null, "weight": 1.0}
   ],
   "communities": [
-    {
-      "id": "presentation",
-      "label": "Presentation Layer",
-      "members": ["mobile_app", "admin_dashboard", "offline_cache"]
-    },
-    {
-      "id": "service_sync",
-      "label": "Service and Sync Layer",
-      "members": ["backend_gateway", "sync_edge_fn", "supabase_auth"]
-    },
-    {
-      "id": "data_ml",
-      "label": "Data and ML Layer",
-      "members": ["supabase_db", "risk_model", "ml_artifacts", "chw", "patients"]
-    }
+    {"id": "mobile_experience", "label": "Mobile Experience", "members": ["mobile_root_layout", "mobile_index_route", "mobile_tabs_layout", "mobile_patients_screen", "mobile_sync_screen", "mobile_qa_screen", "mobile_mother_home", "mobile_background_sync", "mobile_local_store", "mobile_auth_session"]},
+    {"id": "backend_gateway", "label": "Backend Gateway", "members": ["backend_main", "backend_health_router", "backend_sync_router", "backend_chat_router", "backend_supabase_gateway", "backend_chat_service"]},
+    {"id": "supabase_contract", "label": "Supabase Contract and Sync", "members": ["supabase_schema", "supabase_rls_views", "supabase_sync_function"]},
+    {"id": "admin_observability", "label": "Admin Observability", "members": ["admin_dashboard_page", "admin_supabase_server", "admin_risk_chart"]},
+    {"id": "model_and_docs", "label": "Model and Documentation", "members": ["model_readme", "model_train_xgboost", "doc_api", "doc_schema", "doc_setup", "doc_sync_runbook", "plan_demo_login", "plan_risk_model_improvement", "plan_stitch_frontend", "plan_model_execution"]}
   ],
   "audit": {
-    "strong_edges": [
-      "backend-supabase sync path",
-      "auth flow",
-      "offline sync pattern"
+    "strongly_evidenced": [
+      "Backend router wiring and Supabase gateway calls",
+      "Mobile launch routing and background sync bootstrapping",
+      "Supabase schema, RLS, and admin views",
+      "Admin dashboard reads the aggregated Supabase views",
+      "Risk model README constrains the training pipeline"
     ],
-    "uncertain_edges": [
-      "mobile background sync wiring",
-      "admin-to-model runtime integration",
-      "PII logging enforcement"
-    ]
-  }
+    "inferred_or_uncertain": [
+      "Exact QA chat backend path because the feature screen was not fully inspected",
+      "The full mother feature stack beyond the launch/home shell",
+      "The current trained-model artifact status, because the training scripts were not executed in this session"
+    ],
+    "provenance": "Built from direct reads of the main entry points, schema, docs, and planning files after the graphify CLI failed to run without an available LLM backend."
+  },
+  "suggested_questions": [
+    "How many independent layers must agree before a CHW sync event is accepted?",
+    "Where does the app decide CHW versus mother navigation, and what happens if stored auth is stale?",
+    "How do the Supabase views and RLS policies shape what the admin dashboard can see?",
+    "Which parts of the maternal-risk pipeline are learned, and which are deterministic safety rules?",
+    "What is the weakest link in the offline-first sync path?"
+  ]
 }
