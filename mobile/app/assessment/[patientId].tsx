@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
@@ -22,6 +22,7 @@ import { colors, radius, spacing, typography } from "@/theme";
 import type { Patient, RiskPrediction, SymptomFlags, VisitInput } from "@/types/schema";
 import { getDeviceId } from "@/utils/ids";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { callPhoneNumber } from "@/utils/phone";
 
 type FormState = {
   bp_systolic: string;
@@ -354,7 +355,7 @@ function RiskResult({ patient, prediction }: { patient: Patient; prediction: Ris
           title={copy.assessment.title}
           message={copy.assessment.riskMessage}
           actionLabel={copy.assessment.callNow}
-          onAction={() => Linking.openURL("tel:16789")}
+          onAction={() => callPhoneNumber("16789")}
         />
       ) : null}
 
@@ -379,7 +380,7 @@ function RiskResult({ patient, prediction }: { patient: Patient; prediction: Ris
         <Text style={styles.sectionTitle}>{copy.assessment.nearestClinic}</Text>
         <Text style={styles.subtitle}>{copy.assessment.clinicName}</Text>
         <Text style={styles.label}>{copy.assessment.clinicDistance}</Text>
-        <PrimaryButton label={copy.assessment.callNow} iconName="call" onPress={() => Linking.openURL("tel:16789")} />
+        <PrimaryButton label={copy.assessment.callNow} iconName="call" onPress={() => callPhoneNumber("16789")} />
       </View>
     </View>
   );

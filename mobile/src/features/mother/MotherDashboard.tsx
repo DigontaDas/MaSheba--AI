@@ -1,11 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { ProgressBar } from "@/components/progress/ProgressBar";
 import { ScreenShell } from "@/components/ui/ScreenShell";
+import { clearRoleSession } from "@/auth/roleSession";
+import { clearSession } from "@/auth/secureSession";
+import { supabase } from "@/auth/supabaseAuth";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { callPhoneNumber } from "@/utils/phone";
 
 export function MotherDashboard({
   variant = "home",
@@ -14,6 +18,40 @@ export function MotherDashboard({
   variant?: "home" | "progress";
   week?: number;
 }) {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      await Promise.all([clearSession(), clearRoleSession()]);
+      router.replace("/(auth)/login");
+    }
+  };
+
+  const showMenu = () => {
+    Alert.alert("মেনু", "", [
+      { text: "হোম", onPress: () => router.push("/(mother-tabs)/home") },
+      { text: "প্রোফাইল", onPress: () => router.push("/(mother-tabs)/profile") },
+      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
+      { text: "বাতিল", style: "cancel" }
+    ]);
+  };
+
+  const showNotifications = () => {
+    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+  };
+
+  const showComingSoon = () => {
+    Alert.alert("শীঘ্রই আসছে", "এই বৈশিষ্ট্যটি শীঘ্রই আসছে।", [{ text: "ঠিক আছে" }]);
+  };
+
+  const showEmergencyHelp = () => {
+    Alert.alert("⚠️ জরুরি সাহায্য", "এখনই সাহায্যের জন্য কল করুন:", [
+      { text: "বন্ধ করুন", style: "cancel" },
+      { text: "স্বাস্থ্য হটলাইন: ১৬৭৬৭", onPress: () => callPhoneNumber("16767") },
+      { text: "জরুরি: ৯৯৯", onPress: () => callPhoneNumber("999") }
+    ]);
+  };
+
   const title =
     variant === "progress"
       ? `সপ্তাহ ${toBanglaNumber(week)}: আপনার গর্ভকালীন অগ্রগতি`
@@ -30,12 +68,16 @@ export function MotherDashboard({
   return (
     <ScreenShell>
       <View style={styles.topBar}>
-        <Icon name="menu" />
+        <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
+          <Icon name="menu" />
+        </Pressable>
         <View style={styles.brand}>
           <Text style={styles.appName}>{copy.common.appName}</Text>
           <Text style={styles.weekLabel}>সপ্তাহ {toBanglaNumber(week)}</Text>
         </View>
-        <Icon name="notifications" />
+        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+          <Icon name="notifications" />
+        </Pressable>
       </View>
 
       <View style={styles.progressCard}>
@@ -49,7 +91,9 @@ export function MotherDashboard({
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.sectionTitle}>{title}</Text>
-          <Icon name="volume-up" color={colors.primary} />
+          <Pressable accessibilityLabel="অডিও শুনুন" accessibilityRole="button" onPress={showComingSoon} style={styles.smallIconButton}>
+            <Icon name="volume-up" color={colors.primary} />
+          </Pressable>
         </View>
         <Text style={styles.label}>{copy.mother.whatToExpect}</Text>
         {checklist.map((item) => (
@@ -65,7 +109,7 @@ export function MotherDashboard({
         <ActionCard icon="monitor-heart" title={copy.mother.healthTips} onPress={() => router.push("/(mother-tabs)/progress")} />
         <ActionCard icon="restaurant-menu" title={copy.mother.nutritionAdvice} onPress={() => router.push("/(mother-tabs)/nutrition")} />
         <ActionCard icon="warning" title={copy.mother.warningSigns} onPress={() => router.push("/(mother-tabs)/chat")} />
-        <ActionCard icon="local-hospital" title={copy.mother.emergencyHelp} onPress={() => undefined} />
+        <ActionCard icon="local-hospital" title={copy.mother.emergencyHelp} onPress={showEmergencyHelp} />
       </View>
 
       <Pressable accessibilityLabel={copy.mother.askAi} accessibilityRole="button" style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
@@ -101,6 +145,20 @@ const styles = StyleSheet.create({
   },
   brand: {
     flex: 1
+  },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  smallIconButton: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    height: 40,
+    justifyContent: "center",
+    width: 40
   },
   appName: {
     ...typography.h2,

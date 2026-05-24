@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { router, useSegments } from "expo-router";
 import { askOnline } from "@/api/chatClient";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
@@ -19,11 +20,15 @@ type Message = {
 };
 
 const trim: OfflineQaTrimester = "T3";
+const emergencyBannerTitle = "জরুরি লক্ষণ";
+const emergencyBannerMessage = "নিচের যেকোনো লক্ষণ দেখা দিলে এখনই হাসপাতালে যান।";
 
 export function QaChatScreen() {
+  const segments = useSegments();
   const categories = useMemo(() => getQaCategories(), []);
   const [category, setCategory] = useState<QaCategory | null>(null);
   const [items, setItems] = useState<OfflineQa[]>([]);
+  const [emergencyMode, setEmergencyMode] = useState(false);
   const [input, setInput] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -32,13 +37,14 @@ export function QaChatScreen() {
     { id: "hello", role: "ai", text: copy.qa.greeting }
   ]);
 
-  const selectCategory = useCallback(async (nextCategory: QaCategory) => {
+  const selectCategory = useCallback(async (nextCategory: QaCategory, options?: { emergencyOnly?: boolean }) => {
     setCategory(nextCategory);
+    setEmergencyMode(Boolean(options?.emergencyOnly));
     setLoadingQuestions(true);
     try {
       setLoadError(null);
       const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: trim });
-      setItems(nextItems);
+      setItems(options?.emergencyOnly ? nextItems.filter((item) => item.emergency) : nextItems);
     } catch (loadError) {
       setItems([]);
       setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);
@@ -46,6 +52,27 @@ export function QaChatScreen() {
       setLoadingQuestions(false);
     }
   }, []);
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace(segments.includes("(mother-tabs)") ? "/(mother-tabs)/home" : "/(tabs)/patients");
+  };
+
+  const showEmergencyQuestions = async () => {
+    const emergencyCategory = categories.find(
+      (nextCategory) => nextCategory.label === emergencyBannerTitle || nextCategory.topic === "জরুরি_লক্ষণ" || nextCategory.topic.includes("জরুরি")
+    );
+    if (emergencyCategory) {
+      await selectCategory(emergencyCategory, { emergencyOnly: true });
+      return;
+    }
+    setEmergencyMode(true);
+    setItems([]);
+    setLoadError(copy.qa.noQuestions);
+  };
 
   const askItem = (item: OfflineQa) => {
     setMessages((current) => [
@@ -125,16 +152,24 @@ export function QaChatScreen() {
   return (
     <ScreenShell padded={false}>
       <View style={styles.top}>
-        <Icon name="arrow-back" color={colors.onSurface} />
+        <Pressable accessibilityLabel={copy.common.back} accessibilityRole="button" onPress={goBack} style={styles.iconButton}>
+          <Icon name="arrow-back" color={colors.onSurface} />
+        </Pressable>
         <View style={styles.topTitle}>
           <Text style={styles.title}>{copy.common.appName}</Text>
           <Text style={styles.online}>{copy.common.offlineNotice}</Text>
         </View>
-        <View style={styles.urgent}>
+        <Pressable accessibilityLabel={copy.common.emergency} accessibilityRole="button" onPress={showEmergencyQuestions} style={styles.urgent}>
           <Icon name="warning" color={colors.error} size={16} />
           <Text style={styles.urgentText}>{copy.common.emergency}</Text>
-        </View>
+        </Pressable>
       </View>
+
+      {emergencyMode ? (
+        <View style={styles.emergencyIntro}>
+          <EmergencyBanner title={emergencyBannerTitle} message={emergencyBannerMessage} />
+        </View>
+      ) : null}
 
       {loadError ? (
         <View style={styles.errorCard}>
@@ -229,6 +264,13 @@ const styles = StyleSheet.create({
   topTitle: {
     flex: 1
   },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
   title: {
     ...typography.h2,
     color: colors.onSurface
@@ -249,6 +291,9 @@ const styles = StyleSheet.create({
   urgentText: {
     ...typography.caption,
     color: colors.onErrorContainer
+  },
+  emergencyIntro: {
+    paddingHorizontal: spacing.marginMobile
   },
   errorCard: {
     backgroundColor: colors.surfaceContainerLowest,

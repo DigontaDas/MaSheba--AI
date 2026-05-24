@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
@@ -9,6 +9,7 @@ import { supabase } from "@/auth/supabaseAuth";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { callPhoneNumber } from "@/utils/phone";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<MotherProfile | null>(null);
@@ -26,15 +27,76 @@ export default function ProfileScreen() {
     }
   };
 
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(mother-tabs)/home");
+  };
+
+  const showLanguageAlert = () => {
+    Alert.alert("ভাষা পরিবর্তন", "বর্তমানে শুধু বাংলা ভাষা উপলব্ধ।", [{ text: "ঠিক আছে" }]);
+  };
+
+  const showNotificationAlert = () => {
+    Alert.alert("নোটিফিকেশন", "নোটিফিকেশন সেটআপ শীঘ্রই আসছে।", [{ text: "ঠিক আছে" }]);
+  };
+
+  const requestPasswordReset = () => {
+    Alert.alert("পাসওয়ার্ড পরিবর্তন", "পাসওয়ার্ড পরিবর্তনের জন্য আপনার ইমেইলে একটি লিঙ্ক পাঠানো হবে।", [
+      { text: "বাতিল", style: "cancel" },
+      {
+        text: "পাঠান",
+        onPress: async () => {
+          try {
+            const session = await supabase.auth.getSession();
+            const email = session.data.session?.user?.email;
+            if (!email) {
+              Alert.alert("সমস্যা", "ইমেইল পাওয়া যায়নি।", [{ text: "ঠিক আছে" }]);
+              return;
+            }
+            const { error } = await supabase.auth.resetPasswordForEmail(email);
+            if (error) {
+              Alert.alert("সমস্যা", "ইমেইল পাঠানো যায়নি।", [{ text: "ঠিক আছে" }]);
+              return;
+            }
+            Alert.alert("সফল", "ইমেইল পাঠানো হয়েছে।", [{ text: "ঠিক আছে" }]);
+          } catch {
+            Alert.alert("সমস্যা", "ইমেইল পাঠানো যায়নি।", [{ text: "ঠিক আছে" }]);
+          }
+        }
+      }
+    ]);
+  };
+
+  const showSupportAlert = () => {
+    Alert.alert("সাহায্য ও সাপোর্ট", "স্বাস্থ্য সেবা হটলাইন: ১৬৭৬৭\nজরুরি: ৯৯৯", [
+      { text: "বন্ধ করুন", style: "cancel" },
+      { text: "১৬৭৬৭ কল করুন", onPress: () => callPhoneNumber("16767") }
+    ]);
+  };
+
+  const showSettingsAlert = () => {
+    Alert.alert("সেটিংস", "অ্যাকাউন্ট সেটিংস", [
+      { text: "বাতিল", style: "cancel" },
+      { text: "লগ আউট", style: "destructive", onPress: logout }
+    ]);
+  };
+
   const displayName = profile?.name ?? copy.profile.name;
   const week = profile?.gestationalAgeWeeks ?? 28;
 
   return (
     <ScreenShell>
       <View style={styles.topBar}>
-        <Icon name="arrow-back" />
+        <Pressable accessibilityLabel={copy.common.back} accessibilityRole="button" onPress={goBack} style={styles.iconButton}>
+          <Icon name="arrow-back" />
+        </Pressable>
         <Text style={styles.title}>{copy.profile.title}</Text>
-        <Icon name="settings" />
+        <Pressable accessibilityLabel="সেটিংস" accessibilityRole="button" onPress={showSettingsAlert} style={styles.iconButton}>
+          <Icon name="settings" />
+        </Pressable>
       </View>
 
       <View style={styles.profileCard}>
@@ -68,10 +130,10 @@ export default function ProfileScreen() {
       />
 
       <View style={styles.settings}>
-        <SettingsRow icon="translate" label={copy.profile.language} value={copy.profile.bangla} />
-        <SettingsRow icon="notifications" label={copy.profile.notifications} />
-        <SettingsRow icon="security" label={copy.profile.security} />
-        <SettingsRow icon="help" label={copy.profile.help} />
+        <SettingsRow icon="translate" label={copy.profile.language} value={copy.profile.bangla} onPress={showLanguageAlert} />
+        <SettingsRow icon="notifications" label={copy.profile.notifications} onPress={showNotificationAlert} />
+        <SettingsRow icon="security" label={copy.profile.security} onPress={requestPasswordReset} />
+        <SettingsRow icon="help" label={copy.profile.help} onPress={showSupportAlert} />
         <Pressable accessibilityLabel={copy.profile.logout} accessibilityRole="button" style={styles.logout} onPress={logout}>
           <Icon name="logout" color={colors.error} />
           <Text style={styles.logoutText}>{copy.profile.logout}</Text>
@@ -109,19 +171,21 @@ function InfoSection({
 function SettingsRow({
   icon,
   label,
-  value
+  value,
+  onPress
 }: {
   icon: "translate" | "notifications" | "security" | "help";
   label: string;
   value?: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.settingsRow}>
+    <Pressable accessibilityLabel={label} accessibilityRole="button" onPress={onPress} style={styles.settingsRow}>
       <Icon name={icon} color={colors.primary} />
       <Text style={styles.settingsLabel}>{label}</Text>
       {value ? <Text style={styles.settingsValue}>{value}</Text> : null}
       <Icon name="chevron-right" color={colors.outline} />
-    </View>
+    </Pressable>
   );
 }
 
@@ -130,6 +194,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm
+  },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    height: 44,
+    justifyContent: "center",
+    width: 44
   },
   title: {
     ...typography.h2,

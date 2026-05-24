@@ -1,26 +1,104 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { NutritionCard } from "@/components/nutrition/NutritionCard";
 import { ProgressBar } from "@/components/progress/ProgressBar";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
+import { clearRoleSession } from "@/auth/roleSession";
+import { clearSession } from "@/auth/secureSession";
+import { supabase } from "@/auth/supabaseAuth";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 
 const filters = [copy.nutrition.all, copy.nutrition.food, copy.nutrition.drinks, copy.nutrition.medicine, copy.nutrition.rest];
+const nutritionItems = [
+  {
+    title: copy.nutrition.spinach,
+    subtitle: copy.nutrition.spinachAmount,
+    tag: copy.nutrition.iron,
+    category: copy.nutrition.food,
+    imageSource: require("../../assets/illustrations/image.png_1.png")
+  },
+  {
+    title: copy.nutrition.lentil,
+    subtitle: copy.nutrition.lentilAmount,
+    tag: copy.nutrition.protein,
+    category: copy.nutrition.food,
+    imageSource: require("../../assets/illustrations/image.png_2.png")
+  },
+  {
+    title: copy.nutrition.milk,
+    subtitle: copy.nutrition.milkAmount,
+    tag: copy.nutrition.calcium,
+    category: copy.nutrition.drinks,
+    imageSource: require("../../assets/illustrations/image.png_3.png")
+  },
+  {
+    title: copy.nutrition.pomegranate,
+    subtitle: copy.nutrition.pomegranateAmount,
+    tag: copy.nutrition.growth,
+    category: copy.nutrition.food,
+    imageSource: require("../../assets/illustrations/image.png_4.png")
+  }
+];
 
 export default function NutritionScreen() {
+  const [activeFilter, setActiveFilter] = useState(filters[0]);
+  const visibleItems = useMemo(
+    () => nutritionItems.filter((item) => activeFilter === copy.nutrition.all || item.category === activeFilter),
+    [activeFilter]
+  );
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      await Promise.all([clearSession(), clearRoleSession()]);
+      router.replace("/(auth)/login");
+    }
+  };
+
+  const showMenu = () => {
+    Alert.alert("মেনু", "", [
+      { text: "হোম", onPress: () => router.push("/(mother-tabs)/home") },
+      { text: "প্রোফাইল", onPress: () => router.push("/(mother-tabs)/profile") },
+      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
+      { text: "বাতিল", style: "cancel" }
+    ]);
+  };
+
+  const showNotifications = () => {
+    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+  };
+
+  const showNutritionInfo = (item: (typeof nutritionItems)[number]) => {
+    Alert.alert(item.title, `${item.subtitle}\n${item.tag}`, [{ text: "ঠিক আছে" }]);
+  };
+
   return (
     <ScreenShell>
       <View style={styles.topBar}>
-        <Icon name="menu" />
+        <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
+          <Icon name="menu" />
+        </Pressable>
         <Text style={styles.appName}>{copy.common.appName}</Text>
-        <Icon name="notifications" />
+        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+          <Icon name="notifications" />
+        </Pressable>
       </View>
       <Text style={styles.title}>{copy.nutrition.title}</Text>
       <View style={styles.filters}>
-        {filters.map((filter, index) => (
-          <Pressable key={filter} style={[styles.filter, index === 0 && styles.filterActive]}>
-            <Text style={[styles.filterText, index === 0 && styles.filterTextActive]}>{filter}</Text>
+        {filters.map((filter) => (
+          <Pressable
+            accessibilityLabel={filter}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeFilter === filter }}
+            key={filter}
+            onPress={() => setActiveFilter(filter)}
+            style={[styles.filter, activeFilter === filter && styles.filterActive]}
+          >
+            <Text style={[styles.filterText, activeFilter === filter && styles.filterTextActive]}>{filter}</Text>
           </Pressable>
         ))}
       </View>
@@ -41,10 +119,9 @@ export default function NutritionScreen() {
 
       <Text style={styles.sectionTitle}>{copy.nutrition.recommended}</Text>
       <View style={styles.grid}>
-        <NutritionCard title={copy.nutrition.spinach} subtitle={copy.nutrition.spinachAmount} tag={copy.nutrition.iron} imageSource={require("../../assets/illustrations/image.png_1.png")} />
-        <NutritionCard title={copy.nutrition.lentil} subtitle={copy.nutrition.lentilAmount} tag={copy.nutrition.protein} imageSource={require("../../assets/illustrations/image.png_2.png")} />
-        <NutritionCard title={copy.nutrition.milk} subtitle={copy.nutrition.milkAmount} tag={copy.nutrition.calcium} imageSource={require("../../assets/illustrations/image.png_3.png")} />
-        <NutritionCard title={copy.nutrition.pomegranate} subtitle={copy.nutrition.pomegranateAmount} tag={copy.nutrition.growth} imageSource={require("../../assets/illustrations/image.png_4.png")} />
+        {visibleItems.map((item) => (
+          <NutritionCard key={item.title} {...item} onPress={() => showNutritionInfo(item)} />
+        ))}
       </View>
     </ScreenShell>
   );
@@ -60,6 +137,13 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.onSurface,
     flex: 1
+  },
+  iconButton: {
+    alignItems: "center",
+    borderRadius: radius.full,
+    height: 44,
+    justifyContent: "center",
+    width: 44
   },
   title: {
     ...typography.h1,

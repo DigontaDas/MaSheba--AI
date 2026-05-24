@@ -17,7 +17,13 @@ export function NutritionCard({
   onPress?: () => void;
 }) {
   return (
-    <Pressable disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      accessibilityLabel={title}
+      accessibilityRole="button"
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       {imageSource ? <Image source={imageSource} style={styles.image} contentFit="cover" /> : <View style={styles.imagePlaceholder} />}
       <View style={styles.body}>
         <Text style={styles.tag}>{tag}</Text>
