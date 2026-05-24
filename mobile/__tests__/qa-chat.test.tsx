@@ -30,6 +30,8 @@ const mockSearchResults = [
   }
 ];
 
+const mockAskOnline = jest.fn<Promise<{ answer: string; is_emergency: boolean; source: string; emergency_text: string | null } | null>, [string]>(async () => null);
+
 jest.mock("@/components/ui/Icon", () => {
   const React = require("react");
   const { Text } = require("react-native");
@@ -45,7 +47,7 @@ jest.mock("@/features/qa/offlineQaStore", () => ({
 }));
 
 jest.mock("@/api/chatClient", () => ({
-  askOnline: jest.fn(async () => null)
+  askOnline: (...args: [string]) => mockAskOnline(...args)
 }));
 
 describe("QaChatScreen", () => {
@@ -56,6 +58,11 @@ describe("QaChatScreen", () => {
     });
     return tree as unknown as ReactTestRenderer;
   }
+
+  beforeEach(() => {
+    mockAskOnline.mockReset();
+    mockAskOnline.mockResolvedValue(null);
+  });
 
   it("loads offline categories and does not show placeholder SMS text", async () => {
     const tree = await renderTree();
@@ -82,6 +89,31 @@ describe("QaChatScreen", () => {
 
     const snapshot = JSON.stringify(tree.toJSON());
     expect(snapshot).toContain("এটি গুরুত্বপূর্ণ লক্ষণ হতে পারে।");
+  });
+
+  it("uses the online chat answer when the backend responds", async () => {
+    mockAskOnline.mockResolvedValue({
+      answer: "বমি হলে অল্প অল্প করে খাবার খান এবং পানি পান করুন।",
+      is_emergency: false,
+      source: "groq",
+      emergency_text: null
+    });
+
+    const tree = await renderTree();
+    const input = tree.root.findByProps({ accessibilityLabel: "মাশেবা AIকে জিজ্ঞেস করুন..." });
+    const send = tree.root.findByProps({ accessibilityLabel: "প্রশ্ন পাঠান" });
+
+    await act(async () => {
+      input.props.onChangeText("গর্ভাবস্থায় বমি হলে কী করব?");
+    });
+
+    await act(async () => {
+      await send.props.onPress();
+    });
+
+    const snapshot = JSON.stringify(tree.toJSON());
+    expect(mockAskOnline).toHaveBeenCalledWith("গর্ভাবস্থায় বমি হলে কী করব?");
+    expect(snapshot).toContain("বমি হলে অল্প অল্প করে খাবার খান এবং পানি পান করুন।");
   });
 
   it("falls back to offline keyword search for free-text questions", async () => {
