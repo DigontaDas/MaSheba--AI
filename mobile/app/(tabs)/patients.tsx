@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -16,6 +16,10 @@ import { runOutboxSync } from "@/sync/backgroundSync";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { Patient, RiskLevel } from "@/types/schema";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { clearRoleSession } from "@/auth/roleSession";
+import { clearSession } from "@/auth/secureSession";
+import { supabase } from "@/auth/supabaseAuth";
+import { callPhoneNumber } from "@/utils/phone";
 
 type Summary = {
   pending: number;
@@ -68,6 +72,29 @@ export default function PatientDashboardScreen() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      await Promise.all([clearSession(), clearRoleSession()]);
+      router.replace("/(auth)/login");
+    }
+  };
+
+  const showMenu = () => {
+    Alert.alert("মেনু", "", [
+      { text: "হোম", onPress: () => router.push("/(tabs)/patients") },
+      { text: "সিঙ্ক", onPress: () => router.push("/(tabs)/sync") },
+      { text: "চ্যাট", onPress: () => router.push("/(tabs)/qa") },
+      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
+      { text: "বাতিল", style: "cancel" }
+    ]);
+  };
+
+  const showNotifications = () => {
+    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+  };
+
   const highRiskCount = patients.filter((patient) => patient.last_risk_level === "HIGH").length;
   const completed = Math.max(0, patients.length - summary.pending);
   const nextPatient = patients[0];
@@ -91,14 +118,14 @@ export default function PatientDashboardScreen() {
               </View>
             ) : null}
             <View style={styles.topBar}>
-              <Pressable style={styles.iconButton}>
+              <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
                 <Icon name="menu" color={colors.onSurface} />
               </Pressable>
               <View style={styles.brand}>
                 <Text style={styles.title}>{copy.common.appName}</Text>
                 <Text style={styles.syncLabel}>{copy.common.synced}</Text>
               </View>
-              <Pressable style={styles.iconButton}>
+              <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
                 <Icon name="notifications" color={colors.onSurface} />
               </Pressable>
             </View>
@@ -150,14 +177,14 @@ export default function PatientDashboardScreen() {
               <RiskGauge score={riskScore} level={riskScore > 0.65 ? "HIGH" : riskScore > 0.35 ? "MODERATE" : "LOW"} size={132} />
             </View>
 
-            <View style={styles.clinicCard}>
+            <Pressable accessibilityLabel={copy.dashboard.clinic} accessibilityRole="button" onPress={() => callPhoneNumber("16789")} style={styles.clinicCard}>
               <Icon name="local-hospital" color={colors.secondary} />
               <View style={styles.clinicText}>
                 <Text style={styles.clinicTitle}>{copy.dashboard.clinic}</Text>
                 <Text style={styles.meta}>{copy.dashboard.distance}</Text>
               </View>
               <Icon name="call" color={colors.primary} />
-            </View>
+            </Pressable>
 
             <Text style={styles.sectionTitle}>রোগী</Text>
           </View>

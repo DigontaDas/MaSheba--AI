@@ -7,12 +7,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { router } from "expo-router";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
-import { SecondaryButton } from "@/components/ui/SecondaryButton";
-import { Icon, type IconName } from "@/components/ui/Icon";
+import { StatusBar } from "expo-status-bar";
+import { Icon } from "@/components/ui/Icon";
 import { loginAndBootstrap } from "@/auth/supabaseAuth";
 import { loginMother, saveUserRole, type UserRole } from "@/auth/roleSession";
 import { copy } from "@/data/stitchCopy.bn";
@@ -36,28 +37,66 @@ const demoCredentials: Record<UserRole, DemoCredential> = {
   }
 };
 
-const roleOptions: Array<{
-  role: UserRole;
-  title: string;
-  subtitle: string;
-  accessibilityLabel: string;
-  icon: IconName;
-}> = [
-  {
-    role: "CHW",
-    title: "স্বাস্থ্যকর্মী",
-    subtitle: "মা ও রোগী ব্যবস্থাপনা",
-    accessibilityLabel: copy.onboarding.continueAsChw,
-    icon: "health-and-safety"
-  },
-  {
-    role: "MOTHER",
-    title: "মা",
-    subtitle: "নিজের গর্ভকালীন সহায়তা",
-    accessibilityLabel: copy.onboarding.continueAsMother,
-    icon: "pregnant-woman"
+const getLocalizedCopy = (lang: "bn" | "en") => {
+  if (lang === "en") {
+    return {
+      common: {
+        appName: "MaaSheba AI",
+        back: "Back",
+        loading: "Loading..."
+      },
+      onboarding: {
+        tagline: "Your Pregnancy Companion",
+        continueAsMother: "Continue as Mother",
+        continueAsChw: "Continue as Healthcare Worker",
+        whoGuideline: "Following WHO Guidelines"
+      },
+      login: {
+        chwTitle: "Healthcare Worker Login",
+        motherTitle: "Mother Login",
+        emailPlaceholder: "Email",
+        passwordPlaceholder: "Password",
+        loginButton: "Login",
+        demoChwButton: "Direct Demo as Healthcare Worker",
+        demoMotherButton: "Direct Demo as Mother",
+        invalid: "Invalid email or password",
+        chwAccessDenied: "This account does not have healthcare worker permissions",
+        motherAccessDenied: "Mother profile not found for this account",
+        networkError: "Please check your internet connection",
+        demoNotSet: "Demo credentials not set",
+        selectRoleFirst: "Please select your role first"
+      }
+    };
   }
-];
+  return {
+    common: {
+      appName: "মাশেবা AI",
+      back: copy.common.back,
+      loading: copy.common.loading
+    },
+    onboarding: {
+      tagline: copy.onboarding.tagline,
+      continueAsMother: "মা হিসেবে চালিয়ে যান",
+      continueAsChw: "স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান",
+      whoGuideline: copy.onboarding.whoGuideline
+    },
+    login: {
+      chwTitle: copy.login.chwTitle,
+      motherTitle: copy.login.motherTitle,
+      emailPlaceholder: copy.login.emailPlaceholder,
+      passwordPlaceholder: copy.login.passwordPlaceholder,
+      loginButton: copy.login.loginButton,
+      demoChwButton: "স্বাস্থ্যকর্মী হিসেবে সরাসরি ডেমো দেখুন",
+      demoMotherButton: "মা হিসেবে সরাসরি ডেমো দেখুন",
+      invalid: copy.login.invalid,
+      chwAccessDenied: "এই অ্যাকাউন্টে স্বাস্থ্যকর্মীর অনুমতি নেই",
+      motherAccessDenied: "এই অ্যাকাউন্টে মায়ের প্রোফাইল পাওয়া যায়নি",
+      networkError: "ইন্টারনেট সংযোগ পরীক্ষা করুন",
+      demoNotSet: "ডেমো লগইনের তথ্য সেট করা নেই",
+      selectRoleFirst: "প্রথমে আপনার ভূমিকা নির্বাচন করুন"
+    }
+  };
+};
 
 export default function LoginScreen() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -65,29 +104,31 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
+  const [language, setLanguage] = useState<"bn" | "en">("bn");
 
   const loading = loadingAction !== null;
+  const localCopy = getLocalizedCopy(language);
 
   const getLoginErrorMessage = (loginError: unknown) => {
     if (!(loginError instanceof Error)) {
-      return copy.login.invalid;
+      return localCopy.login.invalid;
     }
 
     const message = loginError.message.toLowerCase();
     if (message.includes("network") || message.includes("fetch") || message.includes("internet")) {
-      return "ইন্টারনেট সংযোগ পরীক্ষা করুন";
+      return localCopy.login.networkError;
     }
     if (message.includes("chws") || message.includes("active chw")) {
-      return "এই অ্যাকাউন্টে স্বাস্থ্যকর্মীর অনুমতি নেই";
+      return localCopy.login.chwAccessDenied;
     }
     if (message.includes("mothers") || message.includes("active mother")) {
-      return "এই অ্যাকাউন্টে মায়ের প্রোফাইল পাওয়া যায়নি";
+      return localCopy.login.motherAccessDenied;
     }
     if (message.includes("credentials") || message.includes("password") || message.includes("sign in")) {
-      return copy.login.invalid;
+      return localCopy.login.invalid;
     }
 
-    return copy.login.invalid;
+    return localCopy.login.invalid;
   };
 
   const selectRole = (role: UserRole) => {
@@ -105,7 +146,7 @@ export default function LoginScreen() {
     action: LoadingAction
   ) => {
     if (!nextEmail || !nextPassword) {
-      setError("ডেমো লগইনের তথ্য সেট করা নেই");
+      setError(localCopy.login.demoNotSet);
       return;
     }
 
@@ -130,7 +171,7 @@ export default function LoginScreen() {
 
   const submitManualLogin = () => {
     if (!selectedRole) {
-      setError("প্রথমে আপনার ভূমিকা নির্বাচন করুন");
+      setError(localCopy.login.selectRoleFirst);
       return;
     }
     submitLogin(selectedRole, email, password, "login");
@@ -138,111 +179,169 @@ export default function LoginScreen() {
 
   const submitDemoLogin = (role: UserRole) => {
     const credentials = demoCredentials[role];
-    selectRole(role);
     submitLogin(role, credentials.email, credentials.password, role === "CHW" ? "demo-chw" : "demo-mother");
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.logo}>
-            <Icon name="favorite" color={colors.onPrimary} size={28} />
-          </View>
-          <Text style={styles.title}>{copy.common.appName}</Text>
-          <Text style={styles.subtitle}>আপনার গর্ভকালীন সঙ্গী</Text>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {/* Top Header - High-Resolution Image */}
+        <View style={styles.imageHeaderContainer}>
+          <Image
+            source={require("../../assets/illustrations/screen.png")}
+            style={styles.headerImage}
+            resizeMode="cover"
+          />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>আপনি কে?</Text>
-          <View style={styles.roleGrid}>
-            {roleOptions.map((option) => {
-              const selected = selectedRole === option.role;
-              return (
+        {/* Bottom Content Area */}
+        <View style={styles.contentContainer}>
+          {selectedRole === null ? (
+            /* Mockup State - Welcome Screen */
+            <>
+              {/* App Identity */}
+              <View style={styles.identityContainer}>
+                <Text style={styles.appName}>{localCopy.common.appName}</Text>
+                <Text style={styles.appTagline}>{localCopy.onboarding.tagline}</Text>
+              </View>
+
+              {/* Language Selector Selector */}
+              <View style={styles.langSelectorContainer}>
                 <Pressable
-                  accessibilityLabel={option.accessibilityLabel}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
+                  onPress={() => setLanguage("bn")}
+                  style={[styles.langButton, language === "bn" && styles.langButtonActive]}
+                >
+                  <Text style={[styles.langButtonText, language === "bn" && styles.langButtonTextActive]}>
+                    বাংলা
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setLanguage("en")}
+                  style={[
+                    styles.langButton,
+                    language === "en" && styles.langButtonActive,
+                    language !== "en" && styles.langButtonInactiveBorder
+                  ]}
+                >
+                  <Text style={[styles.langButtonText, language === "en" && styles.langButtonTextActive]}>
+                    English
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.buttonContainer}>
+                {/* Continue as Mother */}
+                <Pressable
+                  onPress={() => selectRole("MOTHER")}
+                  style={({ pressed }) => [styles.motherButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.motherButtonText}>{localCopy.onboarding.continueAsMother}</Text>
+                  <Icon name="arrow-forward" color="#ffffff" size={22} />
+                </Pressable>
+
+                {/* Continue as Healthcare Worker */}
+                <Pressable
+                  onPress={() => selectRole("CHW")}
+                  style={({ pressed }) => [styles.chwButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.chwButtonText}>{localCopy.onboarding.continueAsChw}</Text>
+                  <Icon name="add-box" color="#4b6546" size={20} />
+                </Pressable>
+              </View>
+
+              {/* WHO Guidelines Indicator */}
+              <View style={styles.whoContainer}>
+                <Icon name="verified" color="#4b6546" size={16} />
+                <Text style={styles.whoText}>{localCopy.onboarding.whoGuideline}</Text>
+              </View>
+            </>
+          ) : (
+            /* Input Form State - Manual & Demo Login options */
+            <View style={styles.formContainer}>
+              <Text style={styles.formTitle}>
+                {selectedRole === "CHW" ? localCopy.login.chwTitle : localCopy.login.motherTitle}
+              </Text>
+              
+              <View style={styles.inputGroup}>
+                <TextInput
+                  autoCapitalize="none"
+                  accessibilityLabel={localCopy.login.emailPlaceholder}
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  placeholder={localCopy.login.emailPlaceholder}
+                  placeholderTextColor={colors.outline}
+                  style={styles.input}
+                  value={email}
                   disabled={loading}
-                  key={option.role}
-                  onPress={() => selectRole(option.role)}
+                />
+                
+                <TextInput
+                  accessibilityLabel={localCopy.login.passwordPlaceholder}
+                  onChangeText={setPassword}
+                  placeholder={localCopy.login.passwordPlaceholder}
+                  placeholderTextColor={colors.outline}
+                  secureTextEntry
+                  style={styles.input}
+                  value={password}
+                  disabled={loading}
+                />
+              </View>
+
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+              <View style={styles.formActions}>
+                {/* Manual Login */}
+                <Pressable
+                  onPress={submitManualLogin}
+                  disabled={loading || !email || !password}
                   style={({ pressed }) => [
-                    styles.roleCard,
-                    selected && styles.roleCardSelected,
+                    styles.motherButton,
+                    (loading || !email || !password) && styles.disabledButton,
                     pressed && !loading && styles.pressed
                   ]}
                 >
-                  <View style={[styles.roleIcon, selected && styles.roleIconSelected]}>
-                    <Icon name={option.icon} color={selected ? colors.onPrimary : colors.primary} size={28} />
-                  </View>
-                  <Text style={styles.roleTitle}>{option.title}</Text>
-                  <Text style={styles.roleSubtitle}>{option.subtitle}</Text>
+                  {loadingAction === "login" ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <>
+                      <Text style={styles.motherButtonText}>{localCopy.login.loginButton}</Text>
+                      <Icon name="login" color="#ffffff" size={20} />
+                    </>
+                  )}
                 </Pressable>
-              );
-            })}
-          </View>
-        </View>
 
-        {selectedRole ? (
-          <View style={styles.form}>
-            <Text style={styles.formTitle}>
-              {selectedRole === "CHW" ? copy.login.chwTitle : copy.login.motherTitle}
-            </Text>
-            <TextInput
-              autoCapitalize="none"
-              accessibilityLabel={copy.login.emailPlaceholder}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder={copy.login.emailPlaceholder}
-              placeholderTextColor={colors.outline}
-              style={styles.input}
-              value={email}
-            />
-            <TextInput
-              accessibilityLabel={copy.login.passwordPlaceholder}
-              onChangeText={setPassword}
-              placeholder={copy.login.passwordPlaceholder}
-              placeholderTextColor={colors.outline}
-              secureTextEntry
-              style={styles.input}
-              value={password}
-            />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <PrimaryButton
-              label={copy.login.loginButton}
-              loading={loadingAction === "login"}
-              disabled={loading || !email || !password}
-              onPress={submitManualLogin}
-            />
-          </View>
-        ) : error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : null}
+                {/* Instant Demo Shortcut */}
+                <Pressable
+                  onPress={() => submitDemoLogin(selectedRole)}
+                  disabled={loading}
+                  style={({ pressed }) => [
+                    styles.demoShortcutButton,
+                    loading && styles.disabledButton,
+                    pressed && !loading && styles.pressed
+                  ]}
+                >
+                  {loadingAction === "demo-chw" || loadingAction === "demo-mother" ? (
+                    <ActivityIndicator color={colors.primary} />
+                  ) : (
+                    <Text style={styles.demoShortcutText}>
+                      {selectedRole === "CHW" ? localCopy.login.demoChwButton : localCopy.login.demoMotherButton}
+                    </Text>
+                  )}
+                </Pressable>
 
-        <View style={styles.demoCard}>
-          <View style={styles.demoDivider}>
-            <View style={styles.demoLine} />
-            <Text style={styles.demoTitle}>ডেমো মোড</Text>
-            <View style={styles.demoLine} />
-          </View>
-          <Text style={styles.demoBody}>বিচারক ও পরীক্ষকদের জন্য প্রস্তুত করা নিরাপদ ডেমো অ্যাকাউন্ট।</Text>
-          <View style={styles.demoActions}>
-            <SecondaryButton
-              label={loadingAction === "demo-chw" ? "ডেমো চালু হচ্ছে..." : "স্বাস্থ্যকর্মী হিসেবে ডেমো দেখুন"}
-              disabled={loading}
-              onPress={() => submitDemoLogin("CHW")}
-            />
-            <SecondaryButton
-              label={loadingAction === "demo-mother" ? "ডেমো চালু হচ্ছে..." : "মা হিসেবে ডেমো দেখুন"}
-              disabled={loading}
-              onPress={() => submitDemoLogin("MOTHER")}
-            />
-          </View>
-        </View>
-
-        <View style={styles.footer}>
-          <Icon name="shield" color={colors.secondary} size={18} />
-          <Text style={styles.footerText}>ইন্টারনেট ছাড়াও অফলাইনে কাজ করে</Text>
+                {/* Go Back */}
+                <Pressable
+                  onPress={() => setSelectedRole(null)}
+                  disabled={loading}
+                  style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.backButtonText}>{localCopy.common.back}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -251,153 +350,216 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
+    backgroundColor: "#fff8f7",
     flex: 1
   },
-  content: {
-    gap: spacing.md,
-    padding: spacing.md,
-    paddingBottom: spacing.xl
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: "#fff8f7"
   },
-  header: {
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingTop: spacing.lg
+  imageHeaderContainer: {
+    width: "100%",
+    height: 480,
+    overflow: "hidden"
   },
-  logo: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 58,
-    justifyContent: "center",
-    width: 58
+  headerImage: {
+    width: "100%",
+    height: "100%"
   },
-  title: {
-    ...typography.h1,
-    color: colors.onSurface,
-    textAlign: "center"
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.onSurfaceVariant,
-    textAlign: "center"
-  },
-  section: {
-    gap: spacing.sm
-  },
-  sectionTitle: {
-    ...typography.body,
-    color: colors.onSurface,
-    fontFamily: typography.h2.fontFamily
-  },
-  roleGrid: {
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  roleCard: {
-    backgroundColor: colors.surfaceContainer,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.card,
-    borderWidth: 1,
+  contentContainer: {
     flex: 1,
-    gap: spacing.xs,
-    minHeight: 144,
-    padding: spacing.md
+    backgroundColor: "#fff8f7",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40
   },
-  roleCardSelected: {
-    borderColor: colors.primaryContainer,
-    borderWidth: 2
-  },
-  roleIcon: {
+  identityContainer: {
     alignItems: "center",
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: radius.full,
-    height: 48,
+    marginBottom: 20
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#e8896a",
+    fontFamily: typography.h1.fontFamily,
+    letterSpacing: 0.5
+  },
+  appTagline: {
+    fontSize: 16,
+    color: "#54433d",
+    marginTop: 6,
+    fontFamily: typography.body.fontFamily
+  },
+  langSelectorContainer: {
+    flexDirection: "row",
+    alignSelf: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#dac1ba",
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 3,
+    marginBottom: 32,
+    shadowColor: "#271818",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1
+  },
+  langButton: {
+    width: 96,
+    height: 38,
+    borderRadius: 20,
     justifyContent: "center",
-    width: 48
+    alignItems: "center",
+    backgroundColor: "transparent"
   },
-  roleIconSelected: {
-    backgroundColor: colors.primary
+  langButtonActive: {
+    backgroundColor: "#e8896a"
   },
-  roleTitle: {
-    ...typography.body,
-    color: colors.onSurface,
+  langButtonInactiveBorder: {
+    // Unselected has border style as per mockup
+  },
+  langButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#54433d",
+    fontFamily: typography.body.fontFamily
+  },
+  langButtonTextActive: {
+    color: "#ffffff",
+    fontWeight: "bold"
+  },
+  buttonContainer: {
+    gap: 16,
+    marginBottom: 36
+  },
+  motherButton: {
+    height: 56,
+    backgroundColor: "#e8896a",
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#96482e",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  motherButtonText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "bold",
     fontFamily: typography.h2.fontFamily
   },
-  roleSubtitle: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant
+  chwButton: {
+    height: 56,
+    backgroundColor: "#ffffff",
+    borderColor: "#4b6546",
+    borderWidth: 1.5,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#4b6546",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1
+  },
+  chwButtonText: {
+    color: "#4b6546",
+    fontSize: 18,
+    fontWeight: "bold",
+    fontFamily: typography.h2.fontFamily
+  },
+  whoContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginTop: "auto"
+  },
+  whoText: {
+    fontSize: 14,
+    color: "#4b6546",
+    fontWeight: "500",
+    fontFamily: typography.caption.fontFamily
   },
   pressed: {
-    opacity: 0.86
+    opacity: 0.85
   },
-  form: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    gap: spacing.base,
-    padding: spacing.cardPadding
+  /* Form Styling */
+  formContainer: {
+    width: "100%",
+    paddingTop: 10
   },
   formTitle: {
-    ...typography.h2,
-    color: colors.onSurface
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: colors.surfaceContainerLow,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    color: colors.onSurface,
-    minHeight: 52,
-    paddingHorizontal: spacing.base
-  },
-  error: {
-    ...typography.label,
-    color: colors.error
-  },
-  demoCard: {
-    backgroundColor: colors.surfaceContainerLow,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.card,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    gap: spacing.base,
-    padding: spacing.cardPadding
-  },
-  demoDivider: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  demoLine: {
-    backgroundColor: colors.outlineVariant,
-    flex: 1,
-    height: 1
-  },
-  demoTitle: {
-    ...typography.body,
-    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#96482e",
+    marginBottom: 20,
+    textAlign: "center",
     fontFamily: typography.h2.fontFamily
   },
-  demoBody: {
-    ...typography.label,
-    color: colors.onSurfaceVariant,
-    textAlign: "center"
+  inputGroup: {
+    gap: 14,
+    marginBottom: 16
   },
-  demoActions: {
-    gap: spacing.sm
+  input: {
+    height: 54,
+    backgroundColor: "#ffffff",
+    borderColor: "#dac1ba",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#271818",
+    fontFamily: typography.body.fontFamily
   },
-  footer: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
+  errorText: {
+    fontSize: 14,
+    color: colors.error,
+    marginBottom: 16,
+    textAlign: "center",
+    fontFamily: typography.label.fontFamily
+  },
+  formActions: {
+    gap: 14
+  },
+  demoShortcutButton: {
+    height: 54,
+    backgroundColor: "#ffffff",
+    borderColor: "#e8896a",
+    borderWidth: 1.2,
+    borderRadius: 12,
     justifyContent: "center",
-    paddingTop: spacing.sm
+    alignItems: "center"
   },
-  footerText: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant
+  demoShortcutText: {
+    color: "#96482e",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: typography.body.fontFamily
+  },
+  backButton: {
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  backButtonText: {
+    color: "#87726c",
+    fontSize: 16,
+    fontWeight: "500",
+    fontFamily: typography.body.fontFamily,
+    textDecorationLine: "underline"
+  },
+  disabledButton: {
+    opacity: 0.55
   }
 });
