@@ -8,11 +8,24 @@ const mockQuestions = [
     id: "q-1",
     trimester: "T3" as const,
     week_range: "28-30",
-    topic: "সাধারণ প্রশ্ন",
+    topic: "সাধারণ_প্রশ্ন",
     question_bn: "আমার সকাল থেকে একটু মাথা ঘুরছে।",
     answer_bn: "এটি গুরুত্বপূর্ণ লক্ষণ হতে পারে।",
     severity: "HIGH" as const,
     see_doctor: true,
+    emergency: false
+  }
+];
+const mockSearchResults = [
+  {
+    id: "q-search-1",
+    trimester: "T3" as const,
+    week_range: "28-30",
+    topic: "সাধারণ_প্রশ্ন",
+    question_bn: "মাথা ঘুরছে",
+    answer_bn: "বিশ্রাম নিন এবং পানি পান করুন।",
+    severity: "LOW" as const,
+    see_doctor: false,
     emergency: false
   }
 ];
@@ -27,7 +40,12 @@ jest.mock("@/components/ui/Icon", () => {
 
 jest.mock("@/features/qa/offlineQaStore", () => ({
   getQaCategories: () => mockCategories.map((label) => ({ label, topic: label.replace(/\s+/g, "_") })),
-  getQaByTopic: jest.fn(async () => mockQuestions)
+  getQaByTopic: jest.fn(async () => mockQuestions),
+  searchQa: jest.fn(async () => mockSearchResults)
+}));
+
+jest.mock("@/api/chatClient", () => ({
+  askOnline: jest.fn(async () => null)
 }));
 
 describe("QaChatScreen", () => {
@@ -64,5 +82,22 @@ describe("QaChatScreen", () => {
 
     const snapshot = JSON.stringify(tree.toJSON());
     expect(snapshot).toContain("এটি গুরুত্বপূর্ণ লক্ষণ হতে পারে।");
+  });
+
+  it("falls back to offline keyword search for free-text questions", async () => {
+    const tree = await renderTree();
+    const input = tree.root.findByProps({ accessibilityLabel: "মাশেবা AIকে জিজ্ঞেস করুন..." });
+    const send = tree.root.findByProps({ accessibilityLabel: "প্রশ্ন পাঠান" });
+
+    await act(async () => {
+      input.props.onChangeText("মাথা ঘুরছে");
+    });
+
+    await act(async () => {
+      await send.props.onPress();
+    });
+
+    const snapshot = JSON.stringify(tree.toJSON());
+    expect(snapshot).toContain("বিশ্রাম নিন এবং পানি পান করুন।");
   });
 });

@@ -48,3 +48,38 @@ export async function getQaByTopic(params: {
     throw new Error(getLocalDbErrorMessage(error));
   }
 }
+
+function normalizeKeywords(question: string): string[] {
+  return question
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.replace(/[.,!?।,:;()[\]{}"'`]/g, ""))
+    .filter((part) => part.length >= 2);
+}
+
+export async function searchQa(question: string, trimester: OfflineQaTrimester): Promise<OfflineQa[]> {
+  const keywords = normalizeKeywords(question);
+  if (!keywords.length) {
+    return [];
+  }
+
+  try {
+    return await runLocalDb(async () => {
+      const db = await getDB();
+      const likeClauses = keywords.flatMap(() => ["question_bn LIKE ?", "answer_bn LIKE ?"]).join(" OR ");
+      const bindings = keywords.flatMap((keyword) => [`%${keyword}%`, `%${keyword}%`]);
+      const rows = await db.getAllAsync<OfflineQaRow>(
+        `SELECT * FROM offline_qa
+         WHERE trimester IN (?, 'ALL')
+           AND (${likeClauses})
+         ORDER BY emergency DESC, see_doctor DESC, id ASC
+         LIMIT 5`,
+        trimester,
+        ...bindings
+      );
+      return rows.map(mapOfflineQa);
+    });
+  } catch (error) {
+    throw new Error(getLocalDbErrorMessage(error));
+  }
+}

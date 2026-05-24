@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { askOnline } from "@/api/chatClient";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { copy } from "@/data/stitchCopy.bn";
-import { getQaByTopic, getQaCategories, type QaCategory } from "@/features/qa/offlineQaStore";
+import { getQaByTopic, getQaCategories, searchQa, type QaCategory } from "@/features/qa/offlineQaStore";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { OfflineQa, OfflineQaTrimester } from "@/types/schema";
 
@@ -14,6 +15,7 @@ type Message = {
   role: "ai" | "user";
   text: string;
   item?: OfflineQa;
+  emergency?: boolean;
 };
 
 const trim: OfflineQaTrimester = "T3";
@@ -25,6 +27,7 @@ export function QaChatScreen() {
   const [input, setInput] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: "hello", role: "ai", text: copy.qa.greeting }
   ]);
@@ -48,21 +51,75 @@ export function QaChatScreen() {
     setMessages((current) => [
       ...current,
       { id: `${item.id}-q-${current.length}`, role: "user", text: item.question_bn },
-      { id: `${item.id}-a-${current.length}`, role: "ai", text: item.answer_bn, item }
+      { id: `${item.id}-a-${current.length}`, role: "ai", text: item.answer_bn, item, emergency: item.emergency }
     ]);
   };
 
-  const submitInput = () => {
+  const submitInput = async () => {
     const question = input.trim();
     if (!question) {
       return;
     }
     setInput("");
-    setMessages((current) => [
-      ...current,
-      { id: `custom-q-${Date.now()}`, role: "user", text: question },
-      { id: `custom-a-${Date.now()}`, role: "ai", text: copy.qa.freeTextUnsupported }
-    ]);
+    setMessages((current) => [...current, { id: `custom-q-${Date.now()}`, role: "user", text: question }]);
+    setIsLoading(true);
+
+    try {
+      const onlineResponse = await askOnline(question);
+      if (onlineResponse) {
+        setMessages((current) => [
+          ...current,
+          {
+            id: `online-a-${Date.now()}`,
+            role: "ai",
+            text: onlineResponse.answer,
+            emergency: onlineResponse.is_emergency
+          }
+        ]);
+        return;
+      }
+
+      const offlineResults = await searchQa(question, trim);
+      if (!offlineResults.length) {
+        setMessages((current) => [
+          ...current,
+          {
+            id: `offline-empty-${Date.now()}`,
+            role: "ai",
+            text: "এই বিষয়ে আমার কাছে তথ্য নেই। নিচের বিভাগ থেকে প্রশ্ন বেছে নিন।"
+          }
+        ]);
+        return;
+      }
+
+      const [best, ...related] = offlineResults;
+      setMessages((current) => [
+        ...current,
+        {
+          id: `offline-a-${best.id}-${Date.now()}`,
+          role: "ai",
+          text: best.answer_bn,
+          item: best,
+          emergency: best.emergency
+        },
+        ...(related.length
+          ? [
+              {
+                id: `offline-related-${Date.now()}`,
+                role: "ai" as const,
+                text: `সম্পর্কিত প্রশ্ন:\n${related.map((entry) => `• ${entry.question_bn}`).join("\n")}`
+              }
+            ]
+          : [])
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        { id: `offline-error-${Date.now()}`, role: "ai", text: "সমস্যা হয়েছে। আবার চেষ্টা করুন।" }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -109,13 +166,18 @@ export function QaChatScreen() {
       <View style={styles.messages}>
         {messages.map((message) => (
           <View key={message.id} style={styles.messageWrap}>
-            {message.item?.emergency ? (
-              <EmergencyBanner title={copy.qa.highRiskTitle} message={message.item.answer_bn} />
+            {message.emergency ? (
+              <EmergencyBanner title={copy.qa.highRiskTitle} message={message.text} />
             ) : (
               <ChatBubble role={message.role} text={message.text} />
             )}
           </View>
         ))}
+        {isLoading ? (
+          <View style={styles.messageWrap}>
+            <ChatBubble role="ai" text={copy.common.loading} />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.questionList}>
