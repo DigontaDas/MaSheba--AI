@@ -1,25 +1,72 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { Image } from "expo-image";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 import { router } from "expo-router";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { loginAndBootstrap } from "@/auth/supabaseAuth";
 import { loginMother, saveUserRole, type UserRole } from "@/auth/roleSession";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 
-type Step = "role" | "credentials";
+type LoadingAction = "login" | "demo-chw" | "demo-mother";
+
+type DemoCredential = {
+  email: string;
+  password: string;
+};
+
+const demoCredentials: Record<UserRole, DemoCredential> = {
+  CHW: {
+    email: process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL ?? "",
+    password: process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD ?? ""
+  },
+  MOTHER: {
+    email: process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL ?? "",
+    password: process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD ?? ""
+  }
+};
+
+const roleOptions: Array<{
+  role: UserRole;
+  title: string;
+  subtitle: string;
+  accessibilityLabel: string;
+  icon: IconName;
+}> = [
+  {
+    role: "CHW",
+    title: "স্বাস্থ্যকর্মী",
+    subtitle: "মা ও রোগী ব্যবস্থাপনা",
+    accessibilityLabel: copy.onboarding.continueAsChw,
+    icon: "health-and-safety"
+  },
+  {
+    role: "MOTHER",
+    title: "মা",
+    subtitle: "নিজের গর্ভকালীন সহায়তা",
+    accessibilityLabel: copy.onboarding.continueAsMother,
+    icon: "pregnant-woman"
+  }
+];
 
 export default function LoginScreen() {
-  const [step, setStep] = useState<Step>("role");
-  const [role, setRole] = useState<UserRole>("MOTHER");
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
+
+  const loading = loadingAction !== null;
 
   const getLoginErrorMessage = (loginError: unknown) => {
     if (!(loginError instanceof Error)) {
@@ -43,73 +90,104 @@ export default function LoginScreen() {
     return copy.login.invalid;
   };
 
-  const chooseRole = (nextRole: UserRole) => {
-    setRole(nextRole);
+  const selectRole = (role: UserRole) => {
+    const credentials = demoCredentials[role];
+    setSelectedRole(role);
+    setEmail(credentials.email);
+    setPassword(credentials.password);
     setError(null);
-    setStep("credentials");
   };
 
-  const onLogin = async () => {
-    setLoading(true);
+  const submitLogin = async (
+    role: UserRole,
+    nextEmail: string,
+    nextPassword: string,
+    action: LoadingAction
+  ) => {
+    if (!nextEmail || !nextPassword) {
+      setError("ডেমো লগইনের তথ্য সেট করা নেই");
+      return;
+    }
+
+    setLoadingAction(action);
     setError(null);
     try {
       if (role === "CHW") {
-        await loginAndBootstrap(email.trim(), password);
+        await loginAndBootstrap(nextEmail.trim(), nextPassword);
         await saveUserRole("CHW");
         router.replace("/(tabs)/patients");
         return;
       }
 
-      await loginMother(email.trim(), password);
+      await loginMother(nextEmail.trim(), nextPassword);
       router.replace("/(mother-tabs)/home");
     } catch (loginError) {
       setError(getLoginErrorMessage(loginError));
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
+  };
+
+  const submitManualLogin = () => {
+    if (!selectedRole) {
+      setError("প্রথমে আপনার ভূমিকা নির্বাচন করুন");
+      return;
+    }
+    submitLogin(selectedRole, email, password, "login");
+  };
+
+  const submitDemoLogin = (role: UserRole) => {
+    const credentials = demoCredentials[role];
+    selectRole(role);
+    submitLogin(role, credentials.email, credentials.password, role === "CHW" ? "demo-chw" : "demo-mother");
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
-      <View style={styles.content}>
-        <OfflineBanner />
-        <View style={styles.hero}>
-          <Image
-            source={require("../../assets/stitch/a_high_quality_professional_realistic_photograph_of_a_young_bangladeshi_mother.png")}
-            style={styles.heroImage}
-            contentFit="cover"
-          />
-          <View style={styles.brandMark}>
-            <Icon name="favorite" color={colors.primary} size={22} />
-          </View>
-        </View>
-
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <View style={styles.logo}>
+            <Icon name="favorite" color={colors.onPrimary} size={28} />
+          </View>
           <Text style={styles.title}>{copy.common.appName}</Text>
-          <Text style={styles.subtitle}>{copy.onboarding.tagline}</Text>
-          <View style={styles.languageRow}>
-            <Text style={styles.languageActive}>{copy.onboarding.langBn}</Text>
-            <Text style={styles.language}>{copy.onboarding.langEn}</Text>
+          <Text style={styles.subtitle}>আপনার গর্ভকালীন সঙ্গী</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>আপনি কে?</Text>
+          <View style={styles.roleGrid}>
+            {roleOptions.map((option) => {
+              const selected = selectedRole === option.role;
+              return (
+                <Pressable
+                  accessibilityLabel={option.accessibilityLabel}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  disabled={loading}
+                  key={option.role}
+                  onPress={() => selectRole(option.role)}
+                  style={({ pressed }) => [
+                    styles.roleCard,
+                    selected && styles.roleCardSelected,
+                    pressed && !loading && styles.pressed
+                  ]}
+                >
+                  <View style={[styles.roleIcon, selected && styles.roleIconSelected]}>
+                    <Icon name={option.icon} color={selected ? colors.onPrimary : colors.primary} size={28} />
+                  </View>
+                  <Text style={styles.roleTitle}>{option.title}</Text>
+                  <Text style={styles.roleSubtitle}>{option.subtitle}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        {step === "role" ? (
-          <View style={styles.actions}>
-            <PrimaryButton
-              label={copy.onboarding.continueAsMother}
-              iconName="arrow-forward"
-              onPress={() => chooseRole("MOTHER")}
-            />
-            <SecondaryButton label={copy.onboarding.continueAsChw} onPress={() => chooseRole("CHW")} />
-          </View>
-        ) : (
+        {selectedRole ? (
           <View style={styles.form}>
-            <View style={styles.formHeader}>
-              <Pressable accessibilityRole="button" onPress={() => setStep("role")} style={styles.backButton}>
-                <Icon name="arrow-back" color={colors.primary} size={20} />
-              </Pressable>
-              <Text style={styles.formTitle}>{role === "CHW" ? copy.login.chwTitle : copy.login.motherTitle}</Text>
-            </View>
+            <Text style={styles.formTitle}>
+              {selectedRole === "CHW" ? copy.login.chwTitle : copy.login.motherTitle}
+            </Text>
             <TextInput
               autoCapitalize="none"
               accessibilityLabel={copy.login.emailPlaceholder}
@@ -132,18 +210,41 @@ export default function LoginScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <PrimaryButton
               label={copy.login.loginButton}
-              loading={loading}
-              disabled={!email || !password}
-              onPress={onLogin}
+              loading={loadingAction === "login"}
+              disabled={loading || !email || !password}
+              onPress={submitManualLogin}
             />
           </View>
-        )}
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : null}
+
+        <View style={styles.demoCard}>
+          <View style={styles.demoDivider}>
+            <View style={styles.demoLine} />
+            <Text style={styles.demoTitle}>ডেমো মোড</Text>
+            <View style={styles.demoLine} />
+          </View>
+          <Text style={styles.demoBody}>বিচারক ও পরীক্ষকদের জন্য প্রস্তুত করা নিরাপদ ডেমো অ্যাকাউন্ট।</Text>
+          <View style={styles.demoActions}>
+            <SecondaryButton
+              label={loadingAction === "demo-chw" ? "ডেমো চালু হচ্ছে..." : "স্বাস্থ্যকর্মী হিসেবে ডেমো দেখুন"}
+              disabled={loading}
+              onPress={() => submitDemoLogin("CHW")}
+            />
+            <SecondaryButton
+              label={loadingAction === "demo-mother" ? "ডেমো চালু হচ্ছে..." : "মা হিসেবে ডেমো দেখুন"}
+              disabled={loading}
+              onPress={() => submitDemoLogin("MOTHER")}
+            />
+          </View>
+        </View>
 
         <View style={styles.footer}>
           <Icon name="shield" color={colors.secondary} size={18} />
-          <Text style={styles.footerText}>{copy.onboarding.whoGuideline}</Text>
+          <Text style={styles.footerText}>ইন্টারনেট ছাড়াও অফলাইনে কাজ করে</Text>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -154,37 +255,22 @@ const styles = StyleSheet.create({
     flex: 1
   },
   content: {
-    flex: 1,
-    gap: spacing.lg,
-    justifyContent: "center",
-    padding: spacing.marginMobile
-  },
-  hero: {
-    alignSelf: "center",
-    aspectRatio: 1,
-    borderRadius: radius.xl,
-    maxWidth: 300,
-    overflow: "hidden",
-    width: "86%"
-  },
-  heroImage: {
-    height: "100%",
-    width: "100%"
-  },
-  brandMark: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: radius.full,
-    bottom: spacing.base,
-    height: 48,
-    justifyContent: "center",
-    position: "absolute",
-    right: spacing.base,
-    width: 48
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingBottom: spacing.xl
   },
   header: {
     alignItems: "center",
-    gap: spacing.sm
+    gap: spacing.sm,
+    paddingTop: spacing.lg
+  },
+  logo: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    height: 58,
+    justifyContent: "center",
+    width: 58
   },
   title: {
     ...typography.h1,
@@ -196,29 +282,54 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: "center"
   },
-  languageRow: {
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.full,
-    flexDirection: "row",
-    gap: spacing.xs,
-    padding: spacing.xs
+  section: {
+    gap: spacing.sm
   },
-  languageActive: {
-    ...typography.label,
+  sectionTitle: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontFamily: typography.h2.fontFamily
+  },
+  roleGrid: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  roleCard: {
+    backgroundColor: colors.surfaceContainer,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.xs,
+    minHeight: 144,
+    padding: spacing.md
+  },
+  roleCardSelected: {
+    borderColor: colors.primaryContainer,
+    borderWidth: 2
+  },
+  roleIcon: {
+    alignItems: "center",
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.full,
-    color: colors.primary,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm
+    height: 48,
+    justifyContent: "center",
+    width: 48
   },
-  language: {
-    ...typography.label,
-    color: colors.onSurfaceVariant,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm
+  roleIconSelected: {
+    backgroundColor: colors.primary
   },
-  actions: {
-    gap: spacing.sm
+  roleTitle: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontFamily: typography.h2.fontFamily
+  },
+  roleSubtitle: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant
+  },
+  pressed: {
+    opacity: 0.86
   },
   form: {
     backgroundColor: colors.surfaceContainerLowest,
@@ -228,23 +339,9 @@ const styles = StyleSheet.create({
     gap: spacing.base,
     padding: spacing.cardPadding
   },
-  formHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm
-  },
-  backButton: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.full,
-    height: 38,
-    justifyContent: "center",
-    width: 38
-  },
   formTitle: {
     ...typography.h2,
-    color: colors.onSurface,
-    flex: 1
+    color: colors.onSurface
   },
   input: {
     ...typography.body,
@@ -260,11 +357,44 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.error
   },
+  demoCard: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    gap: spacing.base,
+    padding: spacing.cardPadding
+  },
+  demoDivider: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  demoLine: {
+    backgroundColor: colors.outlineVariant,
+    flex: 1,
+    height: 1
+  },
+  demoTitle: {
+    ...typography.body,
+    color: colors.primary,
+    fontFamily: typography.h2.fontFamily
+  },
+  demoBody: {
+    ...typography.label,
+    color: colors.onSurfaceVariant,
+    textAlign: "center"
+  },
+  demoActions: {
+    gap: spacing.sm
+  },
   footer: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: "center"
+    justifyContent: "center",
+    paddingTop: spacing.sm
   },
   footerText: {
     ...typography.caption,

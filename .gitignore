@@ -42,3 +42,7 @@ model/artifacts/*.joblib
 frontend/stitch_maasheba_ai_ui_kit/
 Stitch Mobile Frontend Replacement Plan.md
 MaaSheba Risk Model Improvement Plan.md
+scripts/cleanup_docker_desktop_vhdx.ps1
+docs/DOCKER_DESKTOP_VHDX_CLEANUP.md
+docs/SETUP.md
+MaaSheba Explicit Demo Login Plan.md
