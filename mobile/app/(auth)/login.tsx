@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderStyle: "dashed",
     borderWidth: 1,
+    display: "none",
     gap: spacing.base,
     padding: spacing.cardPadding
   },

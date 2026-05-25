@@ -14,6 +14,7 @@ export default function MotherTabsLayout() {
       <Tabs.Screen name="nutrition" options={{ title: copy.common.nutrition }} />
       <Tabs.Screen name="chat" options={{ title: copy.common.chat }} />
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
+      <Tabs.Screen name="progress" options={{ href: null }} />
     </Tabs>
   );
 }

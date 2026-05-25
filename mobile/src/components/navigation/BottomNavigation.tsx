@@ -15,12 +15,17 @@ const iconByRoute: Record<string, IconName> = {
 };
 
 export function BottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
+  const visibleRoutes = state.routes.filter((route) => {
+    const options = descriptors[route.key]?.options as { href?: string | null } | undefined;
+    return options?.href !== null;
+  });
+
   return (
     <View style={styles.wrap}>
-      {state.routes.map((route, index) => {
+      {visibleRoutes.map((route) => {
         const descriptor = descriptors[route.key];
         const options = descriptor.options;
-        const focused = state.index === index;
+        const focused = state.routes[state.index]?.key === route.key;
         const label =
           typeof options.title === "string"
             ? options.title
