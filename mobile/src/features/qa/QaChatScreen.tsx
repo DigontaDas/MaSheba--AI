@@ -58,7 +58,7 @@ export function QaChatScreen() {
       router.back();
       return;
     }
-    router.replace(segments.includes("(mother-tabs)") ? "/(mother-tabs)/home" : "/(tabs)/patients");
+    router.replace(segments.includes("(mother-tabs)") ? "/(mother-tabs)/home" : "/(tabs)/home");
   };
 
   const showEmergencyQuestions = async () => {

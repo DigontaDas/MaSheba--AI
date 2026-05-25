@@ -76,6 +76,9 @@ export default function LoginScreen() {
     }
 
     const message = loginError.message.toLowerCase();
+    if (message.includes("schema") || message.includes("unexpected_failure") || message.includes("database error")) {
+      return "সার্ভারে লগইন সমস্যা হয়েছে। আবার চেষ্টা করুন";
+    }
     if (message.includes("network") || message.includes("fetch") || message.includes("internet")) {
       return "ইন্টারনেট সংযোগ পরীক্ষা করুন";
     }
@@ -117,7 +120,7 @@ export default function LoginScreen() {
       if (role === "CHW") {
         await loginAndBootstrap(nextEmail.trim(), nextPassword);
         await saveUserRole("CHW");
-        router.replace("/(tabs)/patients");
+        router.replace("/(tabs)/home");
         return;
       }
 
