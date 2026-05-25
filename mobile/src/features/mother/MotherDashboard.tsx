@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View, ImageBackground } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { ProgressBar } from "@/components/progress/ProgressBar";
@@ -10,6 +10,13 @@ import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
+
+const imageByIcon = {
+  "monitor-heart": require("../../../assets/images/1.png"),
+  "restaurant-menu": require("../../../assets/images/2.png"),
+  "warning": require("../../../assets/images/3.png"),
+  "local-hospital": require("../../../assets/images/4.png")
+};
 
 export function MotherDashboard({
   variant = "home",
@@ -129,10 +136,15 @@ function ActionCard({
   title: string;
   onPress: () => void;
 }) {
+  const imageSource = imageByIcon[icon];
+
   return (
     <Pressable accessibilityLabel={title} accessibilityRole="button" style={styles.actionCard} onPress={onPress}>
-      <Icon name={icon} color={colors.primary} />
-      <Text style={styles.actionText}>{title}</Text>
+      <ImageBackground source={imageSource} style={styles.actionCardBackground} imageStyle={styles.actionCardImage}>
+        <View style={styles.actionTextOverlay}>
+          <Text style={styles.actionCardText} numberOfLines={2}>{title}</Text>
+        </View>
+      </ImageBackground>
     </Pressable>
   );
 }
@@ -230,19 +242,37 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   actionCard: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.card,
-    borderWidth: 1,
     flexBasis: "48%",
     flexGrow: 1,
-    gap: spacing.sm,
-    minHeight: 112,
-    padding: spacing.base
+    minHeight: 120,
+    borderRadius: radius.card,
+    overflow: "hidden",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: "#ebdcd9"
   },
-  actionText: {
-    ...typography.label,
-    color: colors.onSurface
+  actionCardBackground: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 12
+  },
+  actionCardImage: {
+    borderRadius: radius.card
+  },
+  actionTextOverlay: {
+    alignSelf: "flex-start",
+    maxWidth: "65%"
+  },
+  actionCardText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#54433d",
+    fontFamily: typography.body.fontFamily,
+    lineHeight: 18
   },
   askCard: {
     alignItems: "center",

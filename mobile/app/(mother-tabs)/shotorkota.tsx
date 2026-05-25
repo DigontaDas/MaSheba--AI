@@ -9,6 +9,7 @@ import {
   Linking,
   Alert
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -44,7 +45,7 @@ export default function ShotorkotaScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={["top"]}>
       {/* Top Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -157,7 +158,7 @@ export default function ShotorkotaScreen() {
                 </View>
               ) : (
                 <Image
-                  source={require("../../assets/images/bp.png")}
+                  source={require("../../assets/images/Manual_Blood_Pressure.jpg")}
                   style={styles.detailsImage}
                   resizeMode="contain"
                 />
@@ -181,21 +182,6 @@ export default function ShotorkotaScreen() {
                   : "আপনার রক্তচাপ স্বাভাবিকের চেয়ে বেশি। এটি গর্ভাবস্থায় ঝুঁকির কারণ হতে পারে।"}
               </Text>
 
-              {/* Detail speaker */}
-              <Pressable
-                onPress={() =>
-                  toggleSpeech(
-                    activeTab === "NORMAL"
-                      ? "রক্তচাপ স্বাভাবিক। আপনার রক্তচাপ ১২০/৮০ এর মধ্যে রয়েছে।"
-                      : activeTab === "EMERGENCY"
-                      ? "তীব্র রক্তক্ষরণ বা খিঁচুনি। এটি অত্যন্ত বিপদজনক লক্ষণ।"
-                      : "উচ্চ রক্তচাপ। আপনার রক্তচাপ স্বাভাবিকের চেয়ে বেশি। এটি গর্ভাবস্থায় ঝুঁকির কারণ হতে পারে।"
-                  )
-                }
-                style={styles.detailSpeaker}
-              >
-                <Icon name="volume-up" color="#e8896a" size={16} />
-              </Pressable>
             </View>
           </View>
         </View>
@@ -295,7 +281,7 @@ export default function ShotorkotaScreen() {
           <Text style={styles.callButtonText}>এখনই ফোন করুন: ১৬৭৮৯</Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -491,17 +477,6 @@ const styles = StyleSheet.create({
     color: "#6e5a55",
     lineHeight: 18,
     fontFamily: typography.body.fontFamily
-  },
-  detailSpeaker: {
-    position: "absolute",
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#fff0ed",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center"
   },
   actionTitle: {
     fontSize: 20,
