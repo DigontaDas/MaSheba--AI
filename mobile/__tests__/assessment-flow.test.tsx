@@ -134,4 +134,23 @@ describe("RiskAssessmentScreen", () => {
 
     expect(tree.root.findByProps({ accessibilityLabel: copy.assessment.saveVisit }).props.accessibilityState).toMatchObject({ disabled: true });
   });
+
+  it("shows the blood pressure image card when systolic pressure is high", async () => {
+    const tree = await renderTree();
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: copy.assessment.bpSystolic }).props.onChangeText("150");
+      tree.root.findByProps({ accessibilityLabel: copy.assessment.bpDiastolic }).props.onChangeText("95");
+      tree.root.findByProps({ accessibilityLabel: copy.assessment.weight }).props.onChangeText("58");
+      tree.root.findByProps({ accessibilityLabel: copy.assessment.hemoglobin }).props.onChangeText("10.5");
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: copy.assessment.saveVisit }).props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(tree.root.findByProps({ accessibilityLabel: "high-bp-visual-card" })).toBeTruthy();
+  });
 });

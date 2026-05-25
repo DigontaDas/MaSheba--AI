@@ -320,14 +320,23 @@ export default function RiskAssessmentScreen() {
           <PrimaryButton label={copy.assessment.saveVisit} loading={saving} disabled={!requiredFieldsFilled || !prediction} onPress={save} />
         </View>
       ) : prediction ? (
-        <RiskResult patient={patientRecord} prediction={prediction} />
+        <RiskResult bpSystolic={parsedInput?.bp_systolic ?? null} patient={patientRecord} prediction={prediction} />
       ) : null}
     </ScreenShell>
   );
 }
 
-function RiskResult({ patient, prediction }: { patient: Patient; prediction: RiskPrediction }) {
+function RiskResult({
+  bpSystolic,
+  patient,
+  prediction
+}: {
+  bpSystolic: number | null;
+  patient: Patient;
+  prediction: RiskPrediction;
+}) {
   const high = prediction.risk_level === "HIGH";
+  const showHighBpCard = high || (bpSystolic ?? 0) > 140;
   return (
     <View style={styles.result}>
       <View style={styles.warningCard}>
@@ -349,6 +358,21 @@ function RiskResult({ patient, prediction }: { patient: Patient; prediction: Ris
         <RiskGauge score={prediction.score ?? riskScoreForLevel(prediction.risk_level)} level={prediction.risk_level} />
         {prediction.reasons?.length ? <Text style={styles.subtitle}>{riskReasonText(prediction.risk_level)}</Text> : null}
       </View>
+
+      {showHighBpCard ? (
+        <View accessibilityLabel="high-bp-visual-card" style={styles.bpCard}>
+          <Image
+            accessibilityLabel="high-bp-image"
+            contentFit="cover"
+            source={require("../../assets/images/Manual_Blood_Pressure.jpg")}
+            style={styles.bpImage}
+          />
+          <View style={styles.bpBody}>
+            <Text style={styles.sectionTitle}>{copy.assessment.highBp}</Text>
+            <Text style={styles.subtitle}>{copy.assessment.highBpDescription}</Text>
+          </View>
+        </View>
+      ) : null}
 
       {high ? (
         <EmergencyBanner
@@ -523,6 +547,23 @@ const styles = StyleSheet.create({
   },
   resultText: {
     flex: 1,
+    gap: spacing.xs
+  },
+  bpCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.base,
+    overflow: "hidden",
+    padding: spacing.cardPadding
+  },
+  bpImage: {
+    aspectRatio: 1.7,
+    borderRadius: radius.lg,
+    width: "100%"
+  },
+  bpBody: {
     gap: spacing.xs
   },
   stepRow: {

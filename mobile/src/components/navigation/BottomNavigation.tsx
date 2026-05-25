@@ -8,7 +8,7 @@ const iconByRoute: Record<string, IconName> = {
   sync: "sync",
   qa: "chat-bubble",
   home: "home",
-  progress: "monitor-heart",
+  alerts: "warning",
   nutrition: "restaurant-menu",
   chat: "chat-bubble",
   profile: "person"

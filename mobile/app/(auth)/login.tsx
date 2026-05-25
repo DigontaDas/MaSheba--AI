@@ -10,6 +10,7 @@ import {
   View
 } from "react-native";
 import { router } from "expo-router";
+import { Image } from "expo-image";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -65,6 +66,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
+  const [heroFailed, setHeroFailed] = useState(false);
 
   const loading = loadingAction !== null;
 
@@ -146,6 +148,22 @@ export default function LoginScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <View style={styles.heroWrap}>
+            {heroFailed ? (
+              <View style={styles.heroFallback}>
+                <Text style={styles.heroFallbackText}>{copy.common.appName}</Text>
+              </View>
+            ) : (
+              <Image
+                accessibilityLabel="login-hero-image"
+                contentFit="cover"
+                onError={() => setHeroFailed(true)}
+                source={require("../../assets/images/Login_page_pic.png")}
+                style={styles.heroImage}
+                transition={300}
+              />
+            )}
+          </View>
           <View style={styles.logo}>
             <Icon name="favorite" color={colors.onPrimary} size={28} />
           </View>
@@ -263,6 +281,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
     paddingTop: spacing.lg
+  },
+  heroWrap: {
+    alignSelf: "stretch",
+    marginHorizontal: -spacing.md,
+    marginTop: -spacing.md
+  },
+  heroImage: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+    height: 220,
+    width: "100%"
+  },
+  heroFallback: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+    height: 220,
+    justifyContent: "center",
+    width: "100%"
+  },
+  heroFallbackText: {
+    ...typography.h1,
+    color: colors.onPrimary,
+    textAlign: "center"
   },
   logo: {
     alignItems: "center",

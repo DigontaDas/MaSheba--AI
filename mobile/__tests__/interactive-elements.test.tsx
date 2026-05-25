@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import AlertsScreen from "../app/(mother-tabs)/alerts";
 import PatientDashboardScreen from "../app/(tabs)/patients";
 import NutritionScreen from "../app/(mother-tabs)/nutrition";
 import ProfileScreen from "../app/(mother-tabs)/profile";
@@ -201,13 +202,26 @@ describe("mobile interactive elements", () => {
     act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.nutrition.drinks }).props.onPress();
     });
-    expect(JSON.stringify(tree.toJSON())).toContain(copy.nutrition.milk);
+    expect(JSON.stringify(tree.toJSON())).toContain("দুধ/দই + ফল + পানি");
     expect(JSON.stringify(tree.toJSON())).not.toContain(copy.nutrition.spinach);
 
     act(() => {
-      tree.root.findByProps({ accessibilityLabel: copy.nutrition.milk }).props.onPress();
+      tree.root.findByProps({ accessibilityLabel: "দুধ/দই + ফল + পানি" }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith(copy.nutrition.milk, `${copy.nutrition.milkAmount}\n${copy.nutrition.calcium}`, [{ text: "ঠিক আছে" }]);
+    expect((Alert.alert as jest.Mock).mock.calls.at(-1)).toEqual([
+      "দুধ/দই + ফল + পানি",
+      "দুধ/দই ১ পরিবেশন; ফল ২ পরিবেশন; পানি ৯-১০ গ্লাস\nক্যালসিয়াম\nবিকল্প: ছোট মাছ, কলা, পেয়ারা",
+      [{ text: "ঠিক আছে" }]
+    ]);
+  });
+
+  it("renders the alerts screen with emergency guidance and symptom cards", async () => {
+    const tree = await renderTree(<AlertsScreen />);
+    const output = JSON.stringify(tree.toJSON());
+
+    expect(output).toContain("জরুরি সতর্কতা");
+    expect(output).toContain("জরুরি লক্ষণসমূহ");
+    expect(output).toContain("উপসর্গ অনুযায়ী পরামর্শ");
   });
 
   it("wires CHW dashboard menu, notification, and clinic call action", async () => {

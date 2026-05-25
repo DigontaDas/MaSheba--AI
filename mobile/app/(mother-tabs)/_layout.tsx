@@ -10,7 +10,7 @@ export default function MotherTabsLayout() {
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
     >
       <Tabs.Screen name="home" options={{ title: copy.common.home }} />
-      <Tabs.Screen name="progress" options={{ title: "প্রগতি" }} />
+      <Tabs.Screen name="alerts" options={{ title: "সতর্কতা" }} />
       <Tabs.Screen name="nutrition" options={{ title: copy.common.nutrition }} />
       <Tabs.Screen name="chat" options={{ title: copy.common.chat }} />
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
