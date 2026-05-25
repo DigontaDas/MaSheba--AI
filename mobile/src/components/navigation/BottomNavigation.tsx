@@ -17,7 +17,7 @@ const iconByRoute: Record<string, IconName> = {
 export function BottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
   const visibleRoutes = state.routes.filter((route) => {
     const options = descriptors[route.key]?.options as { href?: string | null } | undefined;
-    return options?.href !== null;
+    return route.name !== "progress" && options?.href !== null;
   });
 
   return (
