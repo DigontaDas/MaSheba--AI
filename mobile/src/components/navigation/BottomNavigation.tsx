@@ -9,6 +9,7 @@ const iconByRoute: Record<string, IconName> = {
   qa: "chat-bubble",
   home: "home",
   alerts: "warning",
+  shotorkota: "warning",
   nutrition: "restaurant-menu",
   chat: "chat-bubble",
   profile: "person"
@@ -17,7 +18,7 @@ const iconByRoute: Record<string, IconName> = {
 export function BottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
   const visibleRoutes = state.routes.filter((route) => {
     const options = descriptors[route.key]?.options as { href?: string | null } | undefined;
-    return route.name !== "progress" && options?.href !== null;
+    return route.name !== "progress" && route.name !== "alerts" && options?.href !== null;
   });
 
   return (

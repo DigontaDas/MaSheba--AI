@@ -1,5 +1,8 @@
+import { NativeModules } from "react-native";
 import type { RiskInput, RiskPrediction } from "@/types/schema";
 import { predictMockRisk } from "./mockRiskModel";
+
+
 
 declare const require: (path: string) => number;
 
@@ -65,6 +68,11 @@ function safetyRules(input: RiskInput): RiskPrediction {
 }
 
 async function loadSession(): Promise<{ ort: OrtModule; session: InferenceSession } | null> {
+  // Gracefully fallback if the native module is absent
+  if (!NativeModules.Onnxruntime) {
+    return null;
+  }
+
   sessionPromise ??= (async () => {
     try {
       const [{ Asset }, ort] = await Promise.all([

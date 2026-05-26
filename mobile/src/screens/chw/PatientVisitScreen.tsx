@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { RiskBadge } from "@/components/risk/RiskBadge";
@@ -198,7 +198,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    minHeight: 64
+    minHeight: 64,
+    paddingTop: Platform.select({ ios: 52, android: 56, default: 12 })
   },
   iconButton: {
     alignItems: "center",

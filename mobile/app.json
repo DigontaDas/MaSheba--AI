@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MaaSheba AI",
+    "name": "MaSheba AI",
     "slug": "maasheba-ai",
     "scheme": "maasheba",
     "version": "0.1.0",
@@ -17,8 +17,8 @@
     "ios": {
       "bundleIdentifier": "com.maasheba.mobile",
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "MaaSheba uses speech recognition for optional voice input.",
-        "NSMicrophoneUsageDescription": "MaaSheba uses the microphone for optional voice input."
+        "NSSpeechRecognitionUsageDescription": "MaSheba uses speech recognition for optional voice input.",
+        "NSMicrophoneUsageDescription": "MaSheba uses the microphone for optional voice input."
       }
     },
     "plugins": [

@@ -53,20 +53,28 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   label: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#70605A"
   },
   value: {
-    ...typography.body,
-    color: colors.onSurface,
-    fontFamily: typography.h2.fontFamily
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#4A3E39",
+    fontFamily: typography.h2.fontFamily,
+    marginTop: 2
   },
   button: {
     alignItems: "center",
-    backgroundColor: colors.primary,
+    backgroundColor: "#E57A58",
     borderRadius: radius.full,
     height: 44,
     justifyContent: "center",
-    width: 44
+    width: 44,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   }
 });

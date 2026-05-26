@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -7,26 +7,39 @@ const iconByRoute: Record<string, IconName> = {
   home: "home",
   chat: "chat-bubble",
   patients: "groups",
+  medicine: "medication",
   profile: "person"
 };
 
-const visibleRouteNames = new Set(["home", "chat", "patients", "profile"]);
+const routeLabels: Record<string, string> = {
+  home: "হোম",
+  chat: "চ্যাট",
+  patients: "রোগী",
+  medicine: "ওষুধ",
+  profile: "প্রোফাইল"
+};
 
 export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
-  const visibleRoutes = state.routes.filter((route) => visibleRouteNames.has(route.name));
+  // Extract visible routes and insert the custom "medicine" tab in the 4th slot
+  const nativeRoutes = state.routes.filter((r) => ["home", "chat", "patients", "medicine", "profile"].includes(r.name));
+  
+  // Construct the 5 tabs in the exact order: Home, Chat, Patients, Medicine, Profile
+  const items = [
+    nativeRoutes.find((r) => r.name === "home"),
+    nativeRoutes.find((r) => r.name === "chat"),
+    nativeRoutes.find((r) => r.name === "patients"),
+    nativeRoutes.find((r) => r.name === "medicine"),
+    nativeRoutes.find((r) => r.name === "profile")
+  ].filter(Boolean) as Array<{ name: string; key: string }>;
 
   return (
     <View style={styles.wrap}>
-      {visibleRoutes.map((route) => {
+      {items.map((route) => {
         const descriptor = descriptors[route.key];
-        const options = descriptor.options;
+        const options = descriptor?.options;
         const focused = state.routes[state.index]?.key === route.key;
-        const label =
-          typeof options.title === "string"
-            ? options.title
-            : typeof options.tabBarLabel === "string"
-              ? options.tabBarLabel
-              : route.name;
+        
+        const label = routeLabels[route.name] ?? route.name;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -35,7 +48,7 @@ export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTa
             canPreventDefault: true
           });
 
-          if (!focused && !event.defaultPrevented) {
+          if (!focused && !event?.defaultPrevented) {
             navigation.navigate(route.name);
           }
         };
@@ -49,11 +62,13 @@ export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTa
             onPress={onPress}
             style={[styles.item, focused && styles.itemActive]}
           >
-            <Icon
-              name={iconByRoute[route.name] ?? "circle"}
-              color={focused ? colors.onPrimaryContainer : colors.onSurfaceVariant}
-              size={22}
-            />
+            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+              <Icon
+                name={iconByRoute[route.name] ?? "circle"}
+                color={focused ? "#FFFFFF" : "#70605A"}
+                size={22}
+              />
+            </View>
             <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
               {label}
             </Text>
@@ -67,42 +82,50 @@ export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTa
 const styles = StyleSheet.create({
   wrap: {
     alignItems: "center",
-    backgroundColor: colors.surfaceContainer,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
+    backgroundColor: "#FFF5F2", // Warm peach-pink background matching design perfectly
+    borderTopWidth: 1,
+    borderTopColor: "#F5ECE9",
     flexDirection: "row",
-    gap: spacing.xs,
-    minHeight: 80,
+    gap: 4,
+    minHeight: 74,
     paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
-    shadowColor: colors.primaryContainer,
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
+    elevation: 10,
+    shadowColor: "#E57A58",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 8
+    shadowRadius: 16
   },
   item: {
     alignItems: "center",
-    borderRadius: radius.full,
     flex: 1,
-    gap: 2,
+    gap: 4,
     justifyContent: "center",
     minHeight: 48,
-    minWidth: 0,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
+    minWidth: 0
+  },
+  iconContainer: {
+    width: 52,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  iconContainerActive: {
+    backgroundColor: "#E57A58" // Solid brand terracotta pill background
   },
   itemActive: {
-    backgroundColor: colors.primaryContainer
+    // Left empty since active state uses the custom active pill styles
   },
   label: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#70605A",
     textAlign: "center"
   },
   labelActive: {
-    color: colors.onPrimaryContainer,
-    fontFamily: typography.label.fontFamily
+    color: "#E57A58", // Highlight active label in terracotta orange
+    fontWeight: "bold"
   }
 });

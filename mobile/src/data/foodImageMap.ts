@@ -5,11 +5,13 @@ export const FOOD_IMAGES: Record<string, any> = {
   moshur: require("../../assets/images/moshur.jpg"),
   moshur_dal: require("../../assets/images/moshur.jpg"),
   masoor: require("../../assets/images/moshur.jpg"),
-  palong: require("../../assets/images/palong_shak.jpg"),
-  palong_shak: require("../../assets/images/palong_shak.jpg"),
-  shak: require("../../assets/images/palong_shak.jpg"),
+  palong: require("../../assets/images/palong.jpg"),
+  palong_shak: require("../../assets/images/palong.jpg"),
+  shak: require("../../assets/images/palong.jpg"),
   dalim: require("../../assets/images/dalim.jpg"),
   pomegranate: require("../../assets/images/dalim.jpg"),
+  rice_roti: require("../../assets/images/rice_roti.png"),
+  water: require("../../assets/images/water_glass.png"),
   blood_pressure: require("../../assets/images/Manual_Blood_Pressure.jpg")
 };
 
@@ -37,8 +39,29 @@ export function getFoodImage(nameBn: string, nameEn: string): any | null {
   ) {
     return FOOD_IMAGES.palong;
   }
-  if (lowerBn.includes("ডালিম") || lowerEn.includes("pomegranate")) {
+  if (
+    lowerBn.includes("ডালিম") ||
+    lowerBn.includes("ফল") ||
+    lowerEn.includes("pomegranate") ||
+    lowerEn.includes("fruit")
+  ) {
     return FOOD_IMAGES.dalim;
+  }
+  if (
+    lowerBn.includes("ভাত") ||
+    lowerBn.includes("রুটি") ||
+    lowerEn.includes("rice") ||
+    lowerEn.includes("roti") ||
+    lowerEn.includes("bread")
+  ) {
+    return FOOD_IMAGES.rice_roti;
+  }
+  if (
+    lowerBn.includes("পানি") ||
+    lowerBn.includes("জল") ||
+    lowerEn.includes("water")
+  ) {
+    return FOOD_IMAGES.water;
   }
 
   return null;

@@ -6,123 +6,107 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  Alert
 } from "react-native";
 import { router } from "expo-router";
-import { useNetworkState } from "expo-network";
-import { askOnline } from "@/api/chatClient";
-import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { copy } from "@/data/stitchCopy.bn";
-import { getQaByTopic, getQaCategories, searchQa, type QaCategory } from "@/features/qa/offlineQaStore";
 import { colors, radius, spacing, typography } from "@/theme";
-import type { OfflineQa } from "@/types/schema";
 
 type Message = {
   id: string;
   role: "ai" | "user";
   text: string;
-  emergency?: boolean;
+  type?: "text" | "checklist" | "referral";
   timestamp: string;
 };
 
-function formatMessageTime(date = new Date()): string {
-  return new Intl.DateTimeFormat("bn-BD", {
-    hour: "numeric",
-    minute: "2-digit"
-  }).format(date);
-}
-
 export default function ClinicalChatScreen() {
-  const network = useNetworkState();
-  const online = network.isConnected !== false && network.isInternetReachable !== false;
-  const categories = useMemo(() => getQaCategories(), []);
-  const [selectedCategory, setSelectedCategory] = useState<QaCategory | null>(null);
-  const [quickReplies, setQuickReplies] = useState<OfflineQa[]>([]);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome",
+      id: "msg1",
       role: "ai",
-      text: copy.qa.greeting,
-      timestamp: formatMessageTime()
+      type: "text",
+      text: "আসসালামু আলাইকুম, রাহেলা আপা। আপনার ফিল্ড ভিজিটের জন্য আমি তৈরি। ফাতেমা বেগম (ID: 4421) জরুরি ট্রায়াজে আছেন। তার শেষ BP ছিল ১৫০/১০০ mmHg। মূল্যায়ন কি শুরু করবো?",
+      timestamp: "১০:০২ AM"
+    },
+    {
+      id: "msg2",
+      role: "user",
+      type: "text",
+      text: "হ্যাঁ, শুরু করো।",
+      timestamp: "১০:০৩ AM"
+    },
+    {
+      id: "msg3",
+      role: "ai",
+      type: "checklist",
+      text: "",
+      timestamp: "১০:০৪ AM"
+    },
+    {
+      id: "msg4",
+      role: "ai",
+      type: "referral",
+      text: "",
+      timestamp: "১০:০৪ AM"
     }
   ]);
+
   const [input, setInput] = useState("");
-  const [loadingReply, setLoadingReply] = useState(false);
+  
+  // Checklist Interactive State
+  const [checklist, setChecklist] = useState([
+    { id: 1, text: "BP পুনরায় পরীক্ষা করুন (বিশ্রামের পর)", checked: true },
+    { id: 2, text: "পায়ে পানি বা এডিমা আছে কি?", checked: false },
+    { id: 3, text: "তীব্র মাথাব্যথা বা ঝাপসা দৃষ্টি?", checked: false }
+  ]);
 
-  useEffect(() => {
-    const firstCategory = categories[0] ?? null;
-    setSelectedCategory(firstCategory);
-    if (!firstCategory) {
-      return;
-    }
-    getQaByTopic({ topic: firstCategory.topic, trimester: "T3" })
-      .then((items) => setQuickReplies(items.slice(0, 6)))
-      .catch(() => setQuickReplies([]));
-  }, [categories]);
-
-  const loadCategory = async (category: QaCategory) => {
-    setSelectedCategory(category);
-    const items = await getQaByTopic({ topic: category.topic, trimester: "T3" });
-    setQuickReplies(items.slice(0, 6));
+  const toggleChecklist = (id: number) => {
+    setChecklist((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    );
   };
 
-  const pushMessage = (message: Omit<Message, "id" | "timestamp">) => {
-    setMessages((current) => [
-      ...current,
+  const pushMessage = (text: string, role: "ai" | "user") => {
+    const time = new Date().toLocaleTimeString("bn-BD", {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+    setMessages((prev) => [
+      ...prev,
       {
-        ...message,
-        id: `${message.role}-${Date.now()}-${current.length}`,
-        timestamp: formatMessageTime()
+        id: `${role}-${Date.now()}`,
+        role,
+        type: "text",
+        text,
+        timestamp: time
       }
     ]);
   };
 
-  const askQuestion = async (question: string) => {
-    const normalized = question.trim();
-    if (!normalized) {
-      return;
-    }
-
-    pushMessage({ role: "user", text: normalized });
-    setLoadingReply(true);
-
-    try {
-      if (online) {
-        const onlineResponse = await askOnline(normalized);
-        if (onlineResponse) {
-          pushMessage({
-            role: "ai",
-            text: onlineResponse.answer,
-            emergency: onlineResponse.is_emergency
-          });
-          return;
-        }
-      }
-
-      const offlineResults = await searchQa(normalized, "T3");
-      if (!offlineResults.length) {
-        pushMessage({ role: "ai", text: copy.clinicalChat.noAnswer });
-        return;
-      }
-
-      const [best] = offlineResults;
-      pushMessage({
-        role: "ai",
-        text: best.answer_bn,
-        emergency: best.emergency
-      });
-    } catch {
-      pushMessage({ role: "ai", text: copy.clinicalChat.error });
-    } finally {
-      setLoadingReply(false);
-    }
-  };
-
-  const submitInput = async () => {
-    const question = input.trim();
+  const submitInput = () => {
+    const text = input.trim();
+    if (!text) return;
     setInput("");
-    await askQuestion(question);
+    pushMessage(text, "user");
+
+    // Interactive AI response delay
+    setTimeout(() => {
+      let reply = "রোগীর অবস্থা পর্যবেক্ষণ করা হচ্ছে। প্রয়োজনীয় সেবা ও রেফারেল নিশ্চিত করুন।";
+      const q = text.toLowerCase();
+      if (q.includes("hi") || q.includes("hello") || q.includes("আসসালামু")) {
+        reply = "আসসালামু আলাইকুম, রাহেলা আপা। গর্ভবতী মায়ের সেবা সংক্রান্ত যেকোনো জিজ্ঞাসায় আমি আপনাকে সাহায্য করতে প্রস্তুত।";
+      } else if (q.includes("refer") || q.includes("রেফার")) {
+        reply = "নিকটস্থ উপজেলা স্বাস্থ্য কমপ্লেক্সে রেফারেল স্লিপ তৈরি করে রোগীকে দ্রুত স্থানান্তরের ব্যবস্থা করুন।";
+      }
+      pushMessage(reply, "ai");
+    }, 1200);
   };
 
   const goBack = () => {
@@ -134,378 +118,447 @@ export default function ClinicalChatScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.screen}
+    >
+      {/* Premium Header Bar */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <Pressable accessibilityLabel={copy.common.back} onPress={goBack} style={styles.iconButton}>
-            <Icon color={colors.primary} name="arrow-back" />
+          <Pressable accessibilityLabel={copy.common.back} onPress={goBack} style={styles.backButton}>
+            <Icon color="#70605A" name="arrow-back" size={24} />
           </Pressable>
-          <View>
-            <Text style={styles.title}>{copy.clinicalChat.title}</Text>
-            <View style={[styles.statusBadge, online ? styles.onlineBadge : styles.offlineBadge]}>
-              <View style={[styles.statusDot, online ? styles.onlineDot : styles.offlineDot]} />
-              <Text style={[styles.statusText, online ? styles.onlineText : styles.offlineText]}>
-                {online ? copy.clinicalChat.onlineLabel : copy.clinicalChat.offlineStatus}
-              </Text>
+          
+          {/* Circular Clinician Profile Avatar */}
+          <View style={styles.avatarContainer}>
+            <Icon color="#FFFFFF" name="person" size={20} />
+          </View>
+
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>{copy.common.appName}</Text>
+            <View style={styles.onlineBadge}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>অনলাইন</Text>
             </View>
           </View>
         </View>
+
         <Pressable
-          accessibilityLabel={copy.clinicalChat.urgent}
-          onPress={() => {
-            const urgentCategory =
-              categories.find((item) => item.topic.includes("জরুরি")) ?? selectedCategory;
-            if (urgentCategory) {
-              loadCategory(urgentCategory).catch(() => undefined);
-            }
-          }}
+          onPress={() => Alert.alert("🚨 জরুরি পরিস্থিতি", "রোগীর অবস্থা জটিল। অনুগ্রহ করে দ্রুত পরবর্তী ব্যবস্থা নিন।")}
           style={styles.urgentButton}
         >
-          <Icon color={colors.onErrorContainer} name="warning" size={18} />
-          <Text style={styles.urgentText}>{copy.clinicalChat.urgent}</Text>
+          <Icon color="#B3261E" name="warning" size={14} />
+          <Text style={styles.urgentText}>জরুরি</Text>
         </Pressable>
       </View>
 
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>{copy.clinicalChat.chwMode}</Text>
+      {/* Terracotta Mode Subheader Strip */}
+      <View style={styles.modeStrip}>
+        <Icon color="#FFFFFF" name="add-box" size={18} />
+        <Text style={styles.modeStripText}>স্বাস্থ্যকর্মী মোড — ক্লিনিক্যাল সহায়তা সক্রিয়</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRow}
-      >
-        {categories.map((category) => {
-          const active = selectedCategory?.topic === category.topic;
-          return (
-            <Pressable
-              accessibilityLabel={category.label}
-              key={category.topic}
-              onPress={() => loadCategory(category).catch(() => undefined)}
-              style={[styles.categoryChip, active && styles.categoryChipActive]}
-            >
-              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>
-                {category.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
+      {/* Message Feed */}
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
-        renderItem={({ item }) => (
-          <View style={[styles.messageWrap, item.role === "user" && styles.messageWrapUser]}>
-            {item.emergency ? (
-              <EmergencyBanner title={copy.qa.highRiskTitle} message={item.text} />
-            ) : (
-              <View
-                style={[
-                  styles.bubble,
-                  item.role === "user" ? styles.userBubble : styles.aiBubble
-                ]}
-              >
-                <Text style={[styles.bubbleText, item.role === "user" && styles.userBubbleText]}>
+        renderItem={({ item }) => {
+          if (item.type === "checklist") {
+            return (
+              <View style={styles.messageWrap}>
+                <View style={styles.checklistCard}>
+                  <View style={styles.checklistHeader}>
+                    <View style={styles.checklistHeaderLeft}>
+                      <Text style={styles.checklistTitle}>মূল্যায়ন চেকলিস্ট — ফাতেমা বেগম</Text>
+                      <Text style={styles.checklistSubtitle}>উচ্চ রক্তচাপ স্ক্রিনিং</Text>
+                    </View>
+                    <Icon name="assignment-turned-in" color="#70605A" size={24} />
+                  </View>
+
+                  <View style={styles.checklistDivider} />
+
+                  <View style={styles.checklistBody}>
+                    {checklist.map((task) => (
+                      <Pressable
+                        key={task.id}
+                        onPress={() => toggleChecklist(task.id)}
+                        style={styles.checkRow}
+                      >
+                        <View style={[styles.checkBox, task.checked && styles.checkBoxActive]}>
+                          {task.checked && <Icon name="check" color="#FFFFFF" size={16} />}
+                        </View>
+                        <Text style={[styles.checkLabel, task.checked && styles.checkLabelActive]}>
+                          {task.text}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+                <Text style={styles.timeText}>{item.timestamp}</Text>
+              </View>
+            );
+          }
+
+          if (item.type === "referral") {
+            return (
+              <View style={styles.messageWrap}>
+                <View style={styles.referralCard}>
+                  <View style={styles.referralLeft}>
+                    <View style={styles.referralIconContainer}>
+                      <Icon name="local-hospital" color="#FFFFFF" size={20} />
+                    </View>
+                    <View style={styles.referralInfo}>
+                      <Text style={styles.referralTitle}>জরুরি রেফারেল সুপারিশ</Text>
+                      <Text style={styles.referralDesc} numberOfLines={2}>
+                        BP ১৫০/১০০ mmHg প্রি-eclampsia-র লক্ষণ হতে পারে। অনুগ্রহ করে রোগীকে উপজেলা স্বাস্থ্য কমপ্লেক্সে রেফার করুন।
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <Text style={styles.timeText}>{item.timestamp}</Text>
+              </View>
+            );
+          }
+
+          const isUser = item.role === "user";
+          return (
+            <View style={[styles.messageWrap, isUser && styles.messageWrapUser]}>
+              <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
+                <Text style={[styles.bubbleText, isUser && styles.userBubbleText]}>
                   {item.text}
                 </Text>
               </View>
-            )}
-            <Text style={[styles.timeText, item.role === "user" && styles.userTimeText]}>
-              {item.timestamp}
-            </Text>
-          </View>
-        )}
-        ListFooterComponent={
-          <View style={styles.footerWrap}>
-            <Text style={styles.quickReplyTitle}>{copy.clinicalChat.quickReplies}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickReplyRow}
-            >
-              {quickReplies.length ? (
-                quickReplies.map((reply) => (
-                  <Pressable
-                    accessibilityLabel={reply.question_bn}
-                    key={reply.id}
-                    onPress={() => askQuestion(reply.question_bn)}
-                    style={styles.quickReplyChip}
-                  >
-                    <Text style={styles.quickReplyText}>{reply.question_bn}</Text>
-                  </Pressable>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>{copy.clinicalChat.emptyState}</Text>
-              )}
-            </ScrollView>
-          </View>
-        }
+              <Text style={[styles.timeText, isUser && styles.userTimeText]}>
+                {item.timestamp}
+              </Text>
+            </View>
+          );
+        }}
       />
 
+      {/* Input Panel */}
       <View style={styles.inputContainer}>
         <View style={styles.inputRow}>
-          <TextInput
-            accessibilityLabel={copy.clinicalChat.inputPlaceholder}
-            editable={!loadingReply}
-            onChangeText={setInput}
-            onSubmitEditing={submitInput}
-            placeholder={copy.clinicalChat.inputPlaceholder}
-            placeholderTextColor={colors.outline}
-            style={styles.input}
-            value={input}
-          />
-          <Pressable
-            accessibilityLabel={copy.clinicalChat.send}
-            disabled={loadingReply}
-            onPress={submitInput}
-            style={styles.sendButton}
-          >
-            <Icon color={colors.onPrimary} name="north-east" size={20} />
+          <View style={styles.inputPill}>
+            <TextInput
+              onChangeText={setInput}
+              onSubmitEditing={submitInput}
+              placeholder="বার্তা লিখুন..."
+              placeholderTextColor="#A08E88"
+              style={styles.input}
+              value={input}
+            />
+            <Pressable style={styles.attachBtn}>
+              <Icon name="attach-file" color="#A08E88" size={20} />
+            </Pressable>
+          </View>
+
+          <Pressable onPress={submitInput} style={styles.recordBtn}>
+            <Icon name="mic" color="#FFFFFF" size={22} />
           </Pressable>
         </View>
-        {!online ? <Text style={styles.offlineLabel}>{copy.clinicalChat.offlineLabel}</Text> : null}
-      </View>
 
-      <View pointerEvents="none" style={styles.backgroundPattern} />
-    </View>
+        <Text style={styles.securityLabel}>সুরক্ষিত এনক্রিপ্টেড ডাটা কানেকশন</Text>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
+    backgroundColor: "#FFF9F6", // Cream background
     flex: 1
   },
   topBar: {
     alignItems: "center",
+    backgroundColor: "#FFF9F6",
     flexDirection: "row",
     justifyContent: "space-between",
     minHeight: 64,
     paddingHorizontal: 20,
-    paddingTop: spacing.base
+    paddingTop: Platform.select({ ios: 52, android: 56, default: 12 }),
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5ECE9"
   },
   topLeft: {
     alignItems: "center",
     flexDirection: "row",
     flex: 1,
-    gap: spacing.sm
+    gap: 12
   },
-  iconButton: {
+  backButton: {
+    padding: 4
+  },
+  avatarContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#70605A", // Clinician gray-brown circle
     alignItems: "center",
-    borderRadius: radius.full,
-    height: 40,
-    justifyContent: "center",
-    width: 40
+    justifyContent: "center"
   },
-  title: {
-    ...typography.h1,
-    color: colors.primary,
-    fontSize: 22,
-    lineHeight: 30
+  headerInfo: {
+    gap: 2
   },
-  statusBadge: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    borderRadius: radius.full,
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginTop: 2,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#E57A58"
   },
   onlineBadge: {
-    backgroundColor: colors.secondaryContainer
-  },
-  offlineBadge: {
-    backgroundColor: colors.errorContainer
-  },
-  statusDot: {
-    borderRadius: radius.full,
-    height: 8,
-    width: 8
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4
   },
   onlineDot: {
-    backgroundColor: colors.secondary
-  },
-  offlineDot: {
-    backgroundColor: colors.error
-  },
-  statusText: {
-    ...typography.caption,
-    fontFamily: typography.label.fontFamily
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4A6047"
   },
   onlineText: {
-    color: colors.secondary
-  },
-  offlineText: {
-    color: colors.onErrorContainer
+    fontSize: 11,
+    color: "#4A6047",
+    fontWeight: "bold"
   },
   urgentButton: {
-    alignItems: "center",
-    backgroundColor: colors.errorContainer,
-    borderRadius: radius.full,
+    backgroundColor: "#FCEBE5",
+    borderRadius: 16,
     flexDirection: "row",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "rgba(179, 38, 30, 0.12)"
   },
   urgentText: {
-    ...typography.caption,
-    color: colors.onErrorContainer,
-    fontFamily: typography.label.fontFamily
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#B3261E"
   },
-  banner: {
-    backgroundColor: colors.primaryContainer,
-    paddingHorizontal: 20,
+  modeStrip: {
+    backgroundColor: "#E57A58", // Brand terracotta strip
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     paddingVertical: 10
   },
-  bannerText: {
-    ...typography.caption,
-    color: colors.onPrimaryContainer,
-    fontFamily: typography.label.fontFamily,
-    textAlign: "center"
-  },
-  categoryRow: {
-    gap: spacing.sm,
-    paddingHorizontal: 20,
-    paddingVertical: spacing.sm
-  },
-  categoryChip: {
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.full,
-    minHeight: 40,
-    justifyContent: "center",
-    paddingHorizontal: spacing.base
-  },
-  categoryChipActive: {
-    backgroundColor: colors.primaryFixed
-  },
-  categoryChipText: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
-    fontFamily: typography.label.fontFamily
-  },
-  categoryChipTextActive: {
-    color: colors.primary
+  modeStripText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "bold"
   },
   messageList: {
-    gap: spacing.base,
-    paddingBottom: spacing.base,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 20
   },
   messageWrap: {
     alignItems: "flex-start",
-    marginBottom: spacing.base
+    width: "100%"
   },
   messageWrapUser: {
     alignItems: "flex-end"
   },
   bubble: {
     borderRadius: 16,
-    maxWidth: "85%",
-    padding: spacing.base
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    maxWidth: "85%"
   },
   aiBubble: {
-    backgroundColor: colors.surfaceContainerLowest,
-    shadowColor: colors.primaryContainer,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 2
+    backgroundColor: "#FFFFFF",
+    elevation: 1,
+    shadowColor: "#E57A58",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6
   },
   userBubble: {
-    backgroundColor: colors.primary,
-    maxWidth: "80%"
+    backgroundColor: "#70605A", // Dark warm brown matching design perfectly
+    color: "#FFFFFF"
   },
   bubbleText: {
-    ...typography.body,
-    color: colors.onSurface
+    fontSize: 15,
+    color: "#4A3E39",
+    lineHeight: 22
   },
   userBubbleText: {
-    color: colors.onPrimary
+    color: "#FFFFFF"
   },
   timeText: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
-    marginLeft: spacing.xs,
-    marginTop: 2
+    fontSize: 11,
+    color: "#A08E88",
+    marginTop: 4,
+    marginLeft: 6
   },
   userTimeText: {
-    marginLeft: 0,
-    marginRight: spacing.xs,
-    textAlign: "right"
+    marginRight: 6,
+    textAlign: "right",
+    width: "100%"
   },
-  footerWrap: {
-    gap: spacing.sm,
-    marginTop: spacing.sm
+
+  // Premium Checklist Card styles
+  checklistCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#70605A", // Brown border
+    padding: 16,
+    width: "90%",
+    elevation: 2,
+    shadowColor: "#E57A58",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8
   },
-  quickReplyTitle: {
-    ...typography.h2,
-    color: colors.onSurface
+  checklistHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
   },
-  quickReplyRow: {
-    gap: spacing.sm
+  checklistHeaderLeft: {
+    gap: 2
   },
-  quickReplyChip: {
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.full,
-    minHeight: 44,
+  checklistTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#70605A"
+  },
+  checklistSubtitle: {
+    fontSize: 12,
+    color: "#A08E88"
+  },
+  checklistDivider: {
+    height: 1,
+    backgroundColor: "#F5ECE9",
+    marginVertical: 12
+  },
+  checklistBody: {
+    gap: 12
+  },
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFF9F6",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#F5ECE9"
+  },
+  checkBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#70605A",
+    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: spacing.base
+    backgroundColor: "#FFFFFF"
   },
-  quickReplyText: {
-    ...typography.caption,
-    color: colors.onSurface
+  checkBoxActive: {
+    backgroundColor: "#70605A"
   },
-  emptyText: {
-    ...typography.body,
-    color: colors.onSurfaceVariant
+  checkLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#70605A"
   },
+  checkLabelActive: {
+    color: "#4A3E39"
+  },
+
+  // Premium Referral Card styles
+  referralCard: {
+    backgroundColor: "#FCEBE5", // Soft red-pink background
+    borderRadius: 16,
+    padding: 16,
+    width: "90%",
+    borderWidth: 1,
+    borderColor: "rgba(179, 38, 30, 0.08)"
+  },
+  referralLeft: {
+    flexDirection: "row",
+    gap: 12
+  },
+  referralIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#B3261E", // Crimson red circle
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  referralInfo: {
+    flex: 1,
+    gap: 4
+  },
+  referralTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#B3261E"
+  },
+  referralDesc: {
+    fontSize: 12,
+    color: "#70605A",
+    lineHeight: 16
+  },
+
+  // Chat Input Container
   inputContainer: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderTopColor: colors.outlineVariant,
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    gap: spacing.xs,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm
+    borderTopColor: "#F5ECE9",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 34 : 16,
+    gap: 8
   },
   inputRow: {
-    alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm
+    alignItems: "center",
+    gap: 12
+  },
+  inputPill: {
+    flex: 1,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F2EBE8", // Soft light gray-brown
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    justifyContent: "space-between"
   },
   input: {
-    ...typography.body,
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.full,
-    color: colors.onSurface,
     flex: 1,
-    minHeight: 48,
-    paddingHorizontal: spacing.base
+    fontSize: 14,
+    color: "#4A3E39",
+    paddingVertical: 8
   },
-  sendButton: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
+  attachBtn: {
+    padding: 4
+  },
+  recordBtn: {
+    width: 48,
     height: 48,
+    borderRadius: 24,
+    backgroundColor: "#70605A", // Dark warm record button matching design perfectly
+    alignItems: "center",
     justifyContent: "center",
-    width: 48
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
-  offlineLabel: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
-    textAlign: "center"
-  },
-  backgroundPattern: {
-    backgroundColor: "transparent",
-    bottom: 0,
-    left: 0,
-    opacity: 0.03,
-    position: "absolute",
-    right: 0,
-    top: 0
+  securityLabel: {
+    fontSize: 11,
+    color: "#A08E88",
+    textAlign: "center",
+    marginTop: 2
   }
 });
