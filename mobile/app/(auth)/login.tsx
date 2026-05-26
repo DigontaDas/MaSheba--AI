@@ -22,6 +22,7 @@ import { upsertPatients } from "@/db/patients";
 import { getDB } from "@/db/database";
 import type { Patient } from "@/types/schema";
 import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 
 type LoadingAction = "login" | "demo-chw" | "demo-mother";
@@ -31,15 +32,16 @@ type DemoCredential = {
   password: string;
 };
 
+// Hardcode real seeded demo credentials as fallback so demo auto-login always
+// works even if the EXPO_PUBLIC_* env vars are not loaded in Expo Go.
+const DEMO_MOTHER_EMAIL = process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL || "mother-rahima@maasheba.local";
+const DEMO_MOTHER_PASSWORD = process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD || "Mother_B_demo_password";
+const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-live-a@maasheba.local";
+const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_demo_password";
+
 const demoCredentials: Record<UserRole, DemoCredential> = {
-  CHW: {
-    email: process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL ?? "",
-    password: process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD ?? ""
-  },
-  MOTHER: {
-    email: process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL ?? "",
-    password: process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD ?? ""
-  }
+  CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
+  MOTHER: { email: DEMO_MOTHER_EMAIL, password: DEMO_MOTHER_PASSWORD }
 };
 
 async function seedLocalChwDemoData() {
@@ -158,7 +160,7 @@ const translations = {
 };
 
 export default function LoginScreen() {
-  const [lang, setLang] = useState<"bn" | "en">("bn");
+  const { language: lang, setLanguage } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [modalRole, setModalRole] = useState<UserRole | null>(null);
   const [modalMode, setModalMode] = useState<"login" | "signup">("login");
@@ -219,7 +221,8 @@ export default function LoginScreen() {
           setModalVisible(false);
           router.replace("/(tabs)/home");
         } catch (bootstrapError) {
-          console.warn("Supabase bootstrap failed, falling back to local offline DB seed:", bootstrapError);
+          // For CHW, fall back gracefully to local offline demo mode
+          console.warn("Supabase CHW bootstrap failed, falling back to offline demo:", bootstrapError);
           await seedLocalChwDemoData();
           setModalVisible(false);
           router.replace("/(tabs)/home");
@@ -227,18 +230,16 @@ export default function LoginScreen() {
         return;
       }
 
-      try {
-        await loginMother(nextEmail.trim(), nextPassword);
-        setModalVisible(false);
-        router.replace("/(mother-tabs)/home");
-      } catch (motherError) {
-        console.warn("Supabase mother login failed, falling back to local offline session:", motherError);
-        await seedLocalMotherDemoData();
-        setModalVisible(false);
-        router.replace("/(mother-tabs)/home");
-      }
+      // For Mother: DO NOT fall back to fake local session.
+      // The CHW chat REQUIRES a real Supabase auth session + mother profile.
+      // Show the real error to the user so they can retry with correct credentials.
+      await loginMother(nextEmail.trim(), nextPassword);
+      setModalVisible(false);
+      router.replace("/(mother-tabs)/home");
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "লগইন ব্যর্থ হয়েছে");
+      const msg = loginError instanceof Error ? loginError.message : "লগইন ব্যর্থ হয়েছে";
+      console.error("Login error:", msg);
+      setError(msg);
     } finally {
       setLoadingAction(null);
     }
@@ -256,7 +257,10 @@ export default function LoginScreen() {
   const handleDemoAutoLogin = () => {
     if (!modalRole) return;
     const creds = demoCredentials[modalRole];
-    submitLogin(modalRole, creds.email, creds.password, "login");
+    // Also pre-fill the fields so user can see what credentials are being used
+    setEmail(creds.email);
+    setPassword(creds.password);
+    submitLogin(modalRole, creds.email, creds.password, modalRole === "CHW" ? "demo-chw" : "demo-mother");
   };
 
   return (
@@ -293,13 +297,13 @@ export default function LoginScreen() {
           <View style={styles.langSwitcherWrap}>
             <View style={styles.langSwitcher}>
               <Pressable
-                onPress={() => setLang("bn")}
+                onPress={() => void setLanguage("bn")}
                 style={[styles.langBtn, lang === "bn" && styles.langBtnActive]}
               >
                 <Text style={[styles.langBtnText, lang === "bn" && styles.langBtnTextActive]}>বাংলা</Text>
               </Pressable>
               <Pressable
-                onPress={() => setLang("en")}
+                onPress={() => void setLanguage("en")}
                 style={[styles.langBtn, lang === "en" && styles.langBtnActive]}
               >
                 <Text style={[styles.langBtnText, lang === "en" && styles.langBtnTextActive]}>English</Text>
@@ -310,6 +314,7 @@ export default function LoginScreen() {
           <View style={styles.actionsWrap}>
             {/* Continue as Mother Button - Opens pop up */}
             <Pressable
+              accessibilityLabel="মা হিসেবে চালিয়ে যান"
               onPress={openMotherModal}
               style={({ pressed }) => [
                 styles.motherButton,
@@ -321,6 +326,7 @@ export default function LoginScreen() {
 
             {/* Continue as Health Worker Button - Opens pop up */}
             <Pressable
+              accessibilityLabel="স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"
               onPress={openChwModal}
               style={({ pressed }) => [
                 styles.chwButton,
@@ -432,6 +438,7 @@ export default function LoginScreen() {
 
               {/* Email Address */}
               <TextInput
+                accessibilityLabel="ইমেইল"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 onChangeText={setEmail}
@@ -443,6 +450,7 @@ export default function LoginScreen() {
 
               {/* Password */}
               <TextInput
+                accessibilityLabel="পাসওয়ার্ড"
                 onChangeText={setPassword}
                 placeholder={t.passwordPlaceholder}
                 placeholderTextColor="#A0A0A0"
@@ -455,6 +463,7 @@ export default function LoginScreen() {
 
               {/* Modal Primary Action Submit Button */}
               <Pressable
+                accessibilityLabel="লগইন করুন"
                 disabled={loading}
                 onPress={handleModalSubmit}
                 style={({ pressed }) => [

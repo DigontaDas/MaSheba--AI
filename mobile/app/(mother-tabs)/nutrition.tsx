@@ -13,8 +13,11 @@ import { getFoodImage } from "@/data/foodImageMap";
 import {
   getFoodsByCategory,
   getMonthlyPlan,
+  prioritizeFoodsByRisk,
+  RISK_NUTRITION_OVERLAY,
   SUPPLEMENT_GUIDANCE,
   type MonthlyPlan,
+  type NutritionRiskLevel,
   type NutritionFood
 } from "@/data/nutritionData";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -60,6 +63,7 @@ export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("সব");
   const [gestationalWeek, setGestationalWeek] = useState(32); // Default to 32 (Month 8) matching mockup
   const [waterGlasses, setWaterGlasses] = useState(0); // Starts at 0 matching request
+  const [riskLevel, setRiskLevel] = useState<NutritionRiskLevel>("LOW");
 
   useEffect(() => {
     const loadWaterData = async () => {
@@ -87,6 +91,16 @@ export default function NutritionScreen() {
         if (profile?.gestationalAgeWeeks) {
           setGestationalWeek(profile.gestationalAgeWeeks);
         }
+        if (profile?.patientId) {
+          void (async () => {
+            const { data } = await supabase
+              .from("patients")
+              .select("last_risk_level")
+              .eq("id", profile.patientId)
+              .maybeSingle<{ last_risk_level: NutritionRiskLevel }>();
+            if (data?.last_risk_level) setRiskLevel(data.last_risk_level);
+          })().catch(() => undefined);
+        }
       })
       .catch(() => undefined);
   }, []);
@@ -110,12 +124,10 @@ export default function NutritionScreen() {
     if (!plan) {
       return [];
     }
-    return getFoodsByCategory(plan, activeTab).filter(
-      (food) =>
-        !food.name_bn.includes("পানি") &&
-        !food.name_en.toLowerCase().includes("water")
-    );
-  }, [activeTab, plan]);
+    const filtered = getFoodsByCategory(plan, activeTab);
+    return prioritizeFoodsByRisk(filtered, riskLevel);
+  }, [activeTab, plan, riskLevel]);
+  const riskOverlay = RISK_NUTRITION_OVERLAY[riskLevel];
 
   const handleLogout = async () => {
     try {
@@ -218,6 +230,27 @@ export default function NutritionScreen() {
       {plan && activeTab === "সব" ? (
         <View style={styles.summaryCard}>
           <Text style={styles.summaryText}>{plan.app_display_summary_bn}</Text>
+        </View>
+      ) : null}
+
+      {riskLevel !== "LOW" && riskOverlay.alert_bn ? (
+        <View style={[styles.riskAlert, riskLevel === "HIGH" ? styles.riskHigh : styles.riskModerate]}>
+          <View style={styles.riskHeader}>
+            <Icon name="warning" color={riskLevel === "HIGH" ? "#B3261E" : "#8A5A00"} size={20} />
+            <Text style={styles.riskTitle}>{riskOverlay.title_bn}</Text>
+          </View>
+          <Text style={styles.riskBody}>{riskOverlay.alert_bn}</Text>
+          {riskOverlay.extra_foods_bn.map((food) => (
+            <Text key={food} style={styles.riskFoodItem}>✓ {food}</Text>
+          ))}
+          {riskOverlay.avoid_bn.length ? (
+            <View style={styles.avoidBlock}>
+              <Text style={styles.avoidTitle}>এড়িয়ে চলুন:</Text>
+              {riskOverlay.avoid_bn.map((item) => (
+                <Text key={item} style={styles.avoidItem}>× {item}</Text>
+              ))}
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -491,5 +524,51 @@ const styles = StyleSheet.create({
   cautionText: {
     ...typography.caption,
     color: colors.onErrorContainer
+  },
+  riskAlert: {
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.cardPadding
+  },
+  riskHigh: {
+    backgroundColor: "#FCEBE5",
+    borderColor: "#F2B8B5"
+  },
+  riskModerate: {
+    backgroundColor: "#FFF4D6",
+    borderColor: "#E8D18A"
+  },
+  riskHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.xs
+  },
+  riskTitle: {
+    ...typography.label,
+    color: "#4A3E39",
+    flex: 1,
+    fontFamily: typography.h2.fontFamily
+  },
+  riskBody: {
+    ...typography.body,
+    color: "#70605A"
+  },
+  riskFoodItem: {
+    ...typography.label,
+    color: "#4A6047"
+  },
+  avoidBlock: {
+    gap: 2,
+    marginTop: spacing.xs
+  },
+  avoidTitle: {
+    ...typography.label,
+    color: "#8A3A2A",
+    fontFamily: typography.h2.fontFamily
+  },
+  avoidItem: {
+    ...typography.caption,
+    color: "#8A3A2A"
   }
 });

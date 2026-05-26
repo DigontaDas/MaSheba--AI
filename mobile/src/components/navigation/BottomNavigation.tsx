@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 
 const iconByRoute: Record<string, IconName> = {
@@ -16,6 +17,7 @@ const iconByRoute: Record<string, IconName> = {
 };
 
 export function BottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { t } = useLanguage();
   const visibleRoutes = state.routes.filter((route) => {
     const options = descriptors[route.key]?.options as { href?: string | null } | undefined;
     return route.name !== "progress" && route.name !== "alerts" && options?.href !== null;
@@ -25,14 +27,8 @@ export function BottomNavigation({ state, descriptors, navigation }: BottomTabBa
     <View style={styles.wrap}>
       {visibleRoutes.map((route) => {
         const descriptor = descriptors[route.key];
-        const options = descriptor.options;
         const focused = state.routes[state.index]?.key === route.key;
-        const label =
-          typeof options.title === "string"
-            ? options.title
-            : typeof options.tabBarLabel === "string"
-              ? options.tabBarLabel
-              : route.name;
+        const label = t(`nav.${route.name}`);
 
         const onPress = () => {
           const event = navigation.emit({

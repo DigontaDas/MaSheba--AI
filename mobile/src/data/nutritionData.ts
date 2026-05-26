@@ -2149,6 +2149,10 @@ export function getFoodsByCategory(
     ওষুধ: [],
     বিশ্রাম: []
   };
+  categoryMap["à¦–à¦¾à¦¬à¦¾à¦°"] = categoryMap["খাবার"];
+  categoryMap["à¦ªà¦¾à¦¨à§€à¦¯à¦¼"] = categoryMap["পানীয়"];
+  categoryMap["à¦“à¦·à§à¦§"] = [];
+  categoryMap["à¦¬à¦¿à¦¶à§à¦°à¦¾à¦®"] = [];
 
   const nutrients = categoryMap[category] ?? [];
   if (nutrients.length === 0) {
@@ -2161,3 +2165,81 @@ export function getFoodsByCategory(
 export const GLOBAL_DAILY_RULES = NUTRITION_DATA.global_daily_rules;
 export const SUPPLEMENT_GUIDANCE = NUTRITION_DATA.supplement_guidance as SupplementGuidance[];
 export const SYMPTOM_GUIDANCE = NUTRITION_DATA.symptom_based_guidance as SymptomGuidance[];
+
+export type NutritionRiskLevel = "LOW" | "MODERATE" | "HIGH";
+
+export const RISK_NUTRITION_OVERLAY: Record<
+  NutritionRiskLevel,
+  {
+    title_bn: string;
+    title_en: string;
+    extra_foods_bn: string[];
+    extra_foods_en: string[];
+    avoid_bn: string[];
+    avoid_en: string[];
+    alert_bn: string | null;
+    alert_en: string | null;
+  }
+> = {
+  HIGH: {
+    title_bn: "উচ্চ ঝুঁকি: বিশেষ পুষ্টি পরামর্শ",
+    title_en: "High risk: special nutrition advice",
+    extra_foods_bn: [
+      "অতিরিক্ত প্রোটিন: ডিম, মাছ, ডাল প্রতিদিন",
+      "ক্যালসিয়াম সমৃদ্ধ খাবার: দুধ, দই, ছোট মাছ",
+      "লবণ কমান: উচ্চ রক্তচাপ নিয়ন্ত্রণে",
+      "প্রতিদিন আয়রন ট্যাবলেট অবশ্যই নিন"
+    ],
+    extra_foods_en: [
+      "Extra protein: egg, fish, and lentils daily",
+      "Calcium-rich foods: milk, yogurt, small fish",
+      "Reduce salt to help control high blood pressure",
+      "Take iron tablets every day as prescribed"
+    ],
+    avoid_bn: [
+      "অতিরিক্ত লবণ বা নোনতা খাবার এড়িয়ে চলুন",
+      "চা-কফি কমিয়ে দিন",
+      "ভাজাপোড়া খাবার এড়িয়ে চলুন"
+    ],
+    avoid_en: ["Avoid extra salt and salty snacks", "Reduce tea and coffee", "Avoid fried foods"],
+    alert_bn: "আপনার ঝুঁকির মাত্রা উচ্চ। পুষ্টি বিষয়ে বিশেষ যত্ন নিন এবং নিয়মিত স্বাস্থ্যকর্মীর সাথে যোগাযোগ রাখুন।",
+    alert_en: "Your risk level is high. Take extra care with nutrition and stay in regular contact with your health worker."
+  },
+  MODERATE: {
+    title_bn: "মধ্যম ঝুঁকি: পুষ্টি পরামর্শ",
+    title_en: "Moderate risk: nutrition advice",
+    extra_foods_bn: ["প্রতিদিন ১টি ডিম খান", "শাক-সবজি বেশি করে খান", "পর্যাপ্ত পানি পান করুন"],
+    extra_foods_en: ["Eat one egg daily", "Eat more leafy greens and vegetables", "Drink enough safe water"],
+    avoid_bn: ["অতিরিক্ত চিনি এড়িয়ে চলুন", "প্রক্রিয়াজাত খাবার কম খান"],
+    avoid_en: ["Avoid extra sugar", "Reduce processed foods"],
+    alert_bn: "আপনার ঝুঁকির মাত্রা মধ্যম। নিয়মিত পুষ্টিকর খাবার খান।",
+    alert_en: "Your risk level is moderate. Eat nutritious food regularly."
+  },
+  LOW: {
+    title_bn: "স্বাভাবিক: নিয়মিত পুষ্টি পরামর্শ",
+    title_en: "Normal: regular nutrition advice",
+    extra_foods_bn: [],
+    extra_foods_en: [],
+    avoid_bn: [],
+    avoid_en: [],
+    alert_bn: null,
+    alert_en: null
+  }
+};
+
+export function prioritizeFoodsByRisk(foods: NutritionFood[], riskLevel: NutritionRiskLevel): NutritionFood[] {
+  const priority =
+    riskLevel === "HIGH"
+      ? ["protein", "calcium", "iron"]
+      : riskLevel === "MODERATE"
+        ? ["iron", "folate", "protein"]
+        : [];
+
+  if (!priority.length) return foods;
+
+  return [...foods].sort((a, b) => {
+    const aIndex = Math.min(...a.nutrient_focus.map((nutrient) => priority.indexOf(nutrient)).filter((index) => index >= 0), 99);
+    const bIndex = Math.min(...b.nutrient_focus.map((nutrient) => priority.indexOf(nutrient)).filter((index) => index >= 0), 99);
+    return aIndex - bIndex;
+  });
+}

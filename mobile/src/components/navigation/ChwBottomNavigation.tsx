@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 
 const iconByRoute: Record<string, IconName> = {
@@ -20,6 +21,7 @@ const routeLabels: Record<string, string> = {
 };
 
 export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { t } = useLanguage();
   // Extract visible routes and insert the custom "medicine" tab in the 4th slot
   const nativeRoutes = state.routes.filter((r) => ["home", "chat", "patients", "medicine", "profile"].includes(r.name));
   
@@ -35,11 +37,9 @@ export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTa
   return (
     <View style={styles.wrap}>
       {items.map((route) => {
-        const descriptor = descriptors[route.key];
-        const options = descriptor?.options;
         const focused = state.routes[state.index]?.key === route.key;
         
-        const label = routeLabels[route.name] ?? route.name;
+        const label = t(`nav.${route.name}`);
 
         const onPress = () => {
           const event = navigation.emit({

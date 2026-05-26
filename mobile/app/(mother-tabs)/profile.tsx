@@ -6,6 +6,7 @@ import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearSession } from "@/auth/secureSession";
 import { clearRoleSession, getCurrentMotherProfile, type MotherProfile } from "@/auth/roleSession";
 import { supabase } from "@/auth/supabaseAuth";
+import { useLanguage } from "@/context/LanguageContext";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
@@ -13,6 +14,7 @@ import { callPhoneNumber } from "@/utils/phone";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<MotherProfile | null>(null);
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     getCurrentMotherProfile().then(setProfile).catch(() => undefined);
@@ -35,8 +37,8 @@ export default function ProfileScreen() {
     router.replace("/(mother-tabs)/home");
   };
 
-  const showLanguageAlert = () => {
-    Alert.alert("ভাষা পরিবর্তন", "বর্তমানে শুধু বাংলা ভাষা উপলব্ধ।", [{ text: "ঠিক আছে" }]);
+  const toggleLanguage = () => {
+    void setLanguage(language === "bn" ? "en" : "bn");
   };
 
   const showNotificationAlert = () => {
@@ -130,7 +132,7 @@ export default function ProfileScreen() {
       />
 
       <View style={styles.settings}>
-        <SettingsRow icon="translate" label={copy.profile.language} value={copy.profile.bangla} onPress={showLanguageAlert} />
+        <SettingsRow icon="translate" label={t("profile.language")} value={t("profile.languageValue")} onPress={toggleLanguage} />
         <SettingsRow icon="notifications" label={copy.profile.notifications} onPress={showNotificationAlert} />
         <SettingsRow icon="security" label={copy.profile.security} onPress={requestPasswordReset} />
         <SettingsRow icon="help" label={copy.profile.help} onPress={showSupportAlert} />

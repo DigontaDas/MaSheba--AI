@@ -5,6 +5,7 @@ import { Icon } from "@/components/ui/Icon";
 import { clearRoleSession } from "@/auth/roleSession";
 import { getSession, clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
+import { useLanguage } from "@/context/LanguageContext";
 import { copy } from "@/data/stitchCopy.bn";
 import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getPatients } from "@/db/patients";
@@ -17,6 +18,7 @@ type ChwProfileRow = {
 };
 
 export default function ChwProfileScreen() {
+  const { language, setLanguage, t } = useLanguage();
   const [name, setName] = useState<string>("রাহেলা বেগম");
   const [patientCount, setPatientCount] = useState(8);
   const [visitCount, setVisitCount] = useState(42);
@@ -73,6 +75,10 @@ export default function ChwProfileScreen() {
 
   const showInfo = (title: string, message: string) => {
     Alert.alert(title, message, [{ text: copy.common.close }]);
+  };
+
+  const toggleLanguage = () => {
+    void setLanguage(language === "bn" ? "en" : "bn");
   };
 
   const confirmLogout = () => {
@@ -190,15 +196,15 @@ export default function ChwProfileScreen() {
           <View style={styles.divider} />
 
           {/* Language Switch */}
-          <Pressable
-            onPress={() => showInfo("ভাষা পরিবর্তন", "বর্তমান ভাষা: বাংলা। ইংরেজি ভাষা সমর্থন শীঘ্রই যুক্ত হচ্ছে।")}
-            style={styles.actionRow}
-          >
+          <Pressable onPress={toggleLanguage} style={styles.actionRow}>
             <View style={styles.actionLeft}>
               <View style={styles.actionIconWrap}>
                 <Icon name="language" color="#70605A" size={18} />
               </View>
-              <Text style={styles.actionText}>ভাষা পরিবর্তন</Text>
+              <View>
+                <Text style={styles.actionText}>{t("profile.language")}</Text>
+                <Text style={styles.actionSubText}>{t("chw.profile.languageValue")}</Text>
+              </View>
             </View>
             <Icon name="chevron-right" color="#A08E88" size={18} />
           </Pressable>
@@ -449,6 +455,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#70605A"
+  },
+  actionSubText: {
+    color: "#A08E88",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2
   },
   textRed: {
     color: "#B3261E"

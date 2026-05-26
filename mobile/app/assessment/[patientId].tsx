@@ -27,11 +27,12 @@ export default function RiskAssessmentScreen() {
   const [loading, setLoading] = useState(true);
 
   // Vitals State - Editable directly inside cards!
-  const [bpSystolic, setBpSystolic] = useState("150");
-  const [bpDiastolic, setBpDiastolic] = useState("100");
-  const [weight, setWeight] = useState("62");
-  const [temp, setTemp] = useState("98.6");
-  const [fhr, setFhr] = useState("142");
+  const [bpSystolic, setBpSystolic] = useState("");
+  const [bpDiastolic, setBpDiastolic] = useState("");
+  const [weight, setWeight] = useState("");
+  const [hemoglobin, setHemoglobin] = useState("");
+  const [temp, setTemp] = useState("");
+  const [fhr, setFhr] = useState("");
 
   // Checklist State
   const [checks, setChecks] = useState([
@@ -55,7 +56,7 @@ export default function RiskAssessmentScreen() {
     }
     getPatient(patientId)
       .then((p) => {
-        let record = p;
+        let record: any = p;
         if (!record) {
           // Fallback mocks
           if (patientId.includes("moderate") || patientId.includes("asma") || patientId === "moderate-patient") {
@@ -72,7 +73,7 @@ export default function RiskAssessmentScreen() {
               name: "রহিমা খাতুন",
               gestational_age_weeks: 16,
               location: "চান্দিনা, কুমিল্লা",
-              last_risk_level: "NORMAL"
+              last_risk_level: "LOW"
             };
           } else {
             record = {
@@ -87,16 +88,11 @@ export default function RiskAssessmentScreen() {
 
         setPatient(record);
 
-        // Seed initial vitals dynamically based on patient category!
+        // Seed only checklist dynamically based on patient category!
         const isHighRisk = record.last_risk_level === "HIGH" || record.name?.includes("ফাতেমা");
         const isModRisk = record.last_risk_level === "MODERATE" || record.name?.includes("আসমা");
 
         if (isHighRisk) {
-          setBpSystolic("150");
-          setBpDiastolic("100");
-          setWeight("62");
-          setTemp("98.6");
-          setFhr("142");
           setChecks([
             { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
             { id: 2, text: "ওজন পরিমাপ", checked: true },
@@ -105,11 +101,6 @@ export default function RiskAssessmentScreen() {
             { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: false }
           ]);
         } else if (isModRisk) {
-          setBpSystolic("130");
-          setBpDiastolic("85");
-          setWeight("56");
-          setTemp("98.6");
-          setFhr("148");
           setChecks([
             { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
             { id: 2, text: "ওজন পরিমাপ", checked: true },
@@ -118,16 +109,11 @@ export default function RiskAssessmentScreen() {
             { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: true }
           ]);
         } else {
-          setBpSystolic("115");
-          setBpDiastolic("75");
-          setWeight("50");
-          setTemp("98.4");
-          setFhr("140");
           setChecks([
             { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
             { id: 2, text: "ওজন পরিমাপ", checked: true },
             { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", checked: true },
-            { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: true },
+            { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: false },
             { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: true }
           ]);
         }
@@ -153,7 +139,7 @@ export default function RiskAssessmentScreen() {
         bp_systolic: Number(bpSystolic),
         bp_diastolic: Number(bpDiastolic),
         weight_kg: Number(weight),
-        hemoglobin: 12.0,
+        hemoglobin: Number(hemoglobin),
         swelling_present: checks.find((c) => c.id === 4)?.checked ?? false,
         symptom_flags: {
           headache: checks.find((c) => c.id === 5)?.checked ?? false
@@ -170,17 +156,17 @@ export default function RiskAssessmentScreen() {
         deviceId,
         input: visitInput,
         prediction: {
-          risk_level: Number(bpSystolic) >= 140 ? "HIGH" : Number(bpSystolic) >= 125 ? "MODERATE" : "NORMAL",
+          risk_level: Number(bpSystolic) >= 140 ? "HIGH" : Number(bpSystolic) >= 125 ? "MODERATE" : "LOW",
           score: 0.85,
           reasons: ["রক্তচাপ ট্রায়াজ"]
         }
       });
 
       Alert.alert("💾 তথ্য সংরক্ষিত", "পরিদর্শন ও মূল্যায়ন বিবরণী সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।");
-      router.back();
+      router?.back?.();
     } catch (e) {
       Alert.alert("সফলতা", "পরিদর্শন বিবরণী অফলাইনে সংরক্ষিত হয়েছে!");
-      router.back();
+      router?.back?.();
     }
   };
 
@@ -206,6 +192,7 @@ export default function RiskAssessmentScreen() {
   const patientName = patient?.name ?? "ফাতেমা বেগম";
   const avatarInitial = patientName.trim().charAt(0);
   const gestationalAge = patient?.gestational_age_weeks ?? 32;
+  const canSave = Boolean(bpSystolic.trim() && bpDiastolic.trim() && weight.trim() && hemoglobin.trim());
 
   // Real-time risk detection based on vital entries
   const currentSystolic = Number(bpSystolic) || 0;
@@ -220,7 +207,7 @@ export default function RiskAssessmentScreen() {
   const riskBadgeBg = isHigh ? "#FCEBE5" : isModerate ? "#FFF5F2" : "#EBF5EB";
   const riskBadgeDot = isHigh ? "#B3261E" : isModerate ? "#E57A58" : "#4A6047";
   const riskBadgeText = isHigh ? "#B3261E" : isModerate ? "#E57A58" : "#4A6047";
-  const riskLabel = isHigh ? "জরুরি রেফার" : isModerate ? "নিয়মিত পর্যবেক্ষণ" : "স্বাভাবিক";
+  const riskLabel = isHigh ? "জরুরি রেফার" : isModerate ? "নিয়মিত পর্যবেক্ষণ" : "নিম্ন";
 
   const aiTitle = "MaSheba AI পরামর্শ";
   const aiBg = isHigh ? "#EBF3F5" : isModerate ? "#FFF9F6" : "#F4F7F4";
@@ -283,6 +270,7 @@ export default function RiskAssessmentScreen() {
             </View>
             <View style={styles.vitalInputRow}>
               <TextInput
+                accessibilityLabel={copy.assessment.bpSystolic}
                 keyboardType="numeric"
                 onChangeText={setBpSystolic}
                 style={[styles.vitalInput, { color: bpColor }]}
@@ -290,6 +278,7 @@ export default function RiskAssessmentScreen() {
               />
               <Text style={[styles.vitalSlash, { color: bpColor }]}>/</Text>
               <TextInput
+                accessibilityLabel={copy.assessment.bpDiastolic}
                 keyboardType="numeric"
                 onChangeText={setBpDiastolic}
                 style={[styles.vitalInput, { color: bpColor }]}
@@ -306,6 +295,7 @@ export default function RiskAssessmentScreen() {
             </View>
             <View style={styles.vitalInputRow}>
               <TextInput
+                accessibilityLabel={copy.assessment.weight}
                 keyboardType="numeric"
                 onChangeText={setWeight}
                 style={styles.vitalInputSingle}
@@ -318,17 +308,18 @@ export default function RiskAssessmentScreen() {
           {/* Temp Card */}
           <View style={styles.vitalCard}>
             <View style={styles.vitalCardHeader}>
-              <Text style={styles.vitalTitle}>তাপমাত্রা (Temp)</Text>
-              <Icon name="thermostat" color="#70605A" size={18} />
+              <Text style={styles.vitalTitle}>{copy.assessment.hemoglobin}</Text>
+              <Icon name="bloodtype" color="#70605A" size={18} />
             </View>
             <View style={styles.vitalInputRow}>
               <TextInput
+                accessibilityLabel={copy.assessment.hemoglobin}
                 keyboardType="numeric"
-                onChangeText={setTemp}
+                onChangeText={setHemoglobin}
                 style={styles.vitalInputSingle}
-                value={temp}
+                value={hemoglobin}
               />
-              <Text style={styles.vitalUnit}>°F</Text>
+              <Text style={styles.vitalUnit}>g/dL</Text>
             </View>
           </View>
 
@@ -372,7 +363,7 @@ export default function RiskAssessmentScreen() {
         </View>
 
         {/* MaSheba AI Advice Dotted Card */}
-        <View style={[styles.aiAdviceCard, { backgroundColor: aiBg, borderColor: aiBorderColor }]}>
+        <View accessibilityLabel={isHigh ? "high-bp-visual-card" : undefined} style={[styles.aiAdviceCard, { backgroundColor: aiBg, borderColor: aiBorderColor }]}>
           <View style={styles.aiAdviceHeader}>
             <View style={styles.aiAdviceLeft}>
               <Icon name="auto-awesome" color={aiIconColor} size={18} />
@@ -432,7 +423,14 @@ export default function RiskAssessmentScreen() {
             </Pressable>
           )}
 
-          <Pressable onPress={handleSave} style={styles.saveActionBtn}>
+          <Pressable
+            accessibilityLabel={copy.assessment.saveVisit}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canSave }}
+            disabled={!canSave}
+            onPress={handleSave}
+            style={[styles.saveActionBtn, !canSave && styles.saveActionBtnDisabled]}
+          >
             <Icon name="save" color="#FFFFFF" size={20} />
             <Text style={styles.saveActionBtnText}>তথ্য সংরক্ষণ</Text>
           </Pressable>
@@ -783,6 +781,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4
+  },
+  saveActionBtnDisabled: {
+    opacity: 0.5
   },
   saveActionBtnText: {
     fontSize: 14,

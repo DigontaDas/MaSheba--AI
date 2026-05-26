@@ -190,7 +190,7 @@ describe("mobile interactive elements", () => {
     act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.profile.language }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith("ভাষা পরিবর্তন", "বর্তমানে শুধু বাংলা ভাষা উপলব্ধ।", [{ text: "ঠিক আছে" }]);
+    expect(JSON.stringify(tree.toJSON())).toContain("English");
 
     act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.profile.security }).props.onPress();
@@ -257,11 +257,6 @@ describe("mobile interactive elements", () => {
     expect(Alert.alert).toHaveBeenCalledWith(copy.chwDashboard.notificationsTitle, copy.chwDashboard.notificationsEmpty, [
       { text: copy.common.close }
     ]);
-
-    act(() => {
-      tree.root.findByProps({ accessibilityLabel: copy.chwDashboard.healthCenter }).props.onPress();
-    });
-    expect(mockCallPhoneNumber).toHaveBeenCalledWith("16789");
 
     act(() => {
       tree.unmount();

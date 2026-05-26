@@ -1,459 +1,315 @@
-import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  Alert,
-  KeyboardAvoidingView,
-  Platform
-} from "react-native";
+import { useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Icon } from "@/components/ui/Icon";
-import { router } from "expo-router";
+import { MEDICINE_SOURCE_LABEL, searchMedicines, type MedicineSearchResult } from "@/data/medicineData";
+import { colors, radius, spacing, typography } from "@/theme";
+
+function safetyCopy(level: MedicineSearchResult["safetyLevel"]) {
+  if (level === "safe") return { text: "নিরাপদ", icon: "check-circle" as const, color: "#386652", bg: "#EAF6EE" };
+  if (level === "avoid") return { text: "সতর্কতা", icon: "cancel" as const, color: "#B3261E", bg: "#FCEBE5" };
+  return { text: "ডাক্তারের পরামর্শ নিন", icon: "warning" as const, color: "#8A5A00", bg: "#FFF4D6" };
+}
 
 export default function MedicineVerifyScreen() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
 
-  const historyItems = [
-    { id: 1, name: "ফলিক অ্যাসিড", time: "যাচাই করা হয়েছে: ২ ঘণ্টা আগে", valid: true },
-    { id: 2, name: "বি-কমপ্লেক্স সিরাপ", time: "যাচাই করা হয়েছে: গতকাল", valid: false },
-    { id: 3, name: "জিঙ্ক ট্যাবলেট", time: "যাচাই করা হয়েছে: ২ দিন আগে", valid: true }
-  ];
-
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      setActiveFilter(null);
-      return;
-    }
-    const q = searchQuery.toLowerCase();
-    if (q.includes("para") || q.includes("প্যারা") || q.includes("bn9821")) {
-      setActiveFilter("valid");
-    } else if (q.includes("iron") || q.includes("আয়রন") || q.includes("fe4420")) {
-      setActiveFilter("warning");
-    } else if (q.includes("calc") || q.includes("ক্যাল") || q.includes("ca7712")) {
-      setActiveFilter("expired");
-    } else {
-      setActiveFilter(null);
-      Alert.alert("🔎 ওষুধ খুঁজে পাওয়া যায়নি", "অনুগ্রহ করে সঠিক ব্যাচ নম্বর (যেমন: BN9821, FE4420) লিখুন।");
-    }
-  };
+  const results = useMemo(() => searchMedicines(submittedQuery, submittedQuery ? 30 : 12), [submittedQuery]);
+  const hasSearched = submittedQuery.trim().length > 0;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.screen}
-    >
-      {/* Header Bar */}
+    <View style={styles.screen}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Icon name="arrow-back" color="#70605A" size={24} />
-        </Pressable>
-        <Text style={styles.headerTitle}>ওষুধের মেয়াদ যাচাই</Text>
-        <Pressable style={styles.historyBtn} onPress={() => Alert.alert("⌛ ইতিহাস", "মেয়াদ যাচাইকরণের সম্পূর্ণ ইতিহাস শীঘ্রই আসবে।")}>
-          <Icon name="history" color="#70605A" size={24} />
-        </Pressable>
+        <Text style={styles.headerTitle}>ওষুধ</Text>
+        <Text style={styles.headerSub}>CHW medicine database</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Top Pill Illustration */}
-        <View style={styles.illustrationSection}>
-          <View style={styles.pillCircle}>
-            <Icon name="medication" color="#FFFFFF" size={54} />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.hero}>
+          <View style={styles.heroIcon}>
+            <Icon name="medication" color="#FFFFFF" size={44} />
           </View>
-          <Text style={styles.titleText}>ওষুধের বৈধতা যাচাই করুন</Text>
-          <Text style={styles.subtitleText}>
-            নিরাপদ থাকুন, ওষুধের ব্যাচ নম্বর বা বারকোড দিয়ে আসল নকল পরখ করুন।
-          </Text>
+          <Text style={styles.title}>ওষুধের তথ্য যাচাই করুন</Text>
+          <Text style={styles.subtitle}>নাম, জেনেরিক, ডোজ ফর্ম বা কোম্পানি দিয়ে তথ্য খুঁজুন।</Text>
+          <Text style={styles.source}>Source: {MEDICINE_SOURCE_LABEL}</Text>
         </View>
 
-        {/* Search Input Container */}
-        <View style={styles.searchSection}>
+        <View style={styles.searchCard}>
           <View style={styles.searchInputRow}>
             <Icon name="search" color="#A08E88" size={20} />
             <TextInput
-              onChangeText={(text) => {
-                setSearchQuery(text);
-                if (!text) setActiveFilter(null);
-              }}
-              onSubmitEditing={handleSearch}
-              placeholder="ওষুধের নাম বা ব্যাচ নম্বর..."
+              onChangeText={setQuery}
+              onSubmitEditing={() => setSubmittedQuery(query)}
+              placeholder="ওষুধের নাম লিখুন..."
               placeholderTextColor="#A08E88"
               style={styles.searchInput}
-              value={searchQuery}
+              value={query}
             />
-            <Pressable onPress={() => Alert.alert("🎤 ভয়েস ইনপুট", "ভয়েস সার্চ চালু হচ্ছে...")}>
-              <Icon name="mic" color="#E57A58" size={20} />
-            </Pressable>
           </View>
-
-          <Pressable onPress={handleSearch} style={styles.searchButton}>
+          <Pressable accessibilityRole="button" onPress={() => setSubmittedQuery(query)} style={styles.searchButton}>
             <Icon name="search" color="#FFFFFF" size={18} />
             <Text style={styles.searchButtonText}>সার্চ</Text>
           </Pressable>
         </View>
 
-        {/* Verification Results Panel */}
-        <View style={styles.resultsSection}>
-          <Text style={styles.sectionKicker}>যাচাইয়ের ফলাফল (নমুনা)</Text>
+        {hasSearched && !results.length ? (
+          <View style={styles.emptyCard}>
+            <Icon name="info" color={colors.primary} />
+            <Text style={styles.emptyText}>এই ওষুধ সম্পর্কে তথ্য পাওয়া যায়নি। ডাক্তারের পরামর্শ নিন।</Text>
+          </View>
+        ) : null}
 
-          {/* Valid Card */}
-          {(!activeFilter || activeFilter === "valid") && (
-            <View style={[styles.resultCard, styles.cardValid]}>
-              <View style={styles.iconCircleValid}>
-                <Icon name="check-circle" color="#4A6047" size={24} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.validTitle}>বৈধ ওষুধ (VALID)</Text>
-                <Text style={styles.cardDesc}>প্যারাসিটামল ৫০০ মিগ্রা। ব্যাচ: BN9821</Text>
-                <Text style={styles.validExpiry}>মেয়াদ শেষ হবে: ১৫ আগস্ট ২০২৫</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Warning Card */}
-          {(!activeFilter || activeFilter === "warning") && (
-            <View style={[styles.resultCard, styles.cardWarning]}>
-              <View style={styles.iconCircleWarning}>
-                <Icon name="warning" color="#3B5B66" size={24} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.warningTitle}>দ্রুত ব্যবহার করুন</Text>
-                <Text style={styles.cardDesc}>আয়রন ট্যাবলেট। ব্যাচ: FE4420</Text>
-                <Text style={styles.warningExpiry}>মেয়াদ শেষ হবে: ৩০ জুন ২০২৪ (১ মাস বাকি)</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Expired Card */}
-          {(!activeFilter || activeFilter === "expired") && (
-            <View style={[styles.resultCard, styles.cardExpired]}>
-              <View style={styles.iconCircleExpired}>
-                <Icon name="cancel" color="#B3261E" size={24} />
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.expiredTitle}>মেয়াদোত্তীর্ণ (EXPIRED)</Text>
-                <Text style={styles.cardDesc}>ক্যালসিয়াম ডি৩। ব্যাচ: CA7712</Text>
-                <Text style={styles.expiredWarning}>সতর্কতা: এই ওষুধটি সেবন করাবেন না এবং নষ্ট করে ফেলুন।</Text>
-              </View>
-            </View>
-          )}
+        <View style={styles.resultsHeader}>
+          <Text style={styles.sectionTitle}>{hasSearched ? "সার্চ ফলাফল" : "নমুনা ওষুধ"}</Text>
+          <Text style={styles.resultCount}>{results.length} results</Text>
         </View>
 
-        {/* Recent History Panel */}
-        <View style={styles.historySection}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>সাম্প্রতিক ইতিহাস</Text>
-            <Pressable onPress={() => Alert.alert("সব ইতিহাস", "সম্পূর্ণ তালিকা দেখতে এখানে ট্যাপ করুন।")}>
-              <Text style={styles.seeAllText}>সব দেখুন</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.historyCardContainer}>
-            {historyItems.map((item, index) => (
-              <View key={item.id}>
-                <Pressable
-                  onPress={() => {
-                    setSearchQuery(item.name);
-                    if (item.id === 1) setActiveFilter("valid");
-                    if (item.id === 2) setActiveFilter("expired");
-                    if (item.id === 3) setActiveFilter("valid");
-                  }}
-                  style={styles.historyItemRow}
-                >
-                  <View style={styles.historyLeft}>
-                    <View style={[styles.statusDot, { backgroundColor: item.valid ? "#4A6047" : "#B3261E" }]} />
-                    <View style={styles.historyTextWrap}>
-                      <Text style={styles.historyName}>{item.name}</Text>
-                      <Text style={styles.historyTime}>{item.time}</Text>
-                    </View>
-                  </View>
-                  <Icon name="chevron-right" color="#A08E88" size={18} />
-                </Pressable>
-                {index < historyItems.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </View>
-        </View>
-
+        {results.map((medicine) => (
+          <MedicineResultCard key={`${medicine.id}-${medicine.strength}`} medicine={medicine} />
+        ))}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+function MedicineResultCard({ medicine }: { medicine: MedicineSearchResult }) {
+  const safety = safetyCopy(medicine.safetyLevel);
+
+  return (
+    <View style={[styles.resultCard, medicine.safetyLevel === "avoid" && styles.resultCardDanger]}>
+      <View style={styles.resultHeader}>
+        <View style={styles.resultTitleWrap}>
+          <Text style={styles.brandName}>{medicine.brandName}</Text>
+          <Text style={styles.genericName}>{medicine.genericName}</Text>
+        </View>
+        <View style={[styles.safetyBadge, { backgroundColor: safety.bg }]}>
+          <Icon name={safety.icon} color={safety.color} size={16} />
+          <Text style={[styles.safetyText, { color: safety.color }]}>{safety.text}</Text>
+        </View>
+      </View>
+
+      <View style={styles.metaRow}>
+        <Text style={styles.metaChip}>{medicine.category}</Text>
+        {medicine.strength ? <Text style={styles.metaChip}>{medicine.strength}</Text> : null}
+      </View>
+
+      <Text style={styles.blockLabel}>ব্যবহার</Text>
+      {medicine.uses.map((use) => (
+        <Text key={use} style={styles.bodyLine}>• {use}</Text>
+      ))}
+
+      <Text style={styles.blockLabel}>ডোজ / ফর্ম</Text>
+      <Text style={styles.bodyLine}>{medicine.dose}</Text>
+
+      <Text style={styles.blockLabel}>সতর্কতা</Text>
+      {medicine.warnings.map((warning) => (
+        <Text key={warning} style={styles.warningLine}>• {warning}</Text>
+      ))}
+
+      <Text style={styles.manufacturer}>{medicine.manufacturer}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: "#FFF9F6", // Cream background
+    backgroundColor: "#FFF9F6",
     flex: 1
   },
   topBar: {
-    alignItems: "center",
     backgroundColor: "#FFF9F6",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    minHeight: 64,
-    paddingHorizontal: 20,
-    paddingTop: Platform.select({ ios: 52, android: 56, default: 12 }),
+    borderBottomColor: "#F5ECE9",
     borderBottomWidth: 1,
-    borderBottomColor: "#F5ECE9"
-  },
-  backButton: {
-    padding: 4
+    paddingHorizontal: 20,
+    paddingTop: Platform.select({ ios: 52, android: 56, default: 16 }),
+    paddingBottom: 14
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#70605A"
-  },
-  historyBtn: {
-    padding: 4
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 24
-  },
-
-  // Top Illustration
-  illustrationSection: {
-    alignItems: "center",
-    gap: 14
-  },
-  pillCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#E57A58",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 2,
-    shadowColor: "#E57A58",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10
-  },
-  titleText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#4A3E39"
-  },
-  subtitleText: {
-    fontSize: 13,
     color: "#70605A",
-    textAlign: "center",
-    lineHeight: 18,
-    paddingHorizontal: 16
+    fontSize: 22,
+    fontWeight: "bold"
   },
-
-  // Search input and button
-  searchSection: {
+  headerSub: {
+    color: "#A08E88",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2
+  },
+  content: {
+    gap: 18,
+    padding: 20,
+    paddingBottom: 40
+  },
+  hero: {
+    alignItems: "center",
+    gap: 10
+  },
+  heroIcon: {
+    alignItems: "center",
+    backgroundColor: "#E57A58",
+    borderRadius: 45,
+    height: 90,
+    justifyContent: "center",
+    width: 90
+  },
+  title: {
+    color: "#4A3E39",
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  subtitle: {
+    color: "#70605A",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center"
+  },
+  source: {
+    color: "#A08E88",
+    fontSize: 11,
+    textAlign: "center"
+  },
+  searchCard: {
     gap: 12
   },
   searchInputRow: {
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
     borderRadius: 28,
     borderWidth: 1,
-    borderColor: "#F5ECE9",
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
     height: 52,
-    elevation: 1,
-    shadowColor: "#E57A58",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4
+    paddingHorizontal: 16
   },
   searchInput: {
-    flex: 1,
-    fontSize: 14,
     color: "#4A3E39",
-    marginLeft: 10,
-    marginRight: 10,
-    padding: 0
+    flex: 1,
+    fontSize: 15,
+    marginLeft: 10
   },
   searchButton: {
-    backgroundColor: "#8C4A32", // Rich terracotta-brown
-    borderRadius: 28,
-    height: 52,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "#8C4A32",
+    borderRadius: 28,
+    flexDirection: "row",
     gap: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    height: 52,
+    justifyContent: "center"
   },
   searchButtonText: {
+    color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: "bold",
-    color: "#FFFFFF"
+    fontWeight: "bold"
   },
-
-  // Results Section
-  resultsSection: {
-    gap: 12
+  emptyCard: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.cardPadding
   },
-  sectionKicker: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#70605A",
-    marginBottom: 4
+  emptyText: {
+    ...typography.body,
+    color: colors.onSurface,
+    flex: 1
+  },
+  resultsHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  sectionTitle: {
+    color: "#4A3E39",
+    fontSize: 20,
+    fontWeight: "bold"
+  },
+  resultCount: {
+    color: "#A08E88",
+    fontSize: 12,
+    fontWeight: "600"
   },
   resultCard: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14
-  },
-  cardContent: {
-    flex: 1,
-    gap: 4
-  },
-  cardDesc: {
-    fontSize: 13,
-    color: "#4A3E39",
-    fontWeight: "600"
-  },
-
-  // Valid Card
-  cardValid: {
-    backgroundColor: "#EBF5EB",
-    borderColor: "#C4D6C4"
-  },
-  iconCircleValid: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(74, 96, 71, 0.1)",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  validTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4A6047"
-  },
-  validExpiry: {
-    fontSize: 12,
-    color: "#4A6047",
-    fontWeight: "bold"
-  },
-
-  // Warning Card
-  cardWarning: {
-    backgroundColor: "#EBF3F5",
-    borderColor: "#A3BDC4"
-  },
-  iconCircleWarning: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(59, 91, 102, 0.1)",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  warningTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#3B5B66"
-  },
-  warningExpiry: {
-    fontSize: 12,
-    color: "#3B5B66",
-    fontWeight: "bold"
-  },
-
-  // Expired Card
-  cardExpired: {
-    backgroundColor: "#FCEBE5",
-    borderColor: "#E8C1B7"
-  },
-  iconCircleExpired: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(179, 38, 30, 0.1)",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  expiredTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#B3261E"
-  },
-  expiredWarning: {
-    fontSize: 12,
-    color: "#B3261E",
-    fontWeight: "bold",
-    lineHeight: 16
-  },
-
-  // Recent History section
-  historySection: {
-    gap: 12
-  },
-  historyHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-  historyTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#4A3E39"
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#E57A58"
-  },
-  historyCardContainer: {
     backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
+    borderLeftColor: "#4A6047",
+    borderLeftWidth: 4,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F5ECE9",
-    paddingVertical: 6,
-    paddingHorizontal: 14
+    gap: 8,
+    padding: 16
   },
-  historyItemRow: {
+  resultCardDanger: {
+    borderLeftColor: "#B3261E"
+  },
+  resultHeader: {
+    alignItems: "flex-start",
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12
+    gap: 10,
+    justifyContent: "space-between"
   },
-  historyLeft: {
+  resultTitleWrap: {
+    flex: 1
+  },
+  brandName: {
+    color: "#4A3E39",
+    fontSize: 18,
+    fontWeight: "bold"
+  },
+  genericName: {
+    color: "#70605A",
+    fontSize: 13,
+    marginTop: 2
+  },
+  safetyBadge: {
+    alignItems: "center",
+    borderRadius: 18,
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4
-  },
-  historyTextWrap: {
-    gap: 2
-  },
-  historyName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#4A3E39"
-  },
-  historyTime: {
+  safetyText: {
     fontSize: 11,
-    color: "#A08E88",
-    fontWeight: "600"
+    fontWeight: "bold"
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#F5ECE9"
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  metaChip: {
+    backgroundColor: "#FCEBE5",
+    borderRadius: 14,
+    color: "#70605A",
+    fontSize: 12,
+    fontWeight: "600",
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  blockLabel: {
+    color: "#4A3E39",
+    fontSize: 13,
+    fontWeight: "bold",
+    marginTop: 4
+  },
+  bodyLine: {
+    color: "#70605A",
+    fontSize: 13,
+    lineHeight: 19
+  },
+  warningLine: {
+    color: "#8A5A00",
+    fontSize: 13,
+    lineHeight: 19
+  },
+  manufacturer: {
+    color: "#A08E88",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4
   }
 });

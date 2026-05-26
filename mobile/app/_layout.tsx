@@ -15,7 +15,9 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { ensureLocalDbReady } from "@/db/localDbAccess";
+import { registerForPushNotifications } from "@/notifications/notificationService";
 import { registerOutboxSyncTask } from "@/sync/registerSyncTask";
 import { colors } from "@/theme";
 
@@ -33,6 +35,7 @@ export default function RootLayout() {
     ensureLocalDbReady()
       .then(registerOutboxSyncTask)
       .catch((error) => console.warn("Startup initialization failed", error));
+    registerForPushNotifications().catch((error) => console.warn("Notification setup failed", error));
   }, []);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <LanguageProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)/login" />
@@ -55,6 +58,6 @@ export default function RootLayout() {
         <Stack.Screen name="assessment/[patientId]" />
       </Stack>
       <StatusBar style="dark" />
-    </>
+    </LanguageProvider>
   );
 }

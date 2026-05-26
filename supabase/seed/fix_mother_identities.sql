@@ -1,0 +1,76 @@
+-- Fix: Insert missing auth.identities rows for all 6 seeded mother accounts.
+-- Users created via raw SQL INSERT into auth.users don't automatically get
+-- identities rows, which breaks signInWithPassword ("Database error querying schema").
+
+INSERT INTO auth.identities (
+  provider_id,
+  user_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at,
+  id
+)
+VALUES
+  (
+    '50000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000001',
+    '{"sub":"50000000-0000-0000-0000-000000000001","email":"mother-amina@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  ),
+  (
+    '50000000-0000-0000-0000-000000000002',
+    '50000000-0000-0000-0000-000000000002',
+    '{"sub":"50000000-0000-0000-0000-000000000002","email":"mother-rahima@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  ),
+  (
+    '50000000-0000-0000-0000-000000000003',
+    '50000000-0000-0000-0000-000000000003',
+    '{"sub":"50000000-0000-0000-0000-000000000003","email":"mother-sharmin@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  ),
+  (
+    '50000000-0000-0000-0000-000000000004',
+    '50000000-0000-0000-0000-000000000004',
+    '{"sub":"50000000-0000-0000-0000-000000000004","email":"mother-nasima@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  ),
+  (
+    '50000000-0000-0000-0000-000000000005',
+    '50000000-0000-0000-0000-000000000005',
+    '{"sub":"50000000-0000-0000-0000-000000000005","email":"mother-fatema@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  ),
+  (
+    '50000000-0000-0000-0000-000000000006',
+    '50000000-0000-0000-0000-000000000006',
+    '{"sub":"50000000-0000-0000-0000-000000000006","email":"mother-jannatul@maasheba.local","email_verified":true}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    gen_random_uuid()
+  )
+ON CONFLICT (provider, provider_id) DO NOTHING;

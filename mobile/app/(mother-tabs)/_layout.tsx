@@ -2,15 +2,18 @@ import { Tabs } from "expo-router";
 import { BottomNavigation } from "@/components/navigation/BottomNavigation";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors } from "@/theme";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function MotherTabsLayout() {
+  const { t } = useLanguage();
+
   return (
     <Tabs
       tabBar={(props) => <BottomNavigation {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
     >
       <Tabs.Screen name="home" options={{ title: copy.common.home }} />
-      <Tabs.Screen name="shotorkota" options={{ title: "সতর্কতা" }} />
+      <Tabs.Screen name="shotorkota" options={{ title: t("nav.shotorkota") }} />
       <Tabs.Screen name="nutrition" options={{ title: copy.common.nutrition }} />
       <Tabs.Screen name="chat" options={{ title: copy.common.chat }} />
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
@@ -19,3 +22,4 @@ export default function MotherTabsLayout() {
     </Tabs>
   );
 }
+

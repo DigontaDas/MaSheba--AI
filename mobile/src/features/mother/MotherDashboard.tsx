@@ -1,11 +1,14 @@
+import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View, ImageBackground } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { ProgressBar } from "@/components/progress/ProgressBar";
 import { ScreenShell } from "@/components/ui/ScreenShell";
-import { clearRoleSession } from "@/auth/roleSession";
+import { clearRoleSession, getCurrentMotherProfile } from "@/auth/roleSession";
 import { clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
+import { getUnreadCount } from "@/api/chatService";
+import { useLanguage } from "@/context/LanguageContext";
 import { copy } from "@/data/stitchCopy.bn";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
@@ -25,6 +28,37 @@ export function MotherDashboard({
   variant?: "home" | "progress";
   week?: number;
 }) {
+  const { t } = useLanguage();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUnreadCount() {
+      try {
+        const profile = await getCurrentMotherProfile();
+        if (!profile?.patientId || !profile.id) return;
+
+        const { data } = await supabase
+          .from("patients")
+          .select("chw_id")
+          .eq("id", profile.patientId)
+          .maybeSingle<{ chw_id: string | null }>();
+
+        if (!data?.chw_id) return;
+        const count = await getUnreadCount(data.chw_id, "mother", profile.id);
+        if (!cancelled) setUnreadCount(count);
+      } catch {
+        if (!cancelled) setUnreadCount(0);
+      }
+    }
+
+    loadUnreadCount().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -119,9 +153,19 @@ export function MotherDashboard({
         <ActionCard icon="local-hospital" title={copy.mother.emergencyHelp} onPress={showEmergencyHelp} />
       </View>
 
-      <Pressable accessibilityLabel={copy.mother.askAi} accessibilityRole="button" style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
-        <Icon name="chat-bubble" color={colors.onPrimary} />
-        <Text style={styles.askText}>{copy.mother.askAi}</Text>
+      <Pressable accessibilityLabel={t("mother.chatCard.title")} accessibilityRole="button" style={styles.askCard} onPress={() => router.push("/(mother-tabs)/chat")}>
+        <View style={styles.chatIcon}>
+          <Icon name="chat-bubble" color={colors.onPrimary} />
+        </View>
+        <View style={styles.chatText}>
+          <Text style={styles.askText}>{t("mother.chatCard.title")}</Text>
+          <Text style={styles.chatSub}>{t("mother.chatCard.subtitle")}</Text>
+        </View>
+        {unreadCount > 0 ? (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>{toBanglaNumber(unreadCount)}</Text>
+          </View>
+        ) : null}
       </Pressable>
     </ScreenShell>
   );
@@ -280,13 +324,42 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     flexDirection: "row",
     gap: spacing.sm,
-    justifyContent: "center",
     minHeight: 56,
-    paddingHorizontal: spacing.base
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm
+  },
+  chatIcon: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  chatText: {
+    flex: 1,
+    gap: 2
   },
   askText: {
     ...typography.body,
     color: colors.onPrimary,
+    fontFamily: typography.h2.fontFamily
+  },
+  chatSub: {
+    ...typography.caption,
+    color: colors.onPrimary
+  },
+  unreadBadge: {
+    alignItems: "center",
+    backgroundColor: colors.error,
+    borderRadius: radius.full,
+    minWidth: 26,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  unreadText: {
+    ...typography.caption,
+    color: "#FFFFFF",
     fontFamily: typography.h2.fontFamily
   }
 });
