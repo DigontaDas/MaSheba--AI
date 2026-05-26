@@ -1,4 +1,4 @@
-// Auto-generated from MaaSheba AI Maternal Nutrition Dataset.json
+// Auto-generated from MaSheba AI Maternal Nutrition Dataset.json
 // Do not edit manually
 
 export interface NutritionFood {
@@ -42,8 +42,8 @@ export interface SupplementGuidance {
 
 export const NUTRITION_DATA = {
   "metadata": {
-    "dataset_name": "MaaSheba AI Maternal Nutrition Dataset",
-    "dataset_name_bn": "মাশেবা AI মাতৃ-পুষ্টি ডেটাসেট",
+    "dataset_name": "MaSheba AI Maternal Nutrition Dataset",
+    "dataset_name_bn": "মাসেবা AI মাতৃ-পুষ্টি ডেটাসেট",
     "country_context": "Bangladesh",
     "target_context": "Rural Bangladesh",
     "version": "2.0",
@@ -54,7 +54,7 @@ export const NUTRITION_DATA = {
       "pregnant mothers in rural Bangladesh",
       "family caregivers",
       "community health workers / স্বাস্থ্যকর্মী",
-      "MaaSheba AI chatbot and mobile app"
+      "MaSheba AI chatbot and mobile app"
     ],
     "important_disclaimer_en": "This dataset is for general nutrition education and app guidance. It is not a substitute for antenatal care, clinical diagnosis, emergency care, or a doctor's prescription.",
     "important_disclaimer_bn": "এই ডেটাসেটটি সাধারণ পুষ্টি শিক্ষা ও অ্যাপের পরামর্শের জন্য। এটি ডাক্তার, ধাত্রী, পুষ্টিবিদ বা স্বাস্থ্যকর্মীর চিকিৎসা পরামর্শের বিকল্প নয়। রক্তপাত, খুব বেশি বমি, উচ্চ রক্তচাপ, খিঁচুনি, প্রচণ্ড মাথাব্যথা, চোখে ঝাপসা দেখা, হাত-পা-মুখ বেশি ফুলে যাওয়া, জ্বর, শিশুর নড়াচড়া কমে যাওয়া, বা খুব দুর্বল লাগলে দ্রুত স্বাস্থ্যকেন্দ্রে যোগাযোগ করুন।",

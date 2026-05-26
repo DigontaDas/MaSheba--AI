@@ -222,7 +222,7 @@ export default function RiskAssessmentScreen() {
   const riskBadgeText = isHigh ? "#B3261E" : isModerate ? "#E57A58" : "#4A6047";
   const riskLabel = isHigh ? "জরুরি রেফার" : isModerate ? "নিয়মিত পর্যবেক্ষণ" : "স্বাভাবিক";
 
-  const aiTitle = "MaaSheba AI পরামর্শ";
+  const aiTitle = "MaSheba AI পরামর্শ";
   const aiBg = isHigh ? "#EBF3F5" : isModerate ? "#FFF9F6" : "#F4F7F4";
   const aiBorderColor = isHigh ? "#A3BDC4" : isModerate ? "#F5ECE9" : "#C4D6C4";
   const aiTextColor = isHigh ? "#3B5B66" : isModerate ? "#70605A" : "#4A6047";
@@ -371,7 +371,7 @@ export default function RiskAssessmentScreen() {
           </View>
         </View>
 
-        {/* MaaSheba AI Advice Dotted Card */}
+        {/* MaSheba AI Advice Dotted Card */}
         <View style={[styles.aiAdviceCard, { backgroundColor: aiBg, borderColor: aiBorderColor }]}>
           <View style={styles.aiAdviceHeader}>
             <View style={styles.aiAdviceLeft}>
