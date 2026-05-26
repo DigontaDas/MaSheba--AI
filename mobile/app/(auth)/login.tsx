@@ -112,7 +112,7 @@ async function seedLocalMotherDemoData() {
 
 const translations = {
   bn: {
-    appName: "মাশেবা AI",
+    appName: "মাসেবা AI",
     tagline: "আপনার গর্ভকালীন সঙ্গী",
     motherBtn: "মা হিসেবে চালিয়ে যান  →",
     chwBtn: "স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান",
@@ -134,7 +134,7 @@ const translations = {
     loadingText: "চালু হচ্ছে..."
   },
   en: {
-    appName: "MaaSheba AI",
+    appName: "MaSheba AI",
     tagline: "Your Pregnancy Companion",
     motherBtn: "Continue as Mother  →",
     chwBtn: "Continue as Health Worker",

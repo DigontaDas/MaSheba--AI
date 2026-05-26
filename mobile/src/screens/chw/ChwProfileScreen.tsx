@@ -102,7 +102,7 @@ export default function ChwProfileScreen() {
             <Icon name="medical-services" color="#E57A58" size={20} />
           </View>
           <View style={styles.topBarTextWrap}>
-            <Text style={styles.headerTitle}>মাশেবা AI</Text>
+            <Text style={styles.headerTitle}>মাসেবা AI</Text>
             <Text style={styles.headerSubtitle}>{name} • স্বাস্থ্যকর্মী</Text>
           </View>
         </View>
@@ -207,7 +207,7 @@ export default function ChwProfileScreen() {
 
           {/* Help Center */}
           <Pressable
-            onPress={() => showInfo("সহায়তা কেন্দ্র", "মাশেবা ক্লিনিক্যাল সাপোর্ট সার্ভিস লাইনে যুক্ত হতে কল করুন ১৬৭৮৯ নম্বরে।")}
+            onPress={() => showInfo("সহায়তা কেন্দ্র", "মাসেবা ক্লিনিক্যাল সাপোর্ট সার্ভিস লাইনে যুক্ত হতে কল করুন ১৬৭৮৯ নম্বরে।")}
             style={styles.actionRow}
           >
             <View style={styles.actionLeft}>

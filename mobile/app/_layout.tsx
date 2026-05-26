@@ -7,14 +7,7 @@ LogBox.ignoreLogs([
   "Open debugger to view warnings."
 ]);
 
-if (!NativeModules.Onnxruntime) {
-  NativeModules.Onnxruntime = {
-    install: () => {
-      console.warn("Onnxruntime native module stub installed at root layout.");
-    },
-    isStub: true
-  } as any;
-}
+
 
 import "@/sync/backgroundSync";
 import { useEffect } from "react";
