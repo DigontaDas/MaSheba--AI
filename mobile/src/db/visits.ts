@@ -4,6 +4,12 @@ import { nowIso } from "@/utils/time";
 import { getDB } from "./database";
 import { runLocalDb } from "./localDbAccess";
 
+type VisitSummaryRow = {
+  patient_id: string;
+  last_visited_at: string | null;
+  visit_count: number;
+};
+
 export async function insertVisit(params: {
   patient: Patient;
   chwId: string;
@@ -94,4 +100,39 @@ export async function insertVisit(params: {
   });
 
   return { visit, idempotency_key: idempotencyKey };
+}
+
+export async function getVisitCountForChwSince(chwId: string, sinceIso: string): Promise<number> {
+  return runLocalDb(async () => {
+    const db = await getDB();
+    const row = await db.getFirstAsync<{ count: number }>(
+      "SELECT COUNT(*) as count FROM visits WHERE chw_id = ? AND visited_at >= ?",
+      chwId,
+      sinceIso
+    );
+    return Number(row?.count ?? 0);
+  });
+}
+
+export async function getVisitSummariesByPatient(
+  chwId: string
+): Promise<Array<{ patientId: string; lastVisitedAt: string | null; visitCount: number }>> {
+  return runLocalDb(async () => {
+    const db = await getDB();
+    const rows = await db.getAllAsync<VisitSummaryRow>(
+      `SELECT patient_id,
+              MAX(visited_at) AS last_visited_at,
+              COUNT(*) AS visit_count
+         FROM visits
+        WHERE chw_id = ?
+        GROUP BY patient_id`,
+      chwId
+    );
+
+    return rows.map((row) => ({
+      patientId: row.patient_id,
+      lastVisitedAt: row.last_visited_at,
+      visitCount: Number(row.visit_count ?? 0)
+    }));
+  });
 }

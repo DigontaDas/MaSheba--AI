@@ -52,7 +52,7 @@ async function routeFromStoredSession() {
 
   if (chw?.is_active) {
     await saveUserRole("CHW");
-    router.replace("/(tabs)/patients");
+    router.replace("/(tabs)/home");
     return;
   }
 

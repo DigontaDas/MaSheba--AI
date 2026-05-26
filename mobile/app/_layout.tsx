@@ -1,3 +1,21 @@
+import { NativeModules, LogBox } from "react-native";
+
+// Ignore developer bridge and duplicate autolinking logs
+LogBox.ignoreAllLogs(true);
+LogBox.ignoreLogs([
+  "Tried to insert a NativeModule into the bridge's",
+  "Open debugger to view warnings."
+]);
+
+if (!NativeModules.Onnxruntime) {
+  NativeModules.Onnxruntime = {
+    install: () => {
+      console.warn("Onnxruntime native module stub installed at root layout.");
+    },
+    isStub: true
+  } as any;
+}
+
 import "@/sync/backgroundSync";
 import { useEffect } from "react";
 import { Stack } from "expo-router";

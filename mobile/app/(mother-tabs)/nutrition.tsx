@@ -1,103 +1,121 @@
-import { useMemo, useState, useEffect } from "react";
-import { Alert, Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { NutritionCard } from "@/components/nutrition/NutritionCard";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
-import { clearRoleSession } from "@/auth/roleSession";
+import { clearRoleSession, getCurrentMotherProfile } from "@/auth/roleSession";
 import { clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { copy } from "@/data/stitchCopy.bn";
+import { getFoodImage } from "@/data/foodImageMap";
+import {
+  getFoodsByCategory,
+  getMonthlyPlan,
+  SUPPLEMENT_GUIDANCE,
+  type MonthlyPlan,
+  type NutritionFood
+} from "@/data/nutritionData";
 import { colors, radius, spacing, typography } from "@/theme";
 
-// Helper function to convert numbers to beautiful Bengali digits dynamically
-const toBanglaDigits = (num: number): string => {
-  const digits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  return String(num)
-    .split("")
-    .map((char) => digits[parseInt(char)] || char)
-    .join("");
+const TABS = ["সব", "খাবার", "পানীয়", "ওষুধ", "বিশ্রাম"] as const;
+
+function nutrientLabel(nutrient?: string): string {
+  switch (nutrient) {
+    case "protein":
+      return "প্রোটিন";
+    case "iron":
+      return "আয়রন";
+    case "calcium":
+      return "ক্যালসিয়াম";
+    case "energy":
+      return "শক্তি";
+    case "hydration":
+      return "পানি";
+    case "folate":
+      return "ফোলেট";
+    default:
+      return "পুষ্টি";
+  }
+}
+
+const toBengaliNumeral = (num: number): string => {
+  const numerals: Record<string, string> = {
+    "0": "০",
+    "1": "১",
+    "2": "২",
+    "3": "৩",
+    "4": "৪",
+    "5": "৫",
+    "6": "৬",
+    "7": "৭",
+    "8": "৮",
+    "9": "৯"
+  };
+  return num.toString().split("").map((char) => numerals[char] || char).join("");
 };
 
-const filters = [
-  copy.nutrition.all,      // সব
-  copy.nutrition.food,     // খাবার
-  copy.nutrition.drinks,   // পানীয়
-  copy.nutrition.medicine, // ওষুধ
-  copy.nutrition.rest,     // বিশ্রাম
-  "শিশু"                   // শিশু (Matching mockup horizontal tabs)
-];
-
-const nutritionItems = [
-  {
-    title: copy.nutrition.spinach,
-    subtitle: copy.nutrition.spinachAmount,
-    tag: copy.nutrition.iron, // আয়রন
-    category: copy.nutrition.food,
-    imageSource: require("../../assets/images/palong.jpg")
-  },
-  {
-    title: copy.nutrition.lentil,
-    subtitle: copy.nutrition.lentilAmount,
-    tag: copy.nutrition.protein, // প্রোটিন
-    category: copy.nutrition.food,
-    imageSource: require("../../assets/images/moshur.jpg")
-  },
-  {
-    title: copy.nutrition.milk,
-    subtitle: copy.nutrition.milkAmount,
-    tag: copy.nutrition.calcium, // ক্যালসিয়াম
-    category: copy.nutrition.drinks,
-    imageSource: require("../../assets/images/milk.jpg")
-  },
-  {
-    title: copy.nutrition.pomegranate,
-    subtitle: copy.nutrition.pomegranateAmount,
-    tag: copy.nutrition.iron, // "আয়রন" tag matching mockup exactly!
-    category: copy.nutrition.food,
-    imageSource: require("../../assets/images/dalim.jpg")
-  }
-];
-
 export default function NutritionScreen() {
-  const [activeFilter, setActiveFilter] = useState(filters[0]);
-  const [waterCount, setWaterCount] = useState(3); // Default demo value
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("সব");
+  const [gestationalWeek, setGestationalWeek] = useState(32); // Default to 32 (Month 8) matching mockup
+  const [waterGlasses, setWaterGlasses] = useState(0); // Starts at 0 matching request
 
-  // Load the daily tracked water count from SecureStore on mount
   useEffect(() => {
-    const loadWaterTracker = async () => {
+    const loadWaterData = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-        const savedDate = await SecureStore.getItemAsync("maasheba.water_date");
-        const savedCount = await SecureStore.getItemAsync("maasheba.water_count");
-        
-        if (savedDate === today && savedCount !== null) {
-          setWaterCount(parseInt(savedCount, 10));
+        const todayStr = new Date().toISOString().split("T")[0];
+        const savedDate = await SecureStore.getItemAsync("water_tracking_date");
+        const savedGlasses = await SecureStore.getItemAsync("water_tracking_count");
+
+        if (savedDate === todayStr && savedGlasses) {
+          setWaterGlasses(parseInt(savedGlasses, 10));
         } else {
-          // If a new day has started (or first load), initialize at 3 for demo,
-          // then save for today.
-          setWaterCount(3);
-          await SecureStore.setItemAsync("maasheba.water_date", today);
-          await SecureStore.setItemAsync("maasheba.water_count", "3");
+          await SecureStore.setItemAsync("water_tracking_date", todayStr);
+          await SecureStore.setItemAsync("water_tracking_count", "0");
+          setWaterGlasses(0);
         }
-      } catch (e) {
-        console.warn("Failed to load water tracker:", e);
+      } catch (err) {
+        console.warn("Error loading water progress:", err);
       }
     };
-    loadWaterTracker();
+
+    loadWaterData();
+
+    getCurrentMotherProfile()
+      .then((profile) => {
+        if (profile?.gestationalAgeWeeks) {
+          setGestationalWeek(profile.gestationalAgeWeeks);
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
-  const visibleItems = useMemo(() => {
-    if (activeFilter === copy.nutrition.all) {
-      return nutritionItems;
+  const handleWaterIncrement = async () => {
+    if (waterGlasses < 8) {
+      const newCount = waterGlasses + 1;
+      setWaterGlasses(newCount);
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
+        await SecureStore.setItemAsync("water_tracking_date", todayStr);
+        await SecureStore.setItemAsync("water_tracking_count", newCount.toString());
+      } catch (err) {
+        console.warn("Error saving water progress:", err);
+      }
     }
-    // "শিশু" category filter fallback
-    if (activeFilter === "শিশু") {
+  };
+
+  const plan = useMemo<MonthlyPlan | null>(() => getMonthlyPlan(gestationalWeek), [gestationalWeek]);
+  const visibleFoods = useMemo<NutritionFood[]>(() => {
+    if (!plan) {
       return [];
     }
-    return nutritionItems.filter((item) => item.category === activeFilter);
-  }, [activeFilter]);
+    return getFoodsByCategory(plan, activeTab).filter(
+      (food) =>
+        !food.name_bn.includes("পানি") &&
+        !food.name_en.toLowerCase().includes("water")
+    );
+  }, [activeTab, plan]);
 
   const handleLogout = async () => {
     try {
@@ -121,127 +139,153 @@ export default function NutritionScreen() {
     Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
   };
 
-  const showNutritionInfo = (item: (typeof nutritionItems)[number]) => {
-    Alert.alert(item.title, `${item.subtitle}\nউৎস: ${item.tag}`, [{ text: "ঠিক আছে" }]);
+  const showFoodInfo = (food: NutritionFood) => {
+    const substitutions = food.substitutions_bn?.length ? `\nবিকল্প: ${food.substitutions_bn.join(", ")}` : "";
+    const caution = food.caution_bn ? `\nসতর্কতা: ${food.caution_bn}` : "";
+    Alert.alert(food.name_bn, `${food.amount_bn}\n${nutrientLabel(food.nutrient_focus[0])}${substitutions}${caution}`, [{ text: "ঠিক আছে" }]);
   };
-
-  // Fun interactive water incrementer with lock-at-completion & secure persistence
-  const handleWaterTap = async () => {
-    if (waterCount >= 8) {
-      // Completed! Keep it locked at 8 and do not reset.
-      return;
-    }
-    
-    const nextCount = waterCount + 1;
-    setWaterCount(nextCount);
-    
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      await SecureStore.setItemAsync("maasheba.water_date", today);
-      await SecureStore.setItemAsync("maasheba.water_count", String(nextCount));
-    } catch (e) {
-      console.warn("Failed to save water count:", e);
-    }
-  };
-
-  // Resolve dynamic titles & celebratory messaging on completion
-  const isCompleted = waterCount >= 8;
-  const waterTitle = isCompleted ? "পানি পানের লক্ষ্য সম্পন্ন! ✅" : copy.nutrition.water;
-  const waterSubtitle = isCompleted 
-    ? "অভিনন্দন! আপনি আজকের পানির লক্ষ্য সফলভাবে অর্জন করেছেন 🎉" 
-    : copy.nutrition.waterDescription;
 
   return (
-    <ScreenShell scrollable={true} padded={true}>
+    <ScreenShell>
       {/* Top Header Bar */}
       <View style={styles.topBar}>
         <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
-          <Icon name="menu" size={24} color="#8E3E26" />
+          <Icon name="menu" color="#70605A" size={24} />
         </Pressable>
-        <Text style={styles.appName}>মাশেবা AI</Text>
+        <Text style={styles.appName}>{copy.common.appName}</Text>
         <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
-          <Icon name="notifications" size={24} color="#8E3E26" />
+          <Icon name="notifications" color="#70605A" size={24} />
         </Pressable>
       </View>
 
-      {/* Main Screen Title */}
-      <Text style={styles.title}>{copy.nutrition.title}</Text>
-
-      {/* Horizontally-Scrollable Pill Tab Bar Filters */}
-      <View style={styles.filtersWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filtersScroll}
-          contentContainerStyle={styles.filtersContent}
-        >
-          {filters.map((filter) => {
-            const active = activeFilter === filter;
-            return (
-              <Pressable
-                accessibilityLabel={filter}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                key={filter}
-                onPress={() => setActiveFilter(filter)}
-                style={({ pressed }) => [
-                  styles.filter,
-                  active && styles.filterActive,
-                  pressed && styles.pressedFilter
-                ]}
-              >
-                <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                  {filter}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+      {/* Header Title Block */}
+      <View style={styles.header}>
+        <Text style={styles.title}>{copy.nutrition.title}</Text>
+        {plan ? <Text style={styles.subtitle}>{plan.stage_label_bn}</Text> : null}
       </View>
 
-      {/* Interactive Water Tracker Card */}
-      <Pressable onPress={handleWaterTap} style={({ pressed }) => [styles.waterCard, pressed && styles.pressedFilter]}>
-        <View style={styles.waterHeader}>
-          <Text style={styles.waterTitle}>{waterTitle}</Text>
+      {/* Interactive Stateful Water Intake Card */}
+      <View style={styles.waterCard}>
+        <View style={styles.waterHeaderRow}>
+          <Text style={styles.waterTitle}>আজ ৮ গ্লাস পানি পান করুন</Text>
           <View style={styles.waterBadge}>
-            <Text style={styles.waterBadgeText}>{toBanglaDigits(waterCount)}/৮</Text>
+            <Text style={styles.waterBadgeText}>{toBengaliNumeral(waterGlasses)}/৮</Text>
           </View>
         </View>
-        
-        <Text style={styles.waterSubtitle}>{waterSubtitle}</Text>
-        
-        {/* Rounded Glass Blocks Grid */}
-        <View style={styles.waterGrid}>
+
+        <Text style={waterGlasses === 8 ? styles.waterSubCompleted : styles.waterSub}>
+          {waterGlasses === 8
+            ? "🎉 অভিনন্দন! আজকের লক্ষ্য সম্পূর্ণ হয়েছে! আপনি দারুণ করেছেন।"
+            : "অ্যামনিওটিক তরল বজায় রাখতে হাইড্রেটেড থাকা জরুরি।"}
+        </Text>
+
+        <View style={styles.glassesRow}>
           {Array.from({ length: 8 }).map((_, index) => {
-            const filled = index < waterCount;
+            const isFilled = index < waterGlasses;
             return (
-              <View
+              <Pressable
                 key={index}
+                onPress={handleWaterIncrement}
                 style={[
-                  styles.waterBar,
-                  filled ? styles.waterBarActive : styles.waterBarInactive
+                  styles.glassTumbler,
+                  isFilled ? styles.glassFilled : styles.glassEmpty
                 ]}
               />
             );
           })}
         </View>
-      </Pressable>
-
-      {/* Recommended Food Header */}
-      <Text style={styles.sectionTitle}>{copy.nutrition.recommended}</Text>
-
-      {/* 2x2 Grid Recommended Food Cards */}
-      <View style={styles.grid}>
-        {visibleItems.length > 0 ? (
-          visibleItems.map((item) => (
-            <NutritionCard key={item.title} {...item} onPress={() => showNutritionInfo(item)} />
-          ))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>কোনো খাবার পাওয়া যায়নি।</Text>
-          </View>
-        )}
       </View>
+
+      {/* Scrollable Badges Category Bar */}
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabContent}>
+          {TABS.map((tab) => (
+            <Pressable
+              accessibilityLabel={tab}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activeTab === tab }}
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Summary Guidelines Card */}
+      {plan && activeTab === "সব" ? (
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryText}>{plan.app_display_summary_bn}</Text>
+        </View>
+      ) : null}
+
+      {/* Recommended Food Grid */}
+      {activeTab !== "ওষুধ" && activeTab !== "বিশ্রাম" ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>প্রস্তাবিত খাবার</Text>
+          <View style={styles.grid}>
+            {visibleFoods.map((food) => (
+              <NutritionCard
+                key={food.id}
+                imageSource={getFoodImage(food.name_bn, food.name_en) ?? undefined}
+                onPress={() => showFoodInfo(food)}
+                subtitle={food.amount_bn}
+                tag={nutrientLabel(food.nutrient_focus[0])}
+                title={food.name_bn}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {/* Supplements Tab content */}
+      {activeTab === "ওষুধ" ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>সাপ্লিমেন্ট</Text>
+          {SUPPLEMENT_GUIDANCE.map((supplement) => (
+            <View key={supplement.id} style={styles.supplementCard}>
+              <Text style={styles.suppName}>{supplement.name_bn}</Text>
+              <Text style={styles.suppBody}>{supplement.dose_bn}</Text>
+              <Text style={styles.suppTiming}>⏰ {supplement.timing_bn}</Text>
+              {supplement.side_effects_bn ? (
+                <Text style={styles.suppSideEffect}>⚠️ {supplement.side_effects_bn}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {/* Rest Tab content */}
+      {activeTab === "বিশ্রাম" ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>বিশ্রামের পরামর্শ</Text>
+          {[
+            "দিনে কমপক্ষে ৮ ঘণ্টা ঘুমান।",
+            "বাম পাশে শুয়ে ঘুমানো ভালো — এতে রক্তচলাচল ভালো হয়।",
+            "ভারী কাজ এড়িয়ে চলুন, বিশেষ করে শেষ তিন মাসে।",
+            "প্রতি ১-২ ঘণ্টা পর পর উঠে একটু হাঁটুন।",
+            "মানসিক চাপ কমাতে পরিবারের সাথে কথা বলুন।"
+          ].map((tip) => (
+            <View key={tip} style={styles.restTip}>
+              <Text style={styles.restTipText}>✓ {tip}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {/* Cautions section */}
+      {plan?.cautions_bn?.length ? (
+        <View style={styles.cautionSection}>
+          <Text style={styles.cautionTitle}>⚠️ সতর্কতা</Text>
+          {plan.cautions_bn.map((caution) => (
+            <Text key={caution} style={styles.cautionText}>
+              • {caution}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </ScreenShell>
   );
 }
@@ -251,159 +295,201 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 4
+    paddingVertical: spacing.sm,
+    backgroundColor: "#FFF9F6"
   },
   appName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#e8896a",
+    ...typography.h2,
+    color: "#70605A",
     textAlign: "center",
-    flex: 1,
-    fontFamily: typography.h2.fontFamily,
-    letterSpacing: 0.5
+    fontWeight: "bold",
+    flex: 1
   },
   iconButton: {
     alignItems: "center",
-    borderRadius: radius.full,
-    height: 44,
     justifyContent: "center",
-    width: 44
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FCEBE5"
+  },
+  header: {
+    gap: spacing.xs,
+    marginVertical: 4
   },
   title: {
-    fontSize: 28,
+    ...typography.h1,
+    color: "#4A3E39",
     fontWeight: "bold",
-    color: "#8E3E26",
-    fontFamily: typography.h1.fontFamily,
-    marginTop: 12,
-    marginBottom: 8
+    fontSize: 28
   },
-  filtersWrapper: {
-    marginHorizontal: -16, // Stretch categories out full bleed beyond page padding
-    marginBottom: 16
-  },
-  filtersScroll: {
-    paddingHorizontal: 16
-  },
-  filtersContent: {
-    flexDirection: "row",
-    gap: 10,
-    paddingRight: 32
-  },
-  filter: {
-    backgroundColor: "#ffffff",
-    borderColor: "#dac1ba",
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    minWidth: 64
-  },
-  filterActive: {
-    backgroundColor: "#e8896a",
-    borderColor: "transparent"
-  },
-  filterText: {
-    fontSize: 14,
-    color: "#54433d",
+  subtitle: {
+    ...typography.body,
+    color: "#E57A58",
     fontWeight: "600",
-    fontFamily: typography.label.fontFamily
+    fontSize: 16,
+    marginTop: 2
   },
-  filterTextActive: {
-    color: "#ffffff",
-    fontWeight: "bold"
-  },
-  pressedFilter: {
-    opacity: 0.92
-  },
-  /* Water Card styling matching mockup colors */
   waterCard: {
-    backgroundColor: "#D2ECFC", // Soft blue background tint
+    backgroundColor: "#CBE5F5",
     borderRadius: 18,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#2c4b58",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1
+    padding: 16,
+    gap: 0
   },
-  waterHeader: {
+  waterHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6
+    alignItems: "center"
   },
   waterTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#1C333B",
-    flex: 1,
-    fontFamily: typography.h2.fontFamily
+    color: "#0F375A"
   },
   waterBadge: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginLeft: 10,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center"
   },
   waterBadgeText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#1C333B",
-    fontFamily: typography.label.fontFamily
-  },
-  waterSubtitle: {
     fontSize: 14,
-    color: "#3B5B66",
-    lineHeight: 20,
-    marginBottom: 16,
-    fontFamily: typography.body.fontFamily
+    fontWeight: "bold",
+    color: "#405C6A"
   },
-  waterGrid: {
+  waterSub: {
+    fontSize: 14,
+    color: "#2E4C6D",
+    lineHeight: 20,
+    marginTop: 6
+  },
+  waterSubCompleted: {
+    fontSize: 14,
+    color: "#059669",
+    fontWeight: "bold",
+    lineHeight: 20,
+    marginTop: 6
+  },
+  glassesRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 16,
     width: "100%"
   },
-  waterBar: {
-    height: 48,
-    width: "10.5%", // Fits 8 bars perfectly with safe standard spacing gaps
-    borderRadius: 6
+  glassTumbler: {
+    width: "10.5%",
+    aspectRatio: 0.65,
+    borderRadius: 8
   },
-  waterBarActive: {
-    backgroundColor: "#3B5B66" // Dark slate-grey active glasses
+  glassFilled: {
+    backgroundColor: "#405C6A"
   },
-  waterBarInactive: {
-    backgroundColor: "rgba(59, 91, 102, 0.18)" // Soft transparent-blue un-drank glasses
+  glassEmpty: {
+    backgroundColor: "#A6D2EE",
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#8FBDDB"
   },
-  /* Recommended foods section styling */
+  tabContent: {
+    gap: spacing.xs,
+    paddingRight: spacing.base
+  },
+  tab: {
+    backgroundColor: "#FCEBE5",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10
+  },
+  tabActive: {
+    backgroundColor: "#E57A58"
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#70605A"
+  },
+  tabTextActive: {
+    color: "#FFFFFF"
+  },
+  summaryCard: {
+    backgroundColor: "#FFF5F2",
+    borderLeftColor: "#E57A58",
+    borderLeftWidth: 4,
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 2
+  },
+  summaryText: {
+    fontSize: 14,
+    color: "#70605A",
+    lineHeight: 22,
+    fontWeight: "500"
+  },
+  section: {
+    gap: spacing.sm
+  },
   sectionTitle: {
-    fontSize: 20,
+    ...typography.h2,
+    color: "#4A3E39",
     fontWeight: "bold",
-    color: "#271818",
-    marginBottom: 16,
-    fontFamily: typography.h2.fontFamily
+    fontSize: 20,
+    marginTop: 8
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: 16,
-    paddingBottom: 20
+    columnGap: 10,
+    paddingBottom: 16
   },
-  emptyContainer: {
-    width: "100%",
-    paddingVertical: 20,
-    justifyContent: "center",
-    alignItems: "center"
+  supplementCard: {
+    backgroundColor: colors.secondaryContainer,
+    borderRadius: radius.card,
+    gap: spacing.xs,
+    padding: spacing.cardPadding
   },
-  emptyText: {
-    fontSize: 14,
-    color: "#87726c",
-    fontFamily: typography.body.fontFamily
+  suppName: {
+    ...typography.h2,
+    color: colors.onSecondaryContainer
+  },
+  suppBody: {
+    ...typography.body,
+    color: colors.onSecondaryContainer
+  },
+  suppTiming: {
+    ...typography.label,
+    color: colors.secondary
+  },
+  suppSideEffect: {
+    ...typography.caption,
+    color: colors.error
+  },
+  restTip: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.md,
+    padding: spacing.base
+  },
+  restTipText: {
+    ...typography.body,
+    color: colors.onSurface
+  },
+  cautionSection: {
+    backgroundColor: colors.errorContainer,
+    borderRadius: radius.card,
+    gap: spacing.xs,
+    padding: spacing.base
+  },
+  cautionTitle: {
+    ...typography.label,
+    color: colors.onErrorContainer,
+    fontFamily: typography.h2.fontFamily
+  },
+  cautionText: {
+    ...typography.caption,
+    color: colors.onErrorContainer
   }
 });

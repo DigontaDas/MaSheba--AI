@@ -1,7 +1,8 @@
 import React from "react";
 import { Alert } from "react-native";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import PatientDashboardScreen from "../app/(tabs)/patients";
+import AlertsScreen from "../app/(mother-tabs)/alerts";
+import ChwDashboardScreen from "../app/(tabs)/home";
 import NutritionScreen from "../app/(mother-tabs)/nutrition";
 import ProfileScreen from "../app/(mother-tabs)/profile";
 import { MotherDashboard } from "@/features/mother/MotherDashboard";
@@ -23,6 +24,8 @@ const mockResetPasswordForEmail = jest.fn();
 const mockGetPatients = jest.fn();
 const mockGetOutboxSummary = jest.fn();
 const mockRunOutboxSync = jest.fn();
+const mockGetVisitCountForChwSince = jest.fn();
+const mockGetVisitSummariesByPatient = jest.fn();
 
 jest.mock("expo-router", () => {
   const React = require("react");
@@ -65,7 +68,8 @@ jest.mock("@/utils/phone", () => ({
 }));
 
 jest.mock("@/auth/secureSession", () => ({
-  clearSession: () => mockClearSession()
+  clearSession: () => mockClearSession(),
+  getSession: () => mockGetSession()
 }));
 
 jest.mock("@/auth/roleSession", () => ({
@@ -79,7 +83,14 @@ jest.mock("@/auth/supabaseAuth", () => ({
       signOut: () => mockSignOut(),
       getSession: () => mockGetSession(),
       resetPasswordForEmail: (email: string) => mockResetPasswordForEmail(email)
-    }
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({ data: { id: "chw-1", name: "রাহেলা বেগম" }, error: null })
+        })
+      })
+    })
   }
 }));
 
@@ -89,6 +100,11 @@ jest.mock("@/db/patients", () => ({
 
 jest.mock("@/db/outbox", () => ({
   getOutboxSummary: () => mockGetOutboxSummary()
+}));
+
+jest.mock("@/db/visits", () => ({
+  getVisitCountForChwSince: (...args: unknown[]) => mockGetVisitCountForChwSince(...args),
+  getVisitSummariesByPatient: (...args: unknown[]) => mockGetVisitSummariesByPatient(...args)
 }));
 
 jest.mock("@/sync/backgroundSync", () => ({
@@ -128,11 +144,20 @@ describe("mobile interactive elements", () => {
     mockSignOut.mockResolvedValue(undefined);
     mockClearSession.mockResolvedValue(undefined);
     mockClearRoleSession.mockResolvedValue(undefined);
-    mockGetSession.mockResolvedValue({ data: { session: { user: { email: "mother@example.com" } } } });
+    mockGetSession.mockResolvedValue({
+      accessToken: "access",
+      refreshToken: "refresh",
+      chwId: "chw-1",
+      data: { session: { user: { email: "mother@example.com" } } }
+    });
     mockResetPasswordForEmail.mockResolvedValue({ error: null });
     mockGetPatients.mockResolvedValue([patient]);
     mockGetOutboxSummary.mockResolvedValue({ pending: 0, failed: 0, lastSyncedAt: null });
     mockRunOutboxSync.mockResolvedValue(undefined);
+    mockGetVisitCountForChwSince.mockResolvedValue(1);
+    mockGetVisitSummariesByPatient.mockResolvedValue([
+      { patientId: "patient-1", lastVisitedAt: "2026-05-23T00:00:00.000Z", visitCount: 1 }
+    ]);
   });
 
   it("wires mother dashboard menu, notification, audio, and emergency actions", async () => {
@@ -201,30 +226,40 @@ describe("mobile interactive elements", () => {
     act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.nutrition.drinks }).props.onPress();
     });
-    expect(JSON.stringify(tree.toJSON())).toContain(copy.nutrition.milk);
+    expect(JSON.stringify(tree.toJSON())).toContain("দুধ/দই + ফল + পানি");
     expect(JSON.stringify(tree.toJSON())).not.toContain(copy.nutrition.spinach);
 
     act(() => {
-      tree.root.findByProps({ accessibilityLabel: copy.nutrition.milk }).props.onPress();
+      tree.root.findByProps({ accessibilityLabel: "দুধ/দই + ফল + পানি" }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith(copy.nutrition.milk, `${copy.nutrition.milkAmount}\n${copy.nutrition.calcium}`, [{ text: "ঠিক আছে" }]);
+    expect((Alert.alert as jest.Mock).mock.calls.at(-1)).toEqual([
+      "দুধ/দই + ফল + পানি",
+      "দুধ/দই ১ পরিবেশন; ফল ২ পরিবেশন; পানি ৯-১০ গ্লাস\nক্যালসিয়াম\nবিকল্প: ছোট মাছ, কলা, পেয়ারা",
+      [{ text: "ঠিক আছে" }]
+    ]);
   });
 
-  it("wires CHW dashboard menu, notification, and clinic call action", async () => {
-    const tree = await renderTree(<PatientDashboardScreen />);
+  it("renders the alerts screen with emergency guidance and symptom cards", async () => {
+    const tree = await renderTree(<AlertsScreen />);
+    const output = JSON.stringify(tree.toJSON());
+
+    expect(output).toContain("জরুরি সতর্কতা");
+    expect(output).toContain("জরুরি লক্ষণসমূহ");
+    expect(output).toContain("উপসর্গ অনুযায়ী পরামর্শ");
+  });
+
+  it("wires CHW dashboard notification and clinic call action", async () => {
+    const tree = await renderTree(<ChwDashboardScreen />);
 
     act(() => {
-      tree.root.findByProps({ accessibilityLabel: "মেনু" }).props.onPress();
+      tree.root.findByProps({ accessibilityLabel: copy.chwDashboard.notificationsTitle }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith("মেনু", "", expect.any(Array));
+    expect(Alert.alert).toHaveBeenCalledWith(copy.chwDashboard.notificationsTitle, copy.chwDashboard.notificationsEmpty, [
+      { text: copy.common.close }
+    ]);
 
     act(() => {
-      tree.root.findByProps({ accessibilityLabel: "নোটিফিকেশন" }).props.onPress();
-    });
-    expect(Alert.alert).toHaveBeenCalledWith("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
-
-    act(() => {
-      tree.root.findByProps({ accessibilityLabel: copy.dashboard.clinic }).props.onPress();
+      tree.root.findByProps({ accessibilityLabel: copy.chwDashboard.healthCenter }).props.onPress();
     });
     expect(mockCallPhoneNumber).toHaveBeenCalledWith("16789");
 

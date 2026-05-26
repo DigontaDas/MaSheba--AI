@@ -115,7 +115,7 @@ export function MotherDashboard({
       <View style={styles.grid}>
         <ActionCard icon="monitor-heart" title={copy.mother.healthTips} onPress={() => router.push("/(mother-tabs)/progress")} />
         <ActionCard icon="restaurant-menu" title={copy.mother.nutritionAdvice} onPress={() => router.push("/(mother-tabs)/nutrition")} />
-        <ActionCard icon="warning" title={copy.mother.warningSigns} onPress={() => router.push("/(mother-tabs)/chat")} />
+        <ActionCard icon="warning" title={copy.mother.warningSigns} onPress={() => router.push("/(mother-tabs)/alerts")} />
         <ActionCard icon="local-hospital" title={copy.mother.emergencyHelp} onPress={showEmergencyHelp} />
       </View>
 
