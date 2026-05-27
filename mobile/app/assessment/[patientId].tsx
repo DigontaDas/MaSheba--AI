@@ -14,6 +14,10 @@ import {
 } from "react-native";
 import { Icon } from "@/components/ui/Icon";
 import { copy } from "@/data/stitchCopy.bn";
+import { notifyNow } from "@/notifications/notify";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
+import { formatNumber } from "@/utils/localizedFormat";
 import { getPatient } from "@/db/patients";
 import { insertVisit, getLastVisitForPatient } from "@/db/visits";
 import { getSession } from "@/auth/secureSession";
@@ -70,6 +74,33 @@ function restoreChecks(record: any, lastVisit: any): CheckItem[] {
 
 export default function RiskAssessmentScreen() {
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
+  const { language } = useLanguage();
+  const copy = useCopy();
+  const [badgeCount, setBadgeCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    async function getBadge() {
+      try {
+        const Notifications = require("expo-notifications");
+        const count = await Notifications.getBadgeCountAsync();
+        if (active) setBadgeCount(count);
+      } catch {
+        // Fallback
+      }
+    }
+    getBadge();
+    return () => { active = false; };
+  }, []);
+
+  const showNotifications = () => {
+    Alert.alert(
+      language === "en" ? "Notifications" : "বিজ্ঞপ্তি",
+      language === "en" ? "No new notifications." : "কোনো নতুন বিজ্ঞপ্তি নেই।",
+      [{ text: language === "en" ? "OK" : "ঠিক আছে" }]
+    );
+  };
+
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -219,6 +250,8 @@ export default function RiskAssessmentScreen() {
         } as any
       };
 
+      const riskScore = systolicVal >= 140 ? 0.85 : (systolicVal >= 125 ? 0.5 : 0.2);
+
       await insertVisit({
         patient: {
           id: patientId,
@@ -230,14 +263,22 @@ export default function RiskAssessmentScreen() {
         input: visitInput,
         prediction: {
           risk_level: systolicVal >= 140 ? "HIGH" : systolicVal >= 125 ? "MODERATE" : "LOW",
-          score: 0.85,
+          score: riskScore,
           reasons: ["রক্তচাপ ট্রায়াজ"]
         }
       });
 
+      if (riskScore >= 0.7) {
+        notifyNow("⚠️ উচ্চ ঝুঁকি", `${patient?.name ?? "ফাতেমা বেগম"} জরুরি মূল্যায়ন প্রয়োজন`, "maasheba-emergency");
+      }
+
       Alert.alert("💾 তথ্য সংরক্ষিত", "পরিদর্শন ও মূল্যায়ন বিবরণী সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।");
       router?.back?.();
     } catch (e) {
+      const riskScore = systolicVal >= 140 ? 0.85 : (systolicVal >= 125 ? 0.5 : 0.2);
+      if (riskScore >= 0.7) {
+        notifyNow("⚠️ উচ্চ ঝুঁকি", `${patient?.name ?? "ফাতেমা বেগম"} জরুরি মূল্যায়ন প্রয়োজন`, "maasheba-emergency");
+      }
       Alert.alert("সফলতা", "পরিদর্শন বিবরণী অফলাইনে সংরক্ষিত হয়েছে!");
       router?.back?.();
     }
@@ -305,8 +346,20 @@ export default function RiskAssessmentScreen() {
           <Icon name="arrow-back" color="#70605A" size={24} />
         </Pressable>
         <Text style={styles.headerTitle}>{patientName}</Text>
-        <Pressable style={styles.bellButton}>
-          <Icon name="notifications-none" color="#70605A" size={24} />
+        <Pressable
+          accessibilityLabel={language === "en" ? "Notifications" : "বিজ্ঞপ্তি"}
+          accessibilityRole="button"
+          onPress={showNotifications}
+          style={styles.bellButton}
+        >
+          <View style={{ position: "relative" }}>
+            <Icon name="notifications" color="#70605A" size={24} />
+            {badgeCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{formatNumber(badgeCount, language)}</Text>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
       </View>
 
@@ -479,11 +532,16 @@ export default function RiskAssessmentScreen() {
                 <Icon name={isNormal ? "check-circle" : "calendar-today"} color={isNormal ? "#4A6047" : "#B3261E"} size={18} />
                 <Text style={styles.medName}>ক্যালসিয়াম ট্যাবলেট</Text>
               </View>
-              <View style={[styles.medBadge, isNormal ? styles.medBadgeGreen : styles.medBadgeRed]}>
+              <Pressable
+                accessibilityLabel={isNormal ? "সঠিক" : "যাচাই করুন"}
+                accessibilityRole="button"
+                onPress={() => !isNormal && router.push("/(tabs)/medicine")}
+                style={[styles.medBadge, isNormal ? styles.medBadgeGreen : styles.medBadgeRed]}
+              >
                 <Text style={isNormal ? styles.medBadgeTextGreen : styles.medBadgeTextRed}>
                   {isNormal ? "সঠিক" : "যাচাই করুন"}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -867,5 +925,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#FFFFFF"
+  },
+  bellBadge: {
+    alignItems: "center",
+    backgroundColor: "#ba1a1a",
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: "center",
+    position: "absolute",
+    right: -2,
+    top: -2
+  },
+  bellBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "bold"
   }
 });

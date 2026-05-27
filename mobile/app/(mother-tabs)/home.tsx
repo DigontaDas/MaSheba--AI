@@ -4,6 +4,7 @@ import { MotherDashboard } from "@/features/mother/MotherDashboard";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
 import { colors, radius, spacing, typography } from "@/theme";
 import { copy } from "@/data/stitchCopy.bn";
+import { scheduleReminder } from "@/notifications/notify";
 
 export default function MotherHomeScreen() {
   const [week, setWeek] = useState(24);
@@ -15,6 +16,8 @@ export default function MotherHomeScreen() {
         if (profile?.gestationalAgeWeeks) {
           setWeek(profile.gestationalAgeWeeks);
         }
+        // Schedule visit reminder (if visit scheduled, e.g. at 08:00)
+        scheduleReminder("📅 পরিদর্শন আজ", "আজ আপনার স্বাস্থ্যকর্মী আসবেন", 8, 0, false, "maasheba-reminders");
       })
       .catch((loadError) => {
         setLoadError(loadError instanceof Error ? loadError.message : copy.common.loadFailed);

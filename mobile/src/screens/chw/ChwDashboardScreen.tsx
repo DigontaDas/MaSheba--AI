@@ -30,6 +30,7 @@ export default function ChwDashboardScreen() {
   const [visitsToday, setVisitsToday] = useState(0);
   const [recentMessages, setRecentMessages] = useState<ChatMessage[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [badgeCount, setBadgeCount] = useState(0);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -52,6 +53,14 @@ export default function ChwDashboardScreen() {
     getRecentUnreadMessages(session.chwId, 3)
       .then(setRecentMessages)
       .catch(() => setRecentMessages([]));
+
+    try {
+      const Notifications = require("expo-notifications");
+      const count = await Notifications.getBadgeCountAsync();
+      setBadgeCount(count);
+    } catch {
+      setBadgeCount(0);
+    }
   }, [language]);
 
   useFocusEffect(
@@ -74,16 +83,24 @@ export default function ChwDashboardScreen() {
   );
 
   const showNotifications = () => {
-    if (!recentMessages.length) {
-      Alert.alert(copy.chwDashboard.notificationsTitle, copy.chwDashboard.notificationsEmpty, [{ text: copy.common.close }]);
+    const finalCount = badgeCount > 0 ? badgeCount : recentMessages.length;
+    if (finalCount === 0) {
+      Alert.alert(
+        copy.chwDashboard.notificationsTitle,
+        copy.chwDashboard.notificationsEmpty,
+        [{ text: copy.common.close }]
+      );
       return;
     }
+    const msgList = recentMessages.length 
+      ? recentMessages.map((message) => `• ${message.message}`).join("\n")
+      : (language === "en" ? "You have unread messages in chat." : "আপনার চ্যাটে অপঠিত বার্তা রয়েছে।");
     Alert.alert(
-      language === "en" ? "Notifications" : "নোটিফিকেশন",
-      recentMessages.map((message) => `• ${message.message}`).join("\n"),
+      copy.chwDashboard.notificationsTitle,
+      msgList,
       [
         { text: language === "en" ? "Open Chat" : "চ্যাট খুলুন", onPress: () => router.push("/(tabs)/chat") },
-        { text: language === "en" ? "Close" : "বন্ধ" }
+        { text: copy.common.close }
       ]
     );
   };
@@ -103,9 +120,9 @@ export default function ChwDashboardScreen() {
         </View>
         <Pressable accessibilityLabel={language === "en" ? "Notifications" : "নোটিফিকেশন"} accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
           <Icon name="notifications" color="#70605A" size={24} />
-          {recentMessages.length ? (
+          {(badgeCount > 0 || recentMessages.length > 0) ? (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{formatNumber(recentMessages.length, language)}</Text>
+              <Text style={styles.badgeText}>{formatNumber(badgeCount > 0 ? badgeCount : recentMessages.length, language)}</Text>
             </View>
           ) : null}
         </Pressable>
@@ -260,17 +277,18 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignItems: "center",
-    backgroundColor: "#B3261E",
-    borderRadius: 9,
-    minWidth: 18,
-    paddingHorizontal: 4,
+    backgroundColor: "#ba1a1a",
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: "center",
     position: "absolute",
     right: -2,
     top: -2
   },
   badgeText: {
     color: "#FFFFFF",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "bold"
   },
   content: {

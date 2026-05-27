@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 
 export function ProgressBar({
@@ -12,6 +13,7 @@ export function ProgressBar({
   label?: string;
   showMarkers?: boolean;
 }) {
+  const copy = useCopy();
   const percent = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
     <View accessibilityRole="progressbar" accessibilityValue={{ now: percent, min: 0, max: 100 }} style={styles.wrap}>
@@ -21,8 +23,8 @@ export function ProgressBar({
       </View>
       {showMarkers ? (
         <View style={styles.markers}>
-          <Text style={styles.marker}>সপ্তাহ ১</Text>
-          <Text style={styles.marker}>সপ্তাহ ৪০</Text>
+          <Text style={styles.marker}>{copy.mother.week1}</Text>
+          <Text style={styles.marker}>{copy.mother.week40}</Text>
         </View>
       ) : null}
     </View>

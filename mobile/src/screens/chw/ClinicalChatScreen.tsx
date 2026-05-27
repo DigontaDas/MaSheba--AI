@@ -28,6 +28,7 @@ import { getSession } from "@/auth/secureSession";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { notificationTitleForMessage, scheduleLocalNotification } from "@/notifications/notificationService";
+import { notifyNow } from "@/notifications/notify";
 import { colors, radius, spacing, typography } from "@/theme";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCopy } from "@/data/useCopy";
@@ -394,6 +395,7 @@ export default function ClinicalChatScreen() {
             emergency: response.is_emergency
           }
         ]);
+        notifyNow("MaaSheba AI", response.answer.substring(0, 80), "maasheba-default");
       } else {
         throw new Error("No online reply");
       }

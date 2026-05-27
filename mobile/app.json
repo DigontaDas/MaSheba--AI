@@ -3,11 +3,17 @@
     "name": "MaSheba AI",
     "slug": "maasheba-ai",
     "scheme": "maasheba",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#96482e",
+      "androidMode": "default",
+      "androidCollapsedTitle": "MaaSheba AI"
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,6 +21,7 @@
     },
     "android": {
       "package": "com.maasheba.mobile",
+      "versionCode": 3,
       "minSdkVersion": 26,
       "jsEngine": "hermes",
       "enableProguardInReleaseBuilds": true,

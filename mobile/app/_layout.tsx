@@ -17,7 +17,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ensureLocalDbReady } from "@/db/localDbAccess";
-import { registerForPushNotifications } from "@/notifications/notificationService";
+import { setupNotifications } from "@/notifications/notificationSetup";
 import { registerOutboxSyncTask } from "@/sync/registerSyncTask";
 import { colors } from "@/theme";
 
@@ -35,7 +35,7 @@ export default function RootLayout() {
     ensureLocalDbReady()
       .then(registerOutboxSyncTask)
       .catch((error) => { /* console.warn("Startup initialization failed", error) */ void error; });
-    registerForPushNotifications().catch((error) => { /* console.warn("Notification setup failed", error) */ void error; });
+    setupNotifications().catch((error) => { /* console.warn("Notification setup failed", error) */ void error; });
   }, []);
 
   useEffect(() => {

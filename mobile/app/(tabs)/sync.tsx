@@ -10,6 +10,7 @@ import { copy } from "@/data/stitchCopy.bn";
 import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getOutboxSummary } from "@/db/outbox";
 import { runOutboxSync } from "@/sync/backgroundSync";
+import { notifyNow } from "@/notifications/notify";
 import { colors, radius, spacing, typography } from "@/theme";
 import { minutesSince } from "@/utils/time";
 
@@ -41,9 +42,11 @@ export default function SyncScreen() {
 
   const syncNow = async () => {
     setLoading(true);
+    const count = summary.pending;
     try {
       await runOutboxSync();
       await load();
+      notifyNow("✅ সিঙ্ক সম্পন্ন", `${count} টি রেকর্ড সিঙ্ক হয়েছে`, "maasheba-default");
     } catch (syncError) {
       setLoadError(getLocalDbErrorMessage(syncError, copy.sync.syncFailed));
     } finally {
