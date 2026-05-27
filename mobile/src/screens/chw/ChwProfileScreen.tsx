@@ -56,7 +56,16 @@ export default function ChwProfileScreen() {
       }
 
       if (!profileResponse.error && profileResponse.data?.name) {
-        setName(profileResponse.data.name);
+        const dbName = profileResponse.data.name;
+        if (dbName === "CHW_A") {
+          setName("রাহেলা বেগম");
+        } else if (dbName === "CHW_B") {
+          setName("মোসাঃ সুফিয়া খাতুন");
+        } else if (dbName.startsWith("CHW_")) {
+          setName(`স্বাস্থ্যকর্মী ${dbName.replace("CHW_", "")}`);
+        } else {
+          setName(dbName);
+        }
       }
     } catch (e) {
       // Keep beautiful mock fallbacks intact
@@ -116,46 +125,76 @@ export default function ChwProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Clinician Profile Block */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarWrap}>
-            <Image
-              source={require("../../../assets/images/Login_page_pic.png")}
-              style={styles.profileImage}
-            />
-            <View style={styles.verifiedBadge}>
-              <Icon name="verified" color="#FFFFFF" size={12} />
+        {/* Redesigned Clinician ID Card */}
+        <View style={styles.identityCard}>
+          <View style={styles.identityCardHeader}>
+            <View style={styles.badgeStethoscopeCircle}>
+              <Icon name="health-and-safety" color="#FFFFFF" size={22} />
+            </View>
+            <View style={styles.activeStatusRow}>
+              <View style={styles.activeStatusDot} />
+              <Text style={styles.activeStatusText}>সক্রিয় স্বাস্থ্যকর্মী</Text>
             </View>
           </View>
 
-          <Text style={styles.clinicianName}>{name}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>সিনিয়র স্বাস্থ্যকর্মী</Text>
+          <View style={styles.identityCardBody}>
+            <View style={styles.clinicianAvatarWrap}>
+              <View style={styles.clinicianAvatar}>
+                <Text style={styles.clinicianAvatarText}>{name.slice(0, 2)}</Text>
+              </View>
+              <View style={styles.identityVerifiedBadge}>
+                <Icon name="verified" color="#FFFFFF" size={12} />
+              </View>
+            </View>
+
+            <View style={styles.clinicianDetails}>
+              <Text style={styles.clinicianNameText}>{name}</Text>
+              <Text style={styles.clinicianRoleText}>সিনিয়র স্বাস্থ্যকর্মী (CHW-Senior)</Text>
+              <Text style={styles.clinicianIdText}>আইডি: CHW-88291</Text>
+            </View>
           </View>
-          <Text style={styles.idLabel}>ID: CHW-88291</Text>
+
+          <View style={styles.identityCardDivider} />
+
+          <View style={styles.identityCardFooter}>
+            <View style={styles.footerDetailRow}>
+              <Icon name="location-on" color="#A08E88" size={14} />
+              <Text style={styles.footerDetailText}>কুমিল্লা অঞ্চল</Text>
+            </View>
+            <View style={styles.footerDetailRow}>
+              <Icon name="calendar-today" color="#A08E88" size={14} />
+              <Text style={styles.footerDetailText}>যোগদান: ১২ মার্চ ২০২৪</Text>
+            </View>
+          </View>
         </View>
 
         {/* Performance stats section */}
         <View style={styles.statsSection}>
           <View style={styles.sectionHeader}>
             <Icon name="trending-up" color="#70605A" size={16} />
-            <Text style={styles.sectionTitle}>প্রদর্শন</Text>
+            <Text style={styles.sectionTitle}>প্রদর্শন ও পরিসংখ্যান</Text>
           </View>
 
           <View style={styles.statsGrid}>
             {/* Card 1: Today's Patients */}
             <View style={[styles.statCard, styles.statCardTerracotta]}>
-              <Text style={[styles.statValue, styles.textTerracotta]}>
-                {toBanglaNumber(patientCount)}
-              </Text>
+              <View style={styles.statCardHeaderRow}>
+                <Icon name="people" color="#E57A58" size={20} />
+                <Text style={[styles.statValue, styles.textTerracotta]}>
+                  {toBanglaNumber(patientCount)}
+                </Text>
+              </View>
               <Text style={styles.statLabel}>আজকের রোগী</Text>
             </View>
 
             {/* Card 2: Weekly Visits */}
             <View style={[styles.statCard, styles.statCardGreen]}>
-              <Text style={[styles.statValue, styles.textGreen]}>
-                {toBanglaNumber(visitCount)}
-              </Text>
+              <View style={styles.statCardHeaderRow}>
+                <Icon name="assignment" color="#4A6047" size={20} />
+                <Text style={[styles.statValue, styles.textGreen]}>
+                  {toBanglaNumber(visitCount)}
+                </Text>
+              </View>
               <Text style={styles.statLabel}>এই সপ্তাহের পরিদর্শন</Text>
             </View>
           </View>
@@ -304,59 +343,132 @@ const styles = StyleSheet.create({
     gap: 24
   },
 
-  // Profile block
-  profileSection: {
+  // Redesigned ID Card
+  identityCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#F5ECE9",
+    padding: 20,
+    elevation: 3,
+    shadowColor: "#E57A58",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    gap: 16
+  },
+  identityCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  badgeStethoscopeCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#96482e", // Deep terracotta
     alignItems: "center",
-    gap: 8
+    justifyContent: "center"
   },
-  avatarWrap: {
-    position: "relative"
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: "#FFFFFF",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6
-  },
-  verifiedBadge: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#8C4A32",
+  activeStatusRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#FFFFFF"
-  },
-  clinicianName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4A3E39"
-  },
-  roleBadge: {
     backgroundColor: "#EBF5EB",
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 4
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    gap: 6
   },
-  roleBadgeText: {
-    fontSize: 14,
+  activeStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4A6047"
+  },
+  activeStatusText: {
+    fontSize: 12,
     color: "#4A6047",
     fontWeight: "bold"
   },
-  idLabel: {
-    fontSize: 14,
+  identityCardBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16
+  },
+  clinicianAvatarWrap: {
+    position: "relative"
+  },
+  clinicianAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#FFF0ED",
+    borderWidth: 2,
+    borderColor: "#FCEBE5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  clinicianAvatarText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#96482e"
+  },
+  identityVerifiedBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#96482e",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF"
+  },
+  clinicianDetails: {
+    flex: 1,
+    gap: 3
+  },
+  clinicianNameText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#4A3E39"
+  },
+  clinicianRoleText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#70605A"
+  },
+  clinicianIdText: {
+    fontSize: 11,
     color: "#A08E88",
     fontWeight: "600"
+  },
+  identityCardDivider: {
+    height: 1,
+    backgroundColor: "#F5ECE9"
+  },
+  identityCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  footerDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  footerDetailText: {
+    fontSize: 12,
+    color: "#70605A",
+    fontWeight: "600"
+  },
+  statCardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%"
   },
 
   // Performance Section

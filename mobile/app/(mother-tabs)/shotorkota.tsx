@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
+import { MenuModal } from "@/components/ui/MenuModal";
 import { colors, radius, spacing, typography } from "@/theme";
 import { copy } from "@/data/stitchCopy.bn";
 import { SYMPTOM_GUIDANCE } from "@/data/nutritionData";
@@ -34,6 +35,7 @@ export default function ShotorkotaScreen() {
   const { t } = useLanguage();
   const [expandedSymptom, setExpandedSymptom] = useState<string | null>(null);
   const [expandedQa, setExpandedQa] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -45,13 +47,7 @@ export default function ShotorkotaScreen() {
   };
 
   const showMenu = () => {
-    Alert.alert("মেনু", "", [
-      { text: "হোম", onPress: () => router.push("/(mother-tabs)/home") },
-      { text: "পুষ্টি", onPress: () => router.push("/(mother-tabs)/nutrition") },
-      { text: "প্রোফাইল", onPress: () => router.push("/(mother-tabs)/profile") },
-      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
-      { text: "বাতিল", style: "cancel" }
-    ]);
+    setMenuVisible(true);
   };
 
   const showNotifications = () => {
@@ -60,6 +56,11 @@ export default function ShotorkotaScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      <MenuModal 
+        visible={menuVisible} 
+        onClose={() => setMenuVisible(false)} 
+        onLogout={handleLogout} 
+      />
       {/* Uniform Top Header Bar */}
       <View style={styles.topBar}>
         <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>

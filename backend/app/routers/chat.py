@@ -10,6 +10,7 @@ router = APIRouter(tags=["chat"])
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=500)
+    system_prompt: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -24,5 +25,5 @@ async def chat(request: ChatRequest) -> ChatResponse:
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="Question cannot be empty")
 
-    result = await get_chat_response(request.question)
+    result = await get_chat_response(request.question, system_prompt=request.system_prompt)
     return ChatResponse(**result)

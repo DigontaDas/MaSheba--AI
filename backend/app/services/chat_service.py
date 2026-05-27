@@ -39,14 +39,15 @@ SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[।!?])\s+")
 GEMINI_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash"]
 
 
-async def get_chat_response(question: str) -> dict[str, Any]:
+async def get_chat_response(question: str, system_prompt: str | None = None) -> dict[str, Any]:
     settings = get_settings()
     normalized_question = question.strip()
+    prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else SYSTEM_PROMPT
     is_emergency = any(keyword in normalized_question for keyword in EMERGENCY_KEYWORDS)
 
     if settings.groq_api_key:
         try:
-            response = await _call_groq(normalized_question, settings.groq_api_key)
+            response = await _call_groq(normalized_question, settings.groq_api_key, prompt)
             if response and _is_provider_answer_acceptable(response, normalized_question, is_emergency):
                 return _build_response(response, is_emergency, "groq")
         except Exception as exc:  # pragma: no cover - provider instability is tested via fallback
@@ -54,7 +55,7 @@ async def get_chat_response(question: str) -> dict[str, Any]:
 
     if settings.gemini_api_key:
         try:
-            response = await _call_gemini(normalized_question, settings.gemini_api_key)
+            response = await _call_gemini(normalized_question, settings.gemini_api_key, prompt)
             if response and _is_provider_answer_acceptable(response, normalized_question, is_emergency):
                 return _build_response(response, is_emergency, "gemini")
         except Exception as exc:  # pragma: no cover - provider instability is tested via fallback
@@ -68,11 +69,11 @@ async def get_chat_response(question: str) -> dict[str, Any]:
     }
 
 
-async def _call_groq(question: str, api_key: str) -> str | None:
+async def _call_groq(question: str, api_key: str, system_prompt: str = SYSTEM_PROMPT) -> str | None:
     payload = {
         "model": "llama-3.1-8b-instant",
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": question},
         ],
         "max_tokens": 300,
@@ -98,7 +99,7 @@ async def _call_groq(question: str, api_key: str) -> str | None:
     return content if isinstance(content, str) else None
 
 
-async def _call_gemini(question: str, api_key: str) -> str | None:
+async def _call_gemini(question: str, api_key: str, system_prompt: str = SYSTEM_PROMPT) -> str | None:
     async with httpx.AsyncClient(timeout=30.0) as client:
         for model_name in GEMINI_MODELS:
             generation_config: dict[str, Any] = {
@@ -110,7 +111,7 @@ async def _call_gemini(question: str, api_key: str) -> str | None:
 
             payload = {
                 "system_instruction": {
-                    "parts": [{"text": SYSTEM_PROMPT}]
+                    "parts": [{"text": system_prompt}]
                 },
                 "contents": [
                     {

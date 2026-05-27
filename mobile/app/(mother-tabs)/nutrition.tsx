@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { NutritionCard } from "@/components/nutrition/NutritionCard";
 import { Icon } from "@/components/ui/Icon";
+import { MenuModal } from "@/components/ui/MenuModal";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearRoleSession, getCurrentMotherProfile } from "@/auth/roleSession";
 import { clearSession } from "@/auth/secureSession";
@@ -65,26 +66,59 @@ export default function NutritionScreen() {
   const [waterGlasses, setWaterGlasses] = useState(0); // Starts at 0 matching request
   const [riskLevel, setRiskLevel] = useState<NutritionRiskLevel>("LOW");
 
+  const [checklist, setChecklist] = useState({
+    iron: false,
+    calcium: false,
+    protein: false,
+    greens: false,
+    milkEgg: false,
+    water: false,
+    fruits: false
+  });
+
   useEffect(() => {
-    const loadWaterData = async () => {
+    const loadDailyProgress = async () => {
       try {
         const todayStr = new Date().toISOString().split("T")[0];
-        const savedDate = await SecureStore.getItemAsync("water_tracking_date");
+        
+        // 1. Water Intake loading
+        const savedWaterDate = await SecureStore.getItemAsync("water_tracking_date");
         const savedGlasses = await SecureStore.getItemAsync("water_tracking_count");
-
-        if (savedDate === todayStr && savedGlasses) {
-          setWaterGlasses(parseInt(savedGlasses, 10));
+        let currentGlasses = 0;
+        if (savedWaterDate === todayStr && savedGlasses) {
+          currentGlasses = parseInt(savedGlasses, 10);
+          setWaterGlasses(currentGlasses);
         } else {
           await SecureStore.setItemAsync("water_tracking_date", todayStr);
           await SecureStore.setItemAsync("water_tracking_count", "0");
           setWaterGlasses(0);
         }
+
+        // 2. Nutrition Checklist loading
+        const savedChecklistDate = await SecureStore.getItemAsync("nutrition_checklist_date");
+        const savedChecklist = await SecureStore.getItemAsync("nutrition_checklist_state");
+        if (savedChecklistDate === todayStr && savedChecklist) {
+          setChecklist(JSON.parse(savedChecklist));
+        } else {
+          await SecureStore.setItemAsync("nutrition_checklist_date", todayStr);
+          const initialChecklist = {
+            iron: false,
+            calcium: false,
+            protein: false,
+            greens: false,
+            milkEgg: false,
+            water: currentGlasses === 8,
+            fruits: false
+          };
+          await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(initialChecklist));
+          setChecklist(initialChecklist);
+        }
       } catch (err) {
-        console.warn("Error loading water progress:", err);
+        console.warn("Error loading daily progress:", err);
       }
     };
 
-    loadWaterData();
+    loadDailyProgress();
 
     getCurrentMotherProfile()
       .then((profile) => {
@@ -104,6 +138,36 @@ export default function NutritionScreen() {
       })
       .catch(() => undefined);
   }, []);
+
+  // Auto-sync water checklist item when glasses count changes
+  useEffect(() => {
+    const syncWaterCheck = async () => {
+      const isWaterDone = waterGlasses === 8;
+      if (checklist.water !== isWaterDone) {
+        const updated = { ...checklist, water: isWaterDone };
+        setChecklist(updated);
+        try {
+          await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(updated));
+        } catch (e) {
+          console.warn("Failed to sync water check state:", e);
+        }
+      }
+    };
+    syncWaterCheck();
+  }, [waterGlasses]);
+
+  const handleToggleChecklist = async (key: keyof typeof checklist) => {
+    const updated = {
+      ...checklist,
+      [key]: !checklist[key]
+    };
+    setChecklist(updated);
+    try {
+      await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving checklist:", err);
+    }
+  };
 
   const handleWaterIncrement = async () => {
     if (waterGlasses < 8) {
@@ -129,6 +193,8 @@ export default function NutritionScreen() {
   }, [activeTab, plan, riskLevel]);
   const riskOverlay = RISK_NUTRITION_OVERLAY[riskLevel];
 
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -139,12 +205,7 @@ export default function NutritionScreen() {
   };
 
   const showMenu = () => {
-    Alert.alert("মেনু", "", [
-      { text: "হোম", onPress: () => router.push("/(mother-tabs)/home") },
-      { text: "প্রোফাইল", onPress: () => router.push("/(mother-tabs)/profile") },
-      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
-      { text: "বাতিল", style: "cancel" }
-    ]);
+    setMenuVisible(true);
   };
 
   const showNotifications = () => {
@@ -159,6 +220,11 @@ export default function NutritionScreen() {
 
   return (
     <ScreenShell>
+      <MenuModal 
+        visible={menuVisible} 
+        onClose={() => setMenuVisible(false)} 
+        onLogout={handleLogout} 
+      />
       {/* Top Header Bar */}
       <View style={styles.topBar}>
         <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
@@ -203,6 +269,68 @@ export default function NutritionScreen() {
                   isFilled ? styles.glassFilled : styles.glassEmpty
                 ]}
               />
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Daily Nutrition Checklist Component */}
+      <View style={styles.checklistCard}>
+        <View style={styles.checklistHeaderRow}>
+          <Text style={styles.checklistTitle}>আজকের পুষ্টি চেকলিস্ট</Text>
+          <View style={styles.checklistScoreBadge}>
+            <Text style={styles.checklistScoreText}>
+              {toBengaliNumeral(Object.values(checklist).filter(Boolean).length)}/৭
+            </Text>
+          </View>
+        </View>
+
+        <Text style={Object.values(checklist).every(Boolean) ? styles.checklistCompletedText : styles.checklistSubText}>
+          {Object.values(checklist).every(Boolean)
+            ? "🎉 চমৎকার! আজকের সুষম পুষ্টি সম্পূর্ণ হয়েছে! আপনি সেরা যত্ন নিচ্ছেন।"
+            : "সুস্থ গর্ভাবস্থার জন্য প্রতিদিন নিচের খাবার ও ওষুধগুলো নিশ্চিত করুন।"}
+        </Text>
+
+        {/* Dynamic Progress Bar */}
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressBarFill,
+              { width: `${(Object.values(checklist).filter(Boolean).length / 7) * 100}%` }
+            ]}
+          />
+        </View>
+
+        {/* Checklist Items */}
+        <View style={styles.checklistItemsList}>
+          {[
+            { key: "iron", label: "আয়রন ও ফলিক এসিড ওষুধ" },
+            { key: "calcium", label: "ক্যালসিয়াম ওষুধ" },
+            { key: "protein", label: "মসুর ডাল ও প্রোটিন সমৃদ্ধ খাবার (মাছ/মাংস)" },
+            { key: "greens", label: "সবুজ শাকসবজি" },
+            { key: "milkEgg", label: "দুধ ও ডিম" },
+            { key: "water", label: "বিশুদ্ধ পানি (৮ গ্লাস)", disabled: true, note: "(পানি ট্র্যাকার পূরণ হলে অটো-চেক হবে)" },
+            { key: "fruits", label: "মৌসুমী ফলমূল" }
+          ].map((item) => {
+            const isChecked = checklist[item.key as keyof typeof checklist];
+            const isDisabled = item.disabled;
+            return (
+              <Pressable
+                key={item.key}
+                disabled={isDisabled}
+                onPress={() => handleToggleChecklist(item.key as keyof typeof checklist)}
+                style={styles.checkItemRow}
+              >
+                <View style={[styles.checkBoxCircle, isChecked && styles.checkBoxCircleFilled]}>
+                  {isChecked && <Icon name="check" color="#FFFFFF" size={14} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.checkItemLabel, isChecked && styles.checkItemLabelChecked]}>
+                    {item.label}
+                  </Text>
+                  {item.note && <Text style={styles.checkItemNote}>{item.note}</Text>}
+                </View>
+              </Pressable>
             );
           })}
         </View>
@@ -570,5 +698,107 @@ const styles = StyleSheet.create({
   avoidItem: {
     ...typography.caption,
     color: "#8A3A2A"
+  },
+  checklistCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#F5ECE9",
+    elevation: 2,
+    shadowColor: "#E57A58",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    gap: 10,
+    marginTop: 10
+  },
+  checklistHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  checklistTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#4A3E39"
+  },
+  checklistScoreBadge: {
+    backgroundColor: "#FCEBE5",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16
+  },
+  checklistScoreText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#E57A58"
+  },
+  checklistSubText: {
+    fontSize: 13,
+    color: "#70605A",
+    lineHeight: 20
+  },
+  checklistCompletedText: {
+    fontSize: 13,
+    color: "#4A6047",
+    fontWeight: "bold",
+    lineHeight: 20
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: "#FFF2EF",
+    borderRadius: 4,
+    width: "100%",
+    overflow: "hidden",
+    marginVertical: 4
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#E57A58",
+    borderRadius: 4
+  },
+  checklistItemsList: {
+    gap: 8,
+    marginTop: 6
+  },
+  checkItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFF9F6",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FFF2EF"
+  },
+  checkBoxCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#70605A",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  checkBoxCircleFilled: {
+    backgroundColor: "#E57A58",
+    borderColor: "#E57A58"
+  },
+  checkItemLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#70605A"
+  },
+  checkItemLabelChecked: {
+    color: "#A08E88",
+    textDecorationLine: "line-through"
+  },
+  checkItemNote: {
+    fontSize: 10,
+    color: "#E57A58",
+    fontWeight: "500",
+    marginTop: 2
   }
 });

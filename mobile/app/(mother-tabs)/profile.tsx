@@ -133,7 +133,6 @@ export default function ProfileScreen() {
 
       <View style={styles.settings}>
         <SettingsRow icon="translate" label={t("profile.language")} value={t("profile.languageValue")} onPress={toggleLanguage} />
-        <SettingsRow icon="notifications" label={copy.profile.notifications} onPress={showNotificationAlert} />
         <SettingsRow icon="security" label={copy.profile.security} onPress={requestPasswordReset} />
         <SettingsRow icon="help" label={copy.profile.help} onPress={showSupportAlert} />
         <Pressable accessibilityLabel={copy.profile.logout} accessibilityRole="button" style={styles.logout} onPress={logout}>

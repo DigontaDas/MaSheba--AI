@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View, ImageBackground } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
+import { MenuModal } from "@/components/ui/MenuModal";
 import { ProgressBar } from "@/components/progress/ProgressBar";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearRoleSession, getCurrentMotherProfile } from "@/auth/roleSession";
@@ -30,6 +31,7 @@ export function MotherDashboard({
 }) {
   const { t } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,12 +71,7 @@ export function MotherDashboard({
   };
 
   const showMenu = () => {
-    Alert.alert("মেনু", "", [
-      { text: "হোম", onPress: () => router.push("/(mother-tabs)/home") },
-      { text: "প্রোফাইল", onPress: () => router.push("/(mother-tabs)/profile") },
-      { text: "লগ আউট", style: "destructive", onPress: handleLogout },
-      { text: "বাতিল", style: "cancel" }
-    ]);
+    setMenuVisible(true);
   };
 
   const showNotifications = () => {
@@ -108,6 +105,11 @@ export function MotherDashboard({
 
   return (
     <ScreenShell>
+      <MenuModal 
+        visible={menuVisible} 
+        onClose={() => setMenuVisible(false)} 
+        onLogout={handleLogout} 
+      />
       <View style={styles.topBar}>
         <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
           <Icon name="menu" />

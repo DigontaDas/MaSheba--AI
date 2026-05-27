@@ -136,3 +136,20 @@ export async function getVisitSummariesByPatient(
     }));
   });
 }
+
+export async function getLastVisitForPatient(patientId: string): Promise<Visit | null> {
+  return runLocalDb(async () => {
+    const db = await getDB();
+    const row = await db.getFirstAsync<any>(
+      "SELECT * FROM visits WHERE patient_id = ? ORDER BY visited_at DESC LIMIT 1",
+      patientId
+    );
+    if (!row) return null;
+    return {
+      ...row,
+      swelling_present: row.swelling_present === 1,
+      symptom_flags: row.symptom_flags ? JSON.parse(row.symptom_flags) : {}
+    } as Visit;
+  });
+}
+

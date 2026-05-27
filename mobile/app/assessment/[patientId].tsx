@@ -15,11 +15,58 @@ import {
 import { Icon } from "@/components/ui/Icon";
 import { copy } from "@/data/stitchCopy.bn";
 import { getPatient } from "@/db/patients";
-import { insertVisit } from "@/db/visits";
+import { insertVisit, getLastVisitForPatient } from "@/db/visits";
 import { getSession } from "@/auth/secureSession";
 import { getDeviceId } from "@/utils/ids";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
+
+type CheckItem = {
+  id: number;
+  text: string;
+  checked: boolean;
+};
+
+const CHECKLIST_ITEMS = [
+  { id: 1, text: "রক্তচাপ পরীক্ষা", flagKey: "check_bp" },
+  { id: 2, text: "ওজন পরিমাপ", flagKey: "check_weight" },
+  { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", flagKey: "check_fhr" },
+  { id: 4, text: "শোথ (Edema) পরীক্ষা", flagKey: "check_edema" },
+  { id: 5, text: "ওষুধের সঠিকতা যাচাই", flagKey: "check_medicine" }
+] as const;
+
+const CHECKLIST_FLAG_KEYS = CHECKLIST_ITEMS.map((item) => item.flagKey);
+
+function buildDefaultChecks(record: any): CheckItem[] {
+  const isHighRisk = record.last_risk_level === "HIGH" || record.name?.includes("ফাতেমা");
+  const isModRisk = record.last_risk_level === "MODERATE" || record.name?.includes("আসমা");
+
+  return CHECKLIST_ITEMS.map((item) => {
+    if (isHighRisk) {
+      return { id: item.id, text: item.text, checked: item.id <= 3 };
+    }
+    if (isModRisk) {
+      return { id: item.id, text: item.text, checked: item.id === 1 || item.id === 2 || item.id === 5 };
+    }
+    return { id: item.id, text: item.text, checked: item.id !== 4 };
+  });
+}
+
+function restoreChecks(record: any, lastVisit: any): CheckItem[] {
+  const defaults = buildDefaultChecks(record);
+  const symptomFlags = (lastVisit?.symptom_flags ?? {}) as Record<string, unknown>;
+  const hasSavedChecklist = CHECKLIST_FLAG_KEYS.some((key) => typeof symptomFlags[key] === "boolean");
+
+  if (!hasSavedChecklist) {
+    return defaults;
+  }
+
+  return defaults.map((item) => {
+    const flagKey = CHECKLIST_ITEMS.find((candidate) => candidate.id === item.id)?.flagKey;
+    const savedValue = flagKey ? symptomFlags[flagKey] : undefined;
+    return typeof savedValue === "boolean" ? { ...item, checked: savedValue } : item;
+  });
+}
 
 export default function RiskAssessmentScreen() {
   const { patientId } = useLocalSearchParams<{ patientId: string }>();
@@ -31,17 +78,10 @@ export default function RiskAssessmentScreen() {
   const [bpDiastolic, setBpDiastolic] = useState("");
   const [weight, setWeight] = useState("");
   const [hemoglobin, setHemoglobin] = useState("");
-  const [temp, setTemp] = useState("");
   const [fhr, setFhr] = useState("");
 
   // Checklist State
-  const [checks, setChecks] = useState([
-    { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
-    { id: 2, text: "ওজন পরিমাপ", checked: true },
-    { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", checked: true },
-    { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: false },
-    { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: false }
-  ]);
+  const [checks, setChecks] = useState<CheckItem[]>(() => buildDefaultChecks({ last_risk_level: "HIGH", name: "ফাতেমা বেগম" }));
 
   const toggleCheck = (id: number) => {
     setChecks((prev) =>
@@ -54,8 +94,11 @@ export default function RiskAssessmentScreen() {
       setLoading(false);
       return;
     }
-    getPatient(patientId)
-      .then((p) => {
+    Promise.all([
+      getPatient(patientId),
+      getLastVisitForPatient(patientId)
+    ])
+      .then(([p, lastVisit]) => {
         let record: any = p;
         if (!record) {
           // Fallback mocks
@@ -88,35 +131,23 @@ export default function RiskAssessmentScreen() {
 
         setPatient(record);
 
-        // Seed only checklist dynamically based on patient category!
-        const isHighRisk = record.last_risk_level === "HIGH" || record.name?.includes("ফাতেমা");
-        const isModRisk = record.last_risk_level === "MODERATE" || record.name?.includes("আসমা");
-
-        if (isHighRisk) {
-          setChecks([
-            { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
-            { id: 2, text: "ওজন পরিমাপ", checked: true },
-            { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", checked: true },
-            { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: false },
-            { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: false }
-          ]);
-        } else if (isModRisk) {
-          setChecks([
-            { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
-            { id: 2, text: "ওজন পরিমাপ", checked: true },
-            { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", checked: false },
-            { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: false },
-            { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: true }
-          ]);
+        // Pre-populate previous vitals if available, otherwise typical healthy baselines!
+        if (lastVisit) {
+          setBpSystolic(lastVisit.bp_systolic ? lastVisit.bp_systolic.toString() : "120");
+          setBpDiastolic(lastVisit.bp_diastolic ? lastVisit.bp_diastolic.toString() : "80");
+          setWeight(lastVisit.weight_kg ? lastVisit.weight_kg.toString() : "60");
+          setHemoglobin(lastVisit.hemoglobin ? lastVisit.hemoglobin.toString() : "12.0");
+          const prevFhr = (lastVisit.symptom_flags as any)?.fhr;
+          setFhr(prevFhr ? prevFhr.toString() : "140");
         } else {
-          setChecks([
-            { id: 1, text: "রক্তচাপ পরীক্ষা", checked: true },
-            { id: 2, text: "ওজন পরিমাপ", checked: true },
-            { id: 3, text: "ভ্রূণের হৃদস্পন্দন (FHR)", checked: true },
-            { id: 4, text: "শোথ (Edema) পরীক্ষা", checked: false },
-            { id: 5, text: "ওষুধের সঠিকতা যাচাই", checked: true }
-          ]);
+          setBpSystolic("120");
+          setBpDiastolic("80");
+          setWeight("60");
+          setHemoglobin("12.0");
+          setFhr("140");
         }
+
+        setChecks(restoreChecks(record, lastVisit));
       })
       .catch(() => {
         setPatient({
@@ -126,24 +157,66 @@ export default function RiskAssessmentScreen() {
           location: "হাজীপুর, কুমিল্লা",
           last_risk_level: "HIGH"
         });
+        setBpSystolic("120");
+        setBpDiastolic("80");
+        setWeight("60");
+        setHemoglobin("12.0");
+        setFhr("140");
       })
       .finally(() => setLoading(false));
   }, [patientId]);
 
   const handleSave = async () => {
+    const systolicVal = Number(bpSystolic);
+    const diastolicVal = Number(bpDiastolic);
+    const weightVal = Number(weight);
+    const hbVal = Number(hemoglobin);
+    const fhrVal = fhr ? Number(fhr) : null;
+
+    if (!bpSystolic.trim() || !bpDiastolic.trim()) {
+      Alert.alert("⚠️ ভুল ইনপুট", "দয়া করে রক্তচাপের সিস্টোলিক ও ডায়াস্টোলিক মান প্রদান করুন।");
+      return;
+    }
+    if (isNaN(systolicVal) || systolicVal < 60 || systolicVal > 260) {
+      Alert.alert("⚠️ ভুল ইনপুট", "সিস্টোলিক রক্তচাপ অবশ্যই ৬০ থেকে ২৬০ mmHg এর মধ্যে হতে হবে।");
+      return;
+    }
+    if (isNaN(diastolicVal) || diastolicVal < 30 || diastolicVal > 180) {
+      Alert.alert("⚠️ ভুল ইনপুট", "ডায়াস্টোলিক রক্তচাপ অবশ্যই ৩০ থেকে ১৮০ mmHg এর মধ্যে হতে হবে।");
+      return;
+    }
+    if (!weight.trim() || isNaN(weightVal) || weightVal < 25 || weightVal > 200) {
+      Alert.alert("⚠️ ভুল ইনপুট", "ওজন অবশ্যই ২৫ থেকে ২০০ kg এর মধ্যে হতে হবে।");
+      return;
+    }
+    if (!hemoglobin.trim() || isNaN(hbVal) || hbVal < 3 || hbVal > 20) {
+      Alert.alert("⚠️ ভুল ইনপুট", "হিমোগ্লোবিন অবশ্যই ৩ থেকে ২০ g/dL এর মধ্যে হতে হবে।");
+      return;
+    }
+    if (fhrVal !== null && fhr.trim() !== "" && (isNaN(fhrVal) || fhrVal < 50 || fhrVal > 220)) {
+      Alert.alert("⚠️ ভুল ইনপুট", "FHR অবশ্যই ৫০ থেকে ২২০ bpm এর মধ্যে হতে হবে।");
+      return;
+    }
+
     try {
       const session = await getSession();
       const deviceId = await getDeviceId();
       
       const visitInput = {
-        bp_systolic: Number(bpSystolic),
-        bp_diastolic: Number(bpDiastolic),
-        weight_kg: Number(weight),
-        hemoglobin: Number(hemoglobin),
+        bp_systolic: systolicVal,
+        bp_diastolic: diastolicVal,
+        weight_kg: weightVal,
+        hemoglobin: hbVal,
         swelling_present: checks.find((c) => c.id === 4)?.checked ?? false,
         symptom_flags: {
-          headache: checks.find((c) => c.id === 5)?.checked ?? false
-        }
+          check_bp: checks.find((c) => c.id === 1)?.checked ?? false,
+          check_weight: checks.find((c) => c.id === 2)?.checked ?? false,
+          check_fhr: checks.find((c) => c.id === 3)?.checked ?? false,
+          check_edema: checks.find((c) => c.id === 4)?.checked ?? false,
+          check_medicine: checks.find((c) => c.id === 5)?.checked ?? false,
+          headache: checks.find((c) => c.id === 5)?.checked ?? false,
+          fhr: fhrVal
+        } as any
       };
 
       await insertVisit({
@@ -156,7 +229,7 @@ export default function RiskAssessmentScreen() {
         deviceId,
         input: visitInput,
         prediction: {
-          risk_level: Number(bpSystolic) >= 140 ? "HIGH" : Number(bpSystolic) >= 125 ? "MODERATE" : "LOW",
+          risk_level: systolicVal >= 140 ? "HIGH" : systolicVal >= 125 ? "MODERATE" : "LOW",
           score: 0.85,
           reasons: ["রক্তচাপ ট্রায়াজ"]
         }
@@ -347,6 +420,9 @@ export default function RiskAssessmentScreen() {
           <View style={styles.checklistCard}>
             {checks.map((item) => (
               <Pressable
+                accessibilityLabel={item.text}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: item.checked }}
                 key={item.id}
                 onPress={() => toggleCheck(item.id)}
                 style={styles.checkRow}
@@ -415,12 +491,14 @@ export default function RiskAssessmentScreen() {
         {/* Action Buttons */}
         <View style={styles.actionRow}>
           {!isNormal && (
-            <Pressable onPress={handleUrgentReferral} style={[styles.urgentActionBtn, { backgroundColor: riskBadgeDot }]}>
-              <Icon name="emergency" color="#FFFFFF" size={22} />
-              <Text style={styles.urgentActionBtnText}>
-                {isHigh ? "জরুরি রেফার (Urgent Referral)" : "রেফারেল ও পর্যালোচনা"}
-              </Text>
-            </Pressable>
+            <View style={{ gap: 8 }}>
+              <Pressable onPress={handleUrgentReferral} style={[styles.urgentActionBtn, { backgroundColor: riskBadgeDot }]}>
+                <Icon name="emergency" color="#FFFFFF" size={22} />
+                <Text style={styles.urgentActionBtnText}>
+                  {isHigh ? "জরুরি রেফার (Urgent Referral)" : "রেফারেল ও পর্যালোচনা"}
+                </Text>
+              </Pressable>
+            </View>
           )}
 
           <Pressable
