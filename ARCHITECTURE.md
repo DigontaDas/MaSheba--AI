@@ -1,4 +1,4 @@
-# MaSheba AI — System Architecture Document
+# Masheba AI — System Architecture Document
 
 > **Version:** 1.0  
 > **Last Updated:** May 27, 2026  
@@ -27,21 +27,21 @@
 
 ## 1. Design Philosophy
 
-MaSheba's architecture is built around **six non-negotiable constraints** derived from the realities of rural Bangladesh:
+Masheba's architecture is built around **six non-negotiable constraints** derived from the realities of rural Bangladesh:
 
 | Constraint | Design Response |
 |------------|----------------|
-| Network drops every 10-15 min on 3G | **Offline-first** — all core features work without internet |
-| ৳6,000-12,000 Android phones (2GB RAM) | **Lightweight on-device ML** — ONNX model is 2-5MB |
+| Network drops every 10-15 min on 3G | **Offline-first** — all core database features work without internet |
+| ৳6,000-12,000 Android phones (2GB RAM) | **Rule-based offline safety checks** — fallback logic runs on-device |
 | Load shedding keeps battery at ~30% | **WAL journaling** — survives power cuts mid-write |
-| Semi-literate users | **Voice input** — Bangla speech-to-text, minimal typing |
+| Semi-literate users | **Voice input** — Bangla speech-to-text (when online) |
 | CHWs visit 15-20 patients on foot | **One-tap actions** — no multi-step forms or loading screens |
-| Emergencies need instant response | **On-device risk scoring** — <200ms, zero network latency |
+| Emergencies need instant response | **Deterministic offline safety rules** — <200ms, zero network latency |
 
 ### Architectural Principles
 
-1. **Offline-first, online-enhanced** — The app must never be blocked by network availability.
-2. **Graceful degradation** — Every feature has a fallback path, down to fully offline deterministic rules.
+1. **Offline-first, online-enhanced** — The app must never be blocked by network availability for core data entry.
+2. **Graceful degradation** — Every feature has a fallback path, down to fully offline deterministic safety rules.
 3. **Safety over accuracy** — Deterministic safety rules always override ML predictions when they detect danger.
 4. **Privacy by default** — Row Level Security (RLS) enforces data isolation at the database level.
 5. **Idempotent everything** — Sync operations use idempotency keys to prevent duplicates on retry.
@@ -57,12 +57,12 @@ MaSheba's architecture is built around **six non-negotiable constraints** derive
 │                                                                        │
 │  ┌─────────────────────────────────────────────┐                       │
 │  │          CLIENT LAYER                       │                       │
-│  │    React Native (Expo 55) · Android 8+      │                       │
+│  │    React Native (Expo) · Android 8+         │                       │
 │  │                                             │                       │
 │  │  ┌────────┐ ┌───────┐ ┌──────┐ ┌────────┐  │                       │
-│  │  │SQLite  │ │ ONNX  │ │Voice │ │ Sync   │  │                       │
-│  │  │+ WAL   │ │XGBoost│ │STT/  │ │Worker  │  │                       │
-│  │  │outbox  │ │<200ms │ │TTS   │ │2min bg │  │                       │
+│  │  │SQLite  │ │Rule-  │ │Voice │ │ Sync   │  │                       │
+│  │  │+ WAL   │ │based  │ │STT/  │ │Worker  │  │                       │
+│  │  │outbox  │ │safety │ │TTS   │ │2min bg │  │                       │
 │  │  └────────┘ └───────┘ └──────┘ └───┬────┘  │                       │
 │  └────────────────────────────────────┬┘───────┘                       │
 │                                       │                                │
@@ -114,10 +114,10 @@ MaSheba's architecture is built around **six non-negotiable constraints** derive
 
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
-| Framework | React Native (Expo 55) | JS ecosystem alignment with backend; Expo Go for testing on cheap devices |
+| Framework | React Native (Expo) | JS ecosystem alignment with backend; Expo Go for testing on cheap devices |
 | Navigation | Expo Router + React Navigation | File-based routing, bottom tabs |
 | Local DB | `expo-sqlite` with WAL mode | Atomic writes survive power cuts; WAL allows concurrent read/write |
-| ML Runtime | `onnxruntime-react-native` | On-device XGBoost inference in <200ms |
+| Safety Rules | Client-side logic | Deterministic offline safety rule checks in <200ms |
 | Sync | `expo-background-task` | 2-minute background polling for outbox flush |
 | Auth | `expo-secure-store` | JWT storage in device keychain |
 | Notifications | `expo-notifications` | Push notification support |
@@ -132,12 +132,12 @@ app/
 ├── (chw)/                            # CHW-scoped screens
 │   ├── dashboard                     # Patient list + risk overview
 │   ├── visit/[patientId]            # Record visit vitals
-│   ├── chat                         # Clinical AI chat
+│   ├── chat                         # Clinical AI chat (Requires Internet)
 │   ├── medicine-verify              # Drug safety checker
 │   └── profile                      # CHW profile + sync status
 ├── (mother)/                         # Mother-facing screens
 │   ├── dashboard                     # Pregnancy tracker
-│   └── qa                           # Q&A chat interface
+│   └── qa                           # Q&A chat interface (Offline predefined fallback)
 └── _layout                          # Root layout with tab navigation
 ```
 
@@ -184,29 +184,24 @@ offline_qa (
 );
 ```
 
-### 3.4 On-Device Risk Model
+### 3.4 Client-Side Safety Rules & Offline Scoring
 
-The risk model runs a **dual-path** architecture:
+Due to mobile device resource constraints and the requirement for offline-first stability, advanced ML models (like the LLM cascade) run in the cloud (hosted on Render) and are queried when online. The mobile application relies on a deterministic rule-based safety path for instant offline risk assessment.
 
-1. **Learned path:** XGBoost model exported to ONNX, taking 5 features:
-   - `bp_systolic`, `bp_diastolic`, `weight_kg`, `hemoglobin`, `gestational_age_weeks`
+1. **Deterministic Safety Rules:** Checks for critical conditions:
+   - Systolic BP ≥ 140 or Diastolic BP ≥ 90 mmHg → HIGH RISK
+   - Hemoglobin < 8 g/dL → HIGH RISK (Severe Anemia)
+   - Danger signs reported (blurred vision, severe headache) → HIGH RISK
+   - Edema/Swelling present along with elevated BP (Systolic ≥ 130 or Diastolic ≥ 85) → HIGH RISK
 
-2. **Deterministic safety path:** Rule-based checks for critical conditions:
-   - BP ≥ 140/90 → HIGH
-   - Hemoglobin < 8 → HIGH
-   - Blurred vision or severe headache → HIGH
-   - Swelling + BP ≥ 130/85 → HIGH
+2. **Moderate Risk Indicators:**
+   - Borderline vitals (Systolic BP ≥ 130, Diastolic BP ≥ 85, Hemoglobin < 10)
+   - Severe swelling present
+   - Late gestational age (> 36 weeks)
 
-3. **Merge logic:** `mergeWithSafety()` — safety rules always win if they flag higher risk.
-
-```typescript
-// Simplified prediction flow
-async predict(input: RiskInput): Promise<RiskPrediction> {
-  const safetyPrediction = safetyRules(input);      // Always runs
-  const modelPrediction = await onnxInference(input); // May fail → fallback
-  return mergeWithSafety(modelPrediction, safetyPrediction);
-}
-```
+3. **Offline Fallback Scoring:**
+   - Vitals are scored instantly (<200ms) on-device without internet.
+   - If `onnxruntime-react-native` fails or is not supported natively, the client gracefully falls back to deterministic rule scoring and mock risk functions, ensuring a consistent safety net.
 
 ---
 
@@ -271,7 +266,7 @@ Mobile App                    FastAPI                    Supabase
 
 ### 5.1 Chat Service Architecture
 
-The chat service implements a **cascading LLM fallback** pattern:
+The chat service implements a **cascading LLM fallback** pattern deployed on the Render web server:
 
 ```
 Request ──────────────────────────────────────────────────────►
@@ -294,9 +289,20 @@ Request ────────────────────────
              অফলাইন তথ্য ব্যবহার করুন।"
 ```
 
-### 5.2 System Prompt (Bangla)
+### 5.2 Role-Based Internet Dependencies
 
-The system prompt enforces strict behavioral constraints:
+Connectivity dictates how the app acts for different user classes:
+
+- **Mothers:** Designed to degrade gracefully.
+  - **Online:** Mothers can chat with the live AI assistant using natural language.
+  - **Offline:** Live LLM chat is replaced by a structured offline Q&A module. Mothers choose from categorized health questions, and the app retrieves pre-seeded, trusted answers from the local SQLite `offline_qa` table.
+- **Social Workers (CHWs):** Internet is **mandatory** for Clinical AI chat support.
+  - Since CHWs operate in city, municipal, or upazila areas where internet networks are accessible, they require a stable internet connection for the clinical AI assistant.
+  - If a CHW goes offline, a banner warns: *"Clinical AI requires internet connection."* (ক্লিনিক্যাল AI-এর জন্য ইন্টারনেট সংযোগ প্রয়োজন). The input fields are disabled to prevent inaccurate guidance. However, their offline patient records and visit forms are saved locally and synced once connection is restored.
+
+### 5.3 System Prompt (Bangla)
+
+The system prompt enforces strict behavioral constraints on the LLMs:
 
 - **Language:** Bangla only
 - **Scope:** Pregnancy, childbirth, maternal health, newborn care only
@@ -304,7 +310,7 @@ The system prompt enforces strict behavioral constraints:
 - **Emergency protocol:** Severe symptoms → "এখনই হাসপাতালে যান" (Go to hospital now)
 - **Tone:** Warm, empathetic, 2-3 sentences max
 
-### 5.3 Safety Filter Pipeline
+### 5.4 Safety Filter Pipeline
 
 ```
 LLM Response
@@ -330,7 +336,7 @@ LLM Response
             সবসময় স্বাস্থ্যকর্মী বা হাসপাতালে যান।"
 ```
 
-### 5.4 RAG Pipeline (Future)
+### 5.5 RAG Pipeline (Future)
 
 ```
 Query: "32 weeks pregnant, BP 150/100, severe headache"
@@ -380,11 +386,11 @@ Query: "32 weeks pregnant, BP 150/100, severe headache"
             └────┬─────┘  └────┬─────┘  └──────┬───────┘
                  │              │               │
                  ▼              ▼               ▼
-         ┌──────────┐  ┌──────────┐  ┌──────────────────┐
-         │model.onnx│  │ Supabase │  │ Mobile App       │
-         │ (2-5 MB) │  │ Postgres │  │ offline_qa table │
-         │ on-device│  │ vectors  │  │ seeded at init   │
-         └──────────┘  └──────────┘  └──────────────────┘
+            ┌──────────┐  ┌──────────┐  ┌──────────────────┐
+            │  Safety  │  │ Supabase │  │ Mobile App       │
+            │  Rules   │  │ Postgres │  │ offline_qa table │
+            │(Offline) │  │ vectors  │  │ seeded at init   │
+            └──────────┘  └──────────┘  └──────────────────┘
 ```
 
 ### 6.3 Storage Architecture
@@ -394,7 +400,7 @@ Query: "32 weeks pregnant, BP 150/100, severe headache"
 | **Device SQLite** | expo-sqlite + WAL | patients, visits, outbox, offline_qa, sync_state | Per-device |
 | **Supabase Postgres** | PostgreSQL 15 | chws, patients, visits, outbox_events, mothers, chat | Cloud (RLS-scoped) |
 | **pgvector** | Supabase extension | WHO/DGHS guideline embeddings | Cloud (shared) |
-| **ONNX Model** | onnxruntime-react-native | XGBoost risk classifier | Bundled with app |
+| **Safety Rules** | Client-side JavaScript | Deterministic safety rule logic | Bundled in App code |
 
 ---
 
@@ -402,7 +408,7 @@ Query: "32 weeks pregnant, BP 150/100, severe headache"
 
 ### 7.1 The Outbox Pattern
 
-The outbox pattern is the **cornerstone** of MaSheba's offline capability. Every write operation on the mobile device follows this sequence:
+The outbox pattern is the **cornerstone** of Masheba's offline capability. Every write operation on the mobile device follows this sequence:
 
 ```
 1. CHW records patient visit
@@ -410,7 +416,7 @@ The outbox pattern is the **cornerstone** of MaSheba's offline capability. Every
    a. INSERT/UPDATE patients table
    b. INSERT visits table
    c. INSERT outbox_events (status: PENDING)
-3. ONNX model runs risk assessment
+3. Rule-based risk scoring runs on-device
 4. Risk level written back to patients.last_risk_level
 5. UI shows risk badge immediately (no network needed)
 ```
@@ -449,7 +455,7 @@ async function runOutboxSync() {
 | Duplicate sync attempt | Idempotency key returns DUPLICATE — no duplicate data |
 | Connection drops mid-sync | Row stays PENDING — re-sent on next poll |
 | Storage pressure (<200MB free) | Purge SYNCED outbox rows + alert user |
-| LLM API timeout (>5s) | Cascade to next LLM → ONNX fallback |
+| LLM API timeout (>5s) | Cascade to next LLM → safety rules fallback |
 
 ### 7.4 Idempotency
 
@@ -607,8 +613,7 @@ Mobile App                    Supabase Auth                   Postgres
 |---------|--------|----------|
 | **No network** | Sync paused | Outbox accumulates PENDING; auto-retries on reconnect |
 | **Power cut mid-write** | Data could corrupt | WAL journal replays on next open — zero data loss |
-| **All LLMs down** | Chat unavailable | Offline fallback message + on-device Q&A library |
-| **ONNX model fails to load** | Risk scoring affected | Deterministic safety rules + mock risk model |
+| **No internet connection** | Live advanced chat unavailable | Offline fallback message + local Q&A library |
 | **Supabase outage** | Sync blocked | Backend returns 500; mobile continues offline |
 | **Device storage full** | App crash risk | Purge SYNCED outbox rows; storage pressure alert |
 | **JWT expired** | Auth fails | Re-authenticate; outbox preserved for post-auth sync |
@@ -670,7 +675,7 @@ Result: 100% offline AI — zero external dependencies
 |----------|-------------------|--------|-----------|
 | Mobile framework | Flutter vs React Native | React Native (Expo) | Team knows JS; Expo Go for cheap Android testing |
 | Local DB | AsyncStorage vs SQLite | SQLite + WAL | Structured queries, crash safety, outbox pattern |
-| ML runtime | TFLite vs ONNX | ONNX Runtime | Broader model support, XGBoost export via skl2onnx |
+| ML runtime | Cloud API vs On-device ONNX | Cloud API (Render) | Expo compatibility, reliability, Llama/Gemini power |
 | Cloud DB | Firebase vs Supabase | Supabase | Postgres for SQL analytics + pgvector in same DB |
 | Sync pattern | Firebase RTDB vs Outbox | Outbox | Idempotent, works offline, conflict-safe |
 | LLM strategy | Single provider vs cascade | Cascade | Reliability; free tier alignment across providers |
