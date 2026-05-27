@@ -174,7 +174,7 @@ describe("ClinicalChatScreen CHW AI mode", () => {
     expect(aiInput(tree)?.props.editable).toBe(false);
 
     pressByText(tree.root, "পুষ্টি");
-    pressByText(tree.root, "দুধ");
+    pressByText(tree.root, copy.clinicalChat.clinicalBP);
 
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockSearchQa).not.toHaveBeenCalled();

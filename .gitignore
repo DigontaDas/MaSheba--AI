@@ -21,6 +21,10 @@ mobile/coverage/
 mobile/.env
 mobile/.env.local
 mobile/.env.*.local
+mobile/android/keystore.properties
+mobile/android/*.jks
+mobile/android/*.keystore
+mobile/android/*.p12
 supabase/.branches/
 supabase/.temp/
 MaaSheba.md

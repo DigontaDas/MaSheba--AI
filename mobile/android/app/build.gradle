@@ -3,6 +3,17 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def releaseKeystoreProperties = new Properties()
+def releaseKeystorePropertiesFile = rootProject.file("keystore.properties")
+if (releaseKeystorePropertiesFile.exists()) {
+    releaseKeystorePropertiesFile.withInputStream { releaseKeystoreProperties.load(it) }
+}
+
+def releaseStoreFile = System.getenv("MASHEBA_RELEASE_STORE_FILE") ?: releaseKeystoreProperties["storeFile"]
+def releaseStorePassword = System.getenv("MASHEBA_RELEASE_STORE_PASSWORD") ?: releaseKeystoreProperties["storePassword"]
+def releaseKeyAlias = System.getenv("MASHEBA_RELEASE_KEY_ALIAS") ?: releaseKeystoreProperties["keyAlias"]
+def releaseKeyPassword = System.getenv("MASHEBA_RELEASE_KEY_PASSWORD") ?: releaseKeystoreProperties["keyPassword"]
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -104,15 +115,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
@@ -129,6 +146,12 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.hasTask(":app:assembleRelease") && !hasReleaseSigning) {
+        throw new GradleException("Release signing is not configured. Set MASHEBA_RELEASE_* environment variables or create mobile/android/keystore.properties.")
     }
 }
 

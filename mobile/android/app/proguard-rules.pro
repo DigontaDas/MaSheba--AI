@@ -10,5 +10,13 @@
 # react-native-reanimated
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
+-keep class com.facebook.react.bridge.** { *; }
+-keep class com.facebook.react.uimanager.** { *; }
+-keep class expo.modules.** { *; }
+-keep class ai.onnxruntime.** { *; }
+-keep class com.microsoft.onnxruntime.** { *; }
+-keep class com.reactnativeonnxruntime.** { *; }
+-keep class com.swmansion.worklets.** { *; }
+-keep class kotlin.Metadata { *; }
 
 # Add any project specific keep options here:
