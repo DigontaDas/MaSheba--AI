@@ -11,7 +11,7 @@ export function getInitials(name: string): string {
     .toUpperCase();
 }
 
-export function formatShortDate(iso: string | null): string | null {
+export function formatShortDate(iso: string | null, language: "bn" | "en" = "bn"): string | null {
   if (!iso) {
     return null;
   }
@@ -21,13 +21,13 @@ export function formatShortDate(iso: string | null): string | null {
     return null;
   }
 
-  return new Intl.DateTimeFormat("bn-BD", {
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "bn-BD", {
     day: "numeric",
     month: "short"
   }).format(date);
 }
 
-export function formatSyncTime(iso: string | null): string | null {
+export function formatSyncTime(iso: string | null, language: "bn" | "en" = "bn"): string | null {
   if (!iso) {
     return null;
   }
@@ -37,7 +37,7 @@ export function formatSyncTime(iso: string | null): string | null {
     return null;
   }
 
-  return new Intl.DateTimeFormat("bn-BD", {
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "bn-BD", {
     hour: "numeric",
     minute: "2-digit"
   }).format(date);

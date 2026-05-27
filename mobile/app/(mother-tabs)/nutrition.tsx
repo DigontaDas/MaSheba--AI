@@ -127,8 +127,8 @@ export default function NutritionScreen() {
           await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(initialChecklist));
           setChecklist(initialChecklist);
         }
-      } catch (err) {
-        console.warn("Error loading daily progress:", err);
+      } catch (_err) {
+        // console.warn("Error loading daily progress:", _err)
       }
     };
 
@@ -162,8 +162,8 @@ export default function NutritionScreen() {
         setChecklist(updated);
         try {
           await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(updated));
-        } catch (e) {
-          console.warn("Failed to sync water check state:", e);
+        } catch (_e) {
+          // console.warn("Failed to sync water check state:", _e)
         }
       }
     };
@@ -178,8 +178,8 @@ export default function NutritionScreen() {
     setChecklist(updated);
     try {
       await SecureStore.setItemAsync("nutrition_checklist_state", JSON.stringify(updated));
-    } catch (err) {
-      console.warn("Error saving checklist:", err);
+    } catch (_err) {
+      // console.warn("Error saving checklist:", _err)
     }
   };
 
@@ -191,8 +191,8 @@ export default function NutritionScreen() {
         const todayStr = new Date().toISOString().split("T")[0];
         await SecureStore.setItemAsync("water_tracking_date", todayStr);
         await SecureStore.setItemAsync("water_tracking_count", newCount.toString());
-      } catch (err) {
-        console.warn("Error saving water progress:", err);
+      } catch (_err) {
+        // console.warn("Error saving water progress:", _err)
       }
     }
   };

@@ -8,10 +8,11 @@ import { getOutboxSummary } from "@/db/outbox";
 import { getPatients } from "@/db/patients";
 import { getVisitCountForChwSince } from "@/db/visits";
 import { getRecentUnreadMessages, type ChatMessage } from "@/api/chatService";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { Patient } from "@/types/schema";
-import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { formatNumber } from "@/utils/localizedFormat";
 import { getInitials, getRiskBorderColor } from "./helpers";
 
 type Summary = {
@@ -21,6 +22,9 @@ type Summary = {
 };
 
 export default function ChwDashboardScreen() {
+  const { language } = useLanguage();
+  const copy = useCopy();
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [summary, setSummary] = useState<Summary>({ pending: 0, failed: 0, lastSyncedAt: null });
   const [visitsToday, setVisitsToday] = useState(0);
@@ -30,7 +34,7 @@ export default function ChwDashboardScreen() {
   const load = useCallback(async () => {
     setLoadError(null);
     const session = await getSession();
-    if (!session) throw new Error("Session required");
+    if (!session) throw new Error(language === "en" ? "Session required" : "সেশন প্রয়োজন");
 
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -48,12 +52,12 @@ export default function ChwDashboardScreen() {
     getRecentUnreadMessages(session.chwId, 3)
       .then(setRecentMessages)
       .catch(() => setRecentMessages([]));
-  }, []);
+  }, [language]);
 
   useFocusEffect(
     useCallback(() => {
-      load().catch((error) => setLoadError(getLocalDbErrorMessage(error, "তথ্য লোড করা যায়নি")));
-    }, [load])
+      load().catch((error) => setLoadError(getLocalDbErrorMessage(error, copy.common.loadFailed)));
+    }, [load, copy.common.loadFailed])
   );
 
   const nextPatient = patients[0] ?? null;
@@ -75,24 +79,33 @@ export default function ChwDashboardScreen() {
       return;
     }
     Alert.alert(
-      "নোটিফিকেশন",
+      language === "en" ? "Notifications" : "নোটিফিকেশন",
       recentMessages.map((message) => `• ${message.message}`).join("\n"),
-      [{ text: "চ্যাট খুলুন", onPress: () => router.push("/(tabs)/chat") }, { text: "বন্ধ" }]
+      [
+        { text: language === "en" ? "Open Chat" : "চ্যাট খুলুন", onPress: () => router.push("/(tabs)/chat") },
+        { text: language === "en" ? "Close" : "বন্ধ" }
+      ]
     );
+  };
+
+  const riskLabel = (level: "HIGH" | "MODERATE" | "LOW") => {
+    if (level === "HIGH") return language === "en" ? "High" : "উচ্চ";
+    if (level === "MODERATE") return language === "en" ? "Moderate" : "মধ্যম";
+    return language === "en" ? "Low" : "নিম্ন";
   };
 
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.headerTitle}>মাশেবা AI</Text>
-          <Text style={styles.headerSubtitle}>রাহেলা বেগম • স্বাস্থ্যকর্মী</Text>
+          <Text style={styles.headerTitle}>{copy.common.appName}</Text>
+          <Text style={styles.headerSubtitle}>{copy.chwDashboard.subtitle}</Text>
         </View>
-        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Notifications" : "নোটিফিকেশন"} accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
           <Icon name="notifications" color="#70605A" size={24} />
           {recentMessages.length ? (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{toBanglaNumber(recentMessages.length)}</Text>
+              <Text style={styles.badgeText}>{formatNumber(recentMessages.length, language)}</Text>
             </View>
           ) : null}
         </Pressable>
@@ -102,11 +115,13 @@ export default function ChwDashboardScreen() {
         <View style={styles.statusRow}>
           <View style={styles.statusPill}>
             <Icon name="cloud-done" color="#4A6047" size={17} />
-            <Text style={styles.statusText}>{summary.pending ? `${toBanglaNumber(summary.pending)} অপেক্ষমাণ` : "সিঙ্ক হয়েছে"}</Text>
+            <Text style={styles.statusText}>
+              {summary.pending ? `${formatNumber(summary.pending, language)} ${language === "en" ? "Pending" : "অপেক্ষমাণ"}` : copy.chwDashboard.syncDone}
+            </Text>
           </View>
           <View style={styles.aiPill}>
             <View style={styles.aiDot} />
-            <Text style={styles.aiText}>AI সক্রিয়</Text>
+            <Text style={styles.aiText}>{language === "en" ? "AI Active" : "AI সক্রিয়"}</Text>
           </View>
         </View>
 
@@ -118,24 +133,24 @@ export default function ChwDashboardScreen() {
           style={styles.nextCard}
         >
           <View style={styles.nextText}>
-            <Text style={styles.nextKicker}>পরবর্তী রোগী</Text>
-            <Text style={styles.nextName}>{nextPatient?.name ?? "আজকের রোগী নেই"}</Text>
+            <Text style={styles.nextKicker}>{copy.chwDashboard.nextPatientKicker}</Text>
+            <Text style={styles.nextName}>{nextPatient?.name ?? (language === "en" ? "No patient today" : "আজকের রোগী নেই")}</Text>
             <Text style={styles.nextMeta}>
-              {nextPatient ? `সপ্তাহ ${toBanglaNumber(nextPatient.gestational_age_weeks)}` : "রোগী ট্যাব থেকে তালিকা দেখুন"}
+              {nextPatient ? `${language === "en" ? "Week" : "সপ্তাহ"} ${formatNumber(nextPatient.gestational_age_weeks, language)}` : (language === "en" ? "Check patient tab for list" : "রোগী ট্যাব থেকে তালিকা দেখুন")}
             </Text>
           </View>
           <View style={styles.visitButton}>
-            <Text style={styles.visitButtonText}>ভিজিট শুরু</Text>
+            <Text style={styles.visitButtonText}>{copy.chwDashboard.startVisit}</Text>
             <Icon name="chevron-right" color="#FFFFFF" size={20} />
           </View>
         </Pressable>
 
         <View style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>আজকের অগ্রগতি</Text>
+          <Text style={styles.sectionTitle}>{language === "en" ? "Today's Progress" : "আজকের অগ্রগতি"}</Text>
           <View style={styles.statsGrid}>
-            <Stat label="মোট রোগী" value={patients.length} />
-            <Stat label="সম্পন্ন" value={visitsToday} />
-            <Stat label="বাকি" value={pendingVisits} />
+            <Stat label={copy.chwDashboard.statActive} value={patients.length} />
+            <Stat label={copy.chwDashboard.statCompleted} value={visitsToday} />
+            <Stat label={copy.chwDashboard.statPending} value={pendingVisits} />
           </View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${Math.max(6, completionPercent)}%` }]} />
@@ -143,9 +158,9 @@ export default function ChwDashboardScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>রোগী ট্রায়াজ</Text>
+          <Text style={styles.sectionTitle}>{language === "en" ? "Patient Triage" : "রোগী ট্রায়াজ"}</Text>
           <Pressable onPress={() => router.push("/(tabs)/patients")}>
-            <Text style={styles.linkText}>সব দেখুন</Text>
+            <Text style={styles.linkText}>{copy.chwDashboard.openList}</Text>
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.triageScroll}>
@@ -159,9 +174,9 @@ export default function ChwDashboardScreen() {
                 <Text style={styles.avatarText}>{getInitials(patient.name)}</Text>
               </View>
               <Text numberOfLines={1} style={styles.triageName}>{patient.name}</Text>
-              <Text style={styles.triageWeek}>সপ্তাহ {toBanglaNumber(patient.gestational_age_weeks)}</Text>
+              <Text style={styles.triageWeek}>{language === "en" ? "Week" : "সপ্তাহ"} {formatNumber(patient.gestational_age_weeks, language)}</Text>
               <Text style={[styles.riskText, { color: getRiskBorderColor(patient.last_risk_level) }]}>
-                {patient.last_risk_level === "HIGH" ? "উচ্চ" : patient.last_risk_level === "MODERATE" ? "মধ্যম" : "নিম্ন"}
+                {riskLabel(patient.last_risk_level)}
               </Text>
             </Pressable>
           ))}
@@ -169,9 +184,9 @@ export default function ChwDashboardScreen() {
 
         <View style={styles.chatSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>সাম্প্রতিক চ্যাট</Text>
+            <Text style={styles.sectionTitle}>{language === "en" ? "Recent Chat" : "সাম্প্রতিক চ্যাট"}</Text>
             <Pressable onPress={() => router.push("/(tabs)/chat")}>
-              <Text style={styles.linkText}>সব দেখুন</Text>
+              <Text style={styles.linkText}>{copy.chwDashboard.openList}</Text>
             </Pressable>
           </View>
           {recentMessages.length ? (
@@ -181,14 +196,14 @@ export default function ChwDashboardScreen() {
                   <Icon name="chat-bubble" color="#E57A58" size={18} />
                 </View>
                 <View style={styles.messageTextWrap}>
-                  <Text style={styles.messageTitle}>মায়ের বার্তা</Text>
+                  <Text style={styles.messageTitle}>{language === "en" ? "Mother's message" : "মায়ের বার্তা"}</Text>
                   <Text numberOfLines={1} style={styles.messagePreview}>{message.message}</Text>
                 </View>
               </Pressable>
             ))
           ) : (
             <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatText}>অপঠিত বার্তা নেই</Text>
+              <Text style={styles.emptyChatText}>{language === "en" ? "No unread messages" : "অপঠিত বার্তা নেই"}</Text>
             </View>
           )}
         </View>
@@ -198,9 +213,10 @@ export default function ChwDashboardScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
+  const { language } = useLanguage();
   return (
     <View style={styles.statItem}>
-      <Text style={styles.statValue}>{toBanglaNumber(value)}</Text>
+      <Text style={styles.statValue}>{formatNumber(value, language)}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );

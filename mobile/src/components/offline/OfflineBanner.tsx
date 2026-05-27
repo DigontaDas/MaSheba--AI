@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useNetworkState } from "expo-network";
 import { Icon } from "@/components/ui/Icon";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 
 export function OfflineBanner({
@@ -11,6 +11,7 @@ export function OfflineBanner({
   isOffline?: boolean;
   pendingCount?: number;
 }) {
+  const copy = useCopy();
   const network = useNetworkState();
   const offline = isOffline ?? (network.isConnected === false || network.isInternetReachable === false);
 

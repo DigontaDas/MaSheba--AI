@@ -1,26 +1,36 @@
 import { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { MEDICINE_SOURCE_LABEL, searchMedicines, type MedicineSearchResult } from "@/data/medicineData";
 import { colors, radius, spacing, typography } from "@/theme";
 
-function safetyCopy(level: MedicineSearchResult["safetyLevel"]) {
+function safetyCopy(level: MedicineSearchResult["safetyLevel"], language: "bn" | "en") {
+  if (language === "en") {
+    if (level === "safe") return { text: "Safe", icon: "check-circle" as const, color: "#386652", bg: "#EAF6EE" };
+    if (level === "avoid") return { text: "Avoid / High Risk", icon: "cancel" as const, color: "#B3261E", bg: "#FCEBE5" };
+    return { text: "Consult Doctor", icon: "warning" as const, color: "#8A5A00", bg: "#FFF4D6" };
+  }
   if (level === "safe") return { text: "নিরাপদ", icon: "check-circle" as const, color: "#386652", bg: "#EAF6EE" };
   if (level === "avoid") return { text: "সতর্কতা", icon: "cancel" as const, color: "#B3261E", bg: "#FCEBE5" };
   return { text: "ডাক্তারের পরামর্শ নিন", icon: "warning" as const, color: "#8A5A00", bg: "#FFF4D6" };
 }
 
 export default function MedicineVerifyScreen() {
+  const { language } = useLanguage();
+  const copy = useCopy();
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
 
-  const results = useMemo(() => searchMedicines(submittedQuery, submittedQuery ? 30 : 12), [submittedQuery]);
+  const results = useMemo(() => searchMedicines(submittedQuery, submittedQuery ? 30 : 12, language), [submittedQuery, language]);
   const hasSearched = submittedQuery.trim().length > 0;
 
   return (
     <View style={styles.screen}>
       <View style={styles.topBar}>
-        <Text style={styles.headerTitle}>ওষুধ</Text>
+        <Text style={styles.headerTitle}>{copy.common.medicine}</Text>
         <Text style={styles.headerSub}>CHW medicine database</Text>
       </View>
 
@@ -29,8 +39,14 @@ export default function MedicineVerifyScreen() {
           <View style={styles.heroIcon}>
             <Icon name="medication" color="#FFFFFF" size={44} />
           </View>
-          <Text style={styles.title}>ওষুধের তথ্য যাচাই করুন</Text>
-          <Text style={styles.subtitle}>নাম, জেনেরিক, ডোজ ফর্ম বা কোম্পানি দিয়ে তথ্য খুঁজুন।</Text>
+          <Text style={styles.title}>
+            {language === "en" ? "Verify Medicine Safety" : "ওষুধের তথ্য যাচাই করুন"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {language === "en" 
+              ? "Search by brand name, generic, dosage form, or manufacturer." 
+              : "নাম, জেনেরিক, ডোজ ফর্ম বা কোম্পানি দিয়ে তথ্য খুঁজুন।"}
+          </Text>
           <Text style={styles.source}>Source: {MEDICINE_SOURCE_LABEL}</Text>
         </View>
 
@@ -40,7 +56,7 @@ export default function MedicineVerifyScreen() {
             <TextInput
               onChangeText={setQuery}
               onSubmitEditing={() => setSubmittedQuery(query)}
-              placeholder="ওষুধের নাম লিখুন..."
+              placeholder={language === "en" ? "Write medicine name..." : "ওষুধের নাম লিখুন..."}
               placeholderTextColor="#A08E88"
               style={styles.searchInput}
               value={query}
@@ -48,19 +64,27 @@ export default function MedicineVerifyScreen() {
           </View>
           <Pressable accessibilityRole="button" onPress={() => setSubmittedQuery(query)} style={styles.searchButton}>
             <Icon name="search" color="#FFFFFF" size={18} />
-            <Text style={styles.searchButtonText}>সার্চ</Text>
+            <Text style={styles.searchButtonText}>{copy.common.search}</Text>
           </Pressable>
         </View>
 
         {hasSearched && !results.length ? (
           <View style={styles.emptyCard}>
             <Icon name="info" color={colors.primary} />
-            <Text style={styles.emptyText}>এই ওষুধ সম্পর্কে তথ্য পাওয়া যায়নি। ডাক্তারের পরামর্শ নিন।</Text>
+            <Text style={styles.emptyText}>
+              {language === "en" 
+                ? "No information found for this medicine. Please consult a doctor." 
+                : "এই ওষুধ সম্পর্কে তথ্য পাওয়া যায়নি। ডাক্তারের পরামর্শ নিন।"}
+            </Text>
           </View>
         ) : null}
 
         <View style={styles.resultsHeader}>
-          <Text style={styles.sectionTitle}>{hasSearched ? "সার্চ ফলাফল" : "নমুনা ওষুধ"}</Text>
+          <Text style={styles.sectionTitle}>
+            {hasSearched 
+              ? (language === "en" ? "Search Results" : "সার্চ ফলাফল") 
+              : (language === "en" ? "Sample Medicines" : "নমুনা ওষুধ")}
+          </Text>
           <Text style={styles.resultCount}>{results.length} results</Text>
         </View>
 
@@ -73,7 +97,8 @@ export default function MedicineVerifyScreen() {
 }
 
 function MedicineResultCard({ medicine }: { medicine: MedicineSearchResult }) {
-  const safety = safetyCopy(medicine.safetyLevel);
+  const { language } = useLanguage();
+  const safety = safetyCopy(medicine.safetyLevel, language);
 
   return (
     <View style={[styles.resultCard, medicine.safetyLevel === "avoid" && styles.resultCardDanger]}>
@@ -93,15 +118,15 @@ function MedicineResultCard({ medicine }: { medicine: MedicineSearchResult }) {
         {medicine.strength ? <Text style={styles.metaChip}>{medicine.strength}</Text> : null}
       </View>
 
-      <Text style={styles.blockLabel}>ব্যবহার</Text>
+      <Text style={styles.blockLabel}>{language === "en" ? "Uses" : "ব্যবহার"}</Text>
       {medicine.uses.map((use) => (
         <Text key={use} style={styles.bodyLine}>• {use}</Text>
       ))}
 
-      <Text style={styles.blockLabel}>ডোজ / ফর্ম</Text>
+      <Text style={styles.blockLabel}>{language === "en" ? "Dose / Form" : "ডোজ / ফর্ম"}</Text>
       <Text style={styles.bodyLine}>{medicine.dose}</Text>
 
-      <Text style={styles.blockLabel}>সতর্কতা</Text>
+      <Text style={styles.blockLabel}>{language === "en" ? "Caution" : "সতর্কতা"}</Text>
       {medicine.warnings.map((warning) => (
         <Text key={warning} style={styles.warningLine}>• {warning}</Text>
       ))}

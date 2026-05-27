@@ -10,7 +10,7 @@ if (!isExpoGo) {
   try {
     Notifications = require("expo-notifications");
   } catch (error) {
-    console.warn("Failed to dynamically load expo-notifications:", error);
+    // console.warn("Failed to dynamically load expo-notifications:", error)
   }
 }
 
@@ -30,7 +30,7 @@ if (Notifications) {
 
 export async function registerForPushNotifications(): Promise<boolean> {
   if (!Notifications) {
-    console.log("Push notifications not supported in Expo Go");
+    // console.log("Push notifications not supported in Expo Go")
     return false;
   }
   try {
@@ -41,7 +41,7 @@ export async function registerForPushNotifications(): Promise<boolean> {
     if (requested.granted) return true;
     return requested.status === "granted";
   } catch (error) {
-    console.error("Error checking/requesting push notification permissions:", error);
+    // console.error("Error checking/requesting push notification permissions:", error)
     return false;
   }
 }
@@ -53,7 +53,7 @@ export async function scheduleLocalNotification(params: {
   data?: Record<string, unknown>;
 }): Promise<void> {
   if (!Notifications) {
-    console.log("Simulating local notification in Expo Go:", params.title, params.body);
+    // console.log("Simulating local notification in Expo Go:", params.title, params.body)
     return;
   }
   try {
@@ -68,7 +68,7 @@ export async function scheduleLocalNotification(params: {
       trigger: null
     });
   } catch (error) {
-    console.error("Error scheduling local notification:", error);
+    // console.error("Error scheduling local notification:", error)
   }
 }
 

@@ -7,13 +7,27 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fcf6f2"
+    },
     "android": {
       "package": "com.maasheba.mobile",
       "minSdkVersion": 26,
+      "jsEngine": "hermes",
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fcf6f2"
+      },
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]
     },
+
     "ios": {
       "bundleIdentifier": "com.maasheba.mobile",
       "infoPlist": {

@@ -34,8 +34,8 @@ export default function RootLayout() {
   useEffect(() => {
     ensureLocalDbReady()
       .then(registerOutboxSyncTask)
-      .catch((error) => console.warn("Startup initialization failed", error));
-    registerForPushNotifications().catch((error) => console.warn("Notification setup failed", error));
+      .catch((error) => { /* console.warn("Startup initialization failed", error) */ void error; });
+    registerForPushNotifications().catch((error) => { /* console.warn("Notification setup failed", error) */ void error; });
   }, []);
 
   useEffect(() => {

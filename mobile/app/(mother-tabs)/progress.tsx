@@ -93,7 +93,7 @@ export default function MotherProgressScreen() {
           setSelectedExplorerWeek(profile.gestationalAgeWeeks);
         }
       })
-      .catch((err) => console.warn("Failed to load mother profile in progress:", err))
+      .catch((_err) => { /* console.warn("Failed to load mother profile in progress:", _err) */ })
       .finally(() => setLoading(false));
 
     // Load Kick history from SecureStore
@@ -103,7 +103,7 @@ export default function MotherProgressScreen() {
           setKickHistory(JSON.parse(savedLog));
         }
       })
-      .catch((err) => console.warn("Failed to load kick history:", err));
+      .catch((_err) => { /* console.warn("Failed to load kick history:", _err) */ });
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);

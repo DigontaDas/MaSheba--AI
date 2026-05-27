@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "@/components/ui/Icon";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
-import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { formatNumber } from "@/utils/localizedFormat";
 
 export function OfflineStatusPanel({
   isOffline,
@@ -15,6 +16,9 @@ export function OfflineStatusPanel({
   lastSyncedAt: string | null;
   onSync: () => void;
 }) {
+  const { language } = useLanguage();
+  const copy = useCopy();
+
   return (
     <View style={styles.panel}>
       <View style={styles.heroIcon}>
@@ -30,13 +34,13 @@ export function OfflineStatusPanel({
       <View style={styles.status}>
         <Text style={styles.statusTitle}>{copy.sync.syncStatus}</Text>
         <Text style={styles.statusValue}>
-          {copy.sync.waiting} • {toBanglaNumber(pendingCount)}
+          {copy.sync.waiting} • {formatNumber(pendingCount, language)}
         </Text>
         <Text style={styles.caption}>{lastSyncedAt ?? copy.sync.waitingRecords}</Text>
       </View>
-      <Pressable accessibilityLabel="সিঙ্ক করুন" accessibilityRole="button" onPress={onSync} style={styles.button}>
+      <Pressable accessibilityLabel={copy.common.sync} accessibilityRole="button" onPress={onSync} style={styles.button}>
         <Icon name="sync" color={colors.onPrimary} size={18} />
-        <Text style={styles.buttonText}>সিঙ্ক</Text>
+        <Text style={styles.buttonText}>{copy.common.sync}</Text>
       </Pressable>
     </View>
   );

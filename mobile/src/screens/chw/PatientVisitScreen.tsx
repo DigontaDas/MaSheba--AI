@@ -4,14 +4,15 @@ import { router, useFocusEffect } from "expo-router";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { RiskBadge } from "@/components/risk/RiskBadge";
 import { Icon } from "@/components/ui/Icon";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getPatients } from "@/db/patients";
 import { getVisitSummariesByPatient } from "@/db/visits";
 import { getSession } from "@/auth/secureSession";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { Patient } from "@/types/schema";
-import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { formatNumber } from "@/utils/localizedFormat";
 import { formatShortDate, getRiskBorderColor } from "./helpers";
 
 type FilterKey = "ALL" | "EMERGENCY" | "HIGH" | "NORMAL";
@@ -19,6 +20,9 @@ type FilterKey = "ALL" | "EMERGENCY" | "HIGH" | "NORMAL";
 const filterKeys: FilterKey[] = ["ALL", "EMERGENCY", "HIGH", "NORMAL"];
 
 export default function PatientVisitScreen() {
+  const { language } = useLanguage();
+  const copy = useCopy();
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [visitSummaryMap, setVisitSummaryMap] = useState<Record<string, string | null>>({});
   const [search, setSearch] = useState("");
@@ -41,14 +45,14 @@ export default function PatientVisitScreen() {
     setVisitSummaryMap(
       Object.fromEntries(visitSummaries.map((item) => [item.patientId, item.lastVisitedAt]))
     );
-  }, []);
+  }, [copy.assessment.sessionRequired]);
 
   useFocusEffect(
     useCallback(() => {
       load().catch((error) => {
         setLoadError(getLocalDbErrorMessage(error, copy.common.loadFailed));
       });
-    }, [load])
+    }, [load, copy.common.loadFailed])
   );
 
   const filteredPatients = useMemo(() => {
@@ -160,11 +164,11 @@ export default function PatientVisitScreen() {
               <View style={styles.patientText}>
                 <Text style={styles.patientName}>{item.name}</Text>
                 <Text style={styles.patientMeta}>
-                  {copy.patientVisit.weeksLabel} {toBanglaNumber(item.gestational_age_weeks)}
+                  {copy.patientVisit.weeksLabel} {formatNumber(item.gestational_age_weeks, language)}
                 </Text>
                 <Text style={styles.patientSubMeta}>
                   {copy.patientVisit.lastVisit}:{" "}
-                  {formatShortDate(visitSummaryMap[item.id] ?? null) ?? copy.patientVisit.noVisitYet}
+                  {formatShortDate(visitSummaryMap[item.id] ?? null, language) ?? copy.patientVisit.noVisitYet}
                 </Text>
               </View>
               <RiskBadge compact level={item.last_risk_level} />

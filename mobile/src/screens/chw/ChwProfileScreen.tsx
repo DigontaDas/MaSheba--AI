@@ -6,11 +6,11 @@ import { clearRoleSession } from "@/auth/roleSession";
 import { getSession, clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { useLanguage } from "@/context/LanguageContext";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getPatients } from "@/db/patients";
 import { getVisitCountForChwSince } from "@/db/visits";
-import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { formatNumber } from "@/utils/localizedFormat";
 
 type ChwProfileRow = {
   id: string;
@@ -19,7 +19,9 @@ type ChwProfileRow = {
 
 export default function ChwProfileScreen() {
   const { language, setLanguage, t } = useLanguage();
-  const [name, setName] = useState<string>("রাহেলা বেগম");
+  const copy = useCopy();
+
+  const [name, setName] = useState<string>("Rahela Begum");
   const [patientCount, setPatientCount] = useState(8);
   const [visitCount, setVisitCount] = useState(42);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -42,7 +44,6 @@ export default function ChwProfileScreen() {
         supabase.from("chws").select("id,name").eq("id", session.chwId).maybeSingle<ChwProfileRow>()
       ]);
 
-      // Preserving database dynamic updates with mockup fallback
       if (patients.length > 0) {
         setPatientCount(patients.length);
       } else {
@@ -58,28 +59,27 @@ export default function ChwProfileScreen() {
       if (!profileResponse.error && profileResponse.data?.name) {
         const dbName = profileResponse.data.name;
         if (dbName === "CHW_A") {
-          setName("রাহেলা বেগম");
+          setName(language === "en" ? "Rahela Begum" : "রাহেলা বেগম");
         } else if (dbName === "CHW_B") {
-          setName("মোসাঃ সুফিয়া খাতুন");
+          setName(language === "en" ? "Mst. Sufia Khatun" : "মোসাঃ সুফিয়া খাতুন");
         } else if (dbName.startsWith("CHW_")) {
-          setName(`স্বাস্থ্যকর্মী ${dbName.replace("CHW_", "")}`);
+          setName(language === "en" ? `Health Worker ${dbName.replace("CHW_", "")}` : `স্বাস্থ্যকর্মী ${dbName.replace("CHW_", "")}`);
         } else {
           setName(dbName);
         }
       }
     } catch (e) {
-      // Keep beautiful mock fallbacks intact
       setPatientCount(8);
       setVisitCount(42);
     }
-  }, []);
+  }, [language]);
 
   useFocusEffect(
     useCallback(() => {
       load().catch((error) => {
         setLoadError(getLocalDbErrorMessage(error, copy.common.loadFailed));
       });
-    }, [load])
+    }, [load, copy.common.loadFailed])
   );
 
   const showInfo = (title: string, message: string) => {
@@ -91,21 +91,25 @@ export default function ChwProfileScreen() {
   };
 
   const confirmLogout = () => {
-    Alert.alert("লগ আউট", "আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট থেকে লগ আউট করতে চান?", [
-      { text: "বাতিল", style: "cancel" },
-      {
-        text: "লগ আউট",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await supabase.auth.signOut();
-          } finally {
-            await Promise.all([clearSession(), clearRoleSession()]);
-            router.replace("/(auth)/login");
+    Alert.alert(
+      language === "en" ? "Log Out" : "লগ আউট", 
+      language === "en" ? "Are you sure you want to log out of your account?" : "আপনি কি নিশ্চিতভাবে আপনার অ্যাকাউন্ট থেকে লগ আউট করতে চান?", 
+      [
+        { text: language === "en" ? "Cancel" : "বাতিল", style: "cancel" },
+        {
+          text: language === "en" ? "Log Out" : "লগ আউট",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await supabase.auth.signOut();
+            } finally {
+              await Promise.all([clearSession(), clearRoleSession()]);
+              router.replace("/(auth)/login");
+            }
           }
         }
-      }
-    ]);
+      ]
+    );
   };
 
   return (
@@ -117,8 +121,8 @@ export default function ChwProfileScreen() {
             <Icon name="medical-services" color="#E57A58" size={20} />
           </View>
           <View style={styles.topBarTextWrap}>
-            <Text style={styles.headerTitle}>মাসেবা AI</Text>
-            <Text style={styles.headerSubtitle}>{name} • স্বাস্থ্যকর্মী</Text>
+            <Text style={styles.headerTitle}>{copy.common.appName}</Text>
+            <Text style={styles.headerSubtitle}>{name} • {language === "en" ? "Health Worker" : "স্বাস্থ্যকর্মী"}</Text>
           </View>
         </View>
       </View>
@@ -133,14 +137,18 @@ export default function ChwProfileScreen() {
             </View>
             <View style={styles.activeStatusRow}>
               <View style={styles.activeStatusDot} />
-              <Text style={styles.activeStatusText}>সক্রিয় স্বাস্থ্যকর্মী</Text>
+              <Text style={styles.activeStatusText}>
+                {language === "en" ? "Active Health Worker" : "সক্রিয় স্বাস্থ্যকর্মী"}
+              </Text>
             </View>
           </View>
 
           <View style={styles.identityCardBody}>
             <View style={styles.clinicianAvatarWrap}>
               <View style={styles.clinicianAvatar}>
-                <Text style={styles.clinicianAvatarText}>{name.slice(0, 2)}</Text>
+                <Text style={styles.clinicianAvatarText}>
+                  {language === "en" ? name.split(" ").map(p => p[0]).join("").slice(0, 2) : name.slice(0, 2)}
+                </Text>
               </View>
               <View style={styles.identityVerifiedBadge}>
                 <Icon name="verified" color="#FFFFFF" size={12} />
@@ -149,8 +157,12 @@ export default function ChwProfileScreen() {
 
             <View style={styles.clinicianDetails}>
               <Text style={styles.clinicianNameText}>{name}</Text>
-              <Text style={styles.clinicianRoleText}>সিনিয়র স্বাস্থ্যকর্মী (CHW-Senior)</Text>
-              <Text style={styles.clinicianIdText}>আইডি: CHW-88291</Text>
+              <Text style={styles.clinicianRoleText}>
+                {language === "en" ? "Senior Health Worker (CHW-Senior)" : "সিনিয়র স্বাস্থ্যকর্মী (CHW-Senior)"}
+              </Text>
+              <Text style={styles.clinicianIdText}>
+                {language === "en" ? "ID: CHW-88291" : "আইডি: CHW-88291"}
+              </Text>
             </View>
           </View>
 
@@ -159,11 +171,15 @@ export default function ChwProfileScreen() {
           <View style={styles.identityCardFooter}>
             <View style={styles.footerDetailRow}>
               <Icon name="location-on" color="#A08E88" size={14} />
-              <Text style={styles.footerDetailText}>কুমিল্লা অঞ্চল</Text>
+              <Text style={styles.footerDetailText}>
+                {language === "en" ? "Comilla Region" : "কুমিল্লা অঞ্চল"}
+              </Text>
             </View>
             <View style={styles.footerDetailRow}>
               <Icon name="calendar-today" color="#A08E88" size={14} />
-              <Text style={styles.footerDetailText}>যোগদান: ১২ মার্চ ২০২৪</Text>
+              <Text style={styles.footerDetailText}>
+                {language === "en" ? "Joined: 12 March 2024" : "যোগদান: ১২ মার্চ ২০২৪"}
+              </Text>
             </View>
           </View>
         </View>
@@ -172,7 +188,9 @@ export default function ChwProfileScreen() {
         <View style={styles.statsSection}>
           <View style={styles.sectionHeader}>
             <Icon name="trending-up" color="#70605A" size={16} />
-            <Text style={styles.sectionTitle}>প্রদর্শন ও পরিসংখ্যান</Text>
+            <Text style={styles.sectionTitle}>
+              {language === "en" ? "Performance & Statistics" : "প্রদর্শন ও পরিসংখ্যান"}
+            </Text>
           </View>
 
           <View style={styles.statsGrid}>
@@ -181,10 +199,10 @@ export default function ChwProfileScreen() {
               <View style={styles.statCardHeaderRow}>
                 <Icon name="people" color="#E57A58" size={20} />
                 <Text style={[styles.statValue, styles.textTerracotta]}>
-                  {toBanglaNumber(patientCount)}
+                  {formatNumber(patientCount, language)}
                 </Text>
               </View>
-              <Text style={styles.statLabel}>আজকের রোগী</Text>
+              <Text style={styles.statLabel}>{copy.chwDashboard.todaysPatients}</Text>
             </View>
 
             {/* Card 2: Weekly Visits */}
@@ -192,10 +210,10 @@ export default function ChwProfileScreen() {
               <View style={styles.statCardHeaderRow}>
                 <Icon name="assignment" color="#4A6047" size={20} />
                 <Text style={[styles.statValue, styles.textGreen]}>
-                  {toBanglaNumber(visitCount)}
+                  {formatNumber(visitCount, language)}
                 </Text>
               </View>
-              <Text style={styles.statLabel}>এই সপ্তাহের পরিদর্শন</Text>
+              <Text style={styles.statLabel}>{copy.chwProfile.visitsThisWeek}</Text>
             </View>
           </View>
         </View>
@@ -204,14 +222,17 @@ export default function ChwProfileScreen() {
         <View style={styles.actionsCard}>
           {/* Edit Profile */}
           <Pressable
-            onPress={() => showInfo("প্রোফাইল সম্পাদনা", "প্রোফাইল বিবরণ সম্পাদনা করার জন্য প্রধান কার্যালয়ে যোগাযোগ করুন।")}
+            onPress={() => showInfo(
+              language === "en" ? "Edit Profile" : "প্রোফাইল সম্পাদনা", 
+              language === "en" ? "Please contact the main office to edit profile details." : "প্রোফাইল বিবরণ সম্পাদনা করার জন্য প্রধান কার্যালয়ে যোগাযোগ করুন।"
+            )}
             style={styles.actionRow}
           >
             <View style={styles.actionLeft}>
               <View style={styles.actionIconWrap}>
                 <Icon name="person" color="#70605A" size={18} />
               </View>
-              <Text style={styles.actionText}>প্রোফাইল সম্পাদনা</Text>
+              <Text style={styles.actionText}>{copy.chwProfile.edit}</Text>
             </View>
             <Icon name="chevron-right" color="#A08E88" size={18} />
           </Pressable>
@@ -220,14 +241,17 @@ export default function ChwProfileScreen() {
 
           {/* Clinical Guideline */}
           <Pressable
-            onPress={() => showInfo("ক্লিনিক্যাল নির্দেশিকা", "মাতা ও শিশু স্বাস্থ্য নির্দেশিকা ও স্বাস্থ্যকর্মীর রেফারেল গাইডলাইন ডাউনলোড হচ্ছে।")}
+            onPress={() => showInfo(
+              language === "en" ? "Clinical Guideline" : "ক্লিনিক্যাল নির্দেশিকা", 
+              language === "en" ? "Maternal and child health guidelines & health worker referral guidelines are downloading." : "মাতা ও শিশু স্বাস্থ্য নির্দেশিকা ও স্বাস্থ্যকর্মীর রেফারেল গাইডলাইন ডাউনলোড হচ্ছে।"
+            )}
             style={styles.actionRow}
           >
             <View style={styles.actionLeft}>
               <View style={styles.actionIconWrap}>
                 <Icon name="book" color="#70605A" size={18} />
               </View>
-              <Text style={styles.actionText}>ক্লিনিক্যাল নির্দেশিকা</Text>
+              <Text style={styles.actionText}>{copy.chwProfile.guide}</Text>
             </View>
             <Icon name="chevron-right" color="#A08E88" size={18} />
           </Pressable>
@@ -252,14 +276,17 @@ export default function ChwProfileScreen() {
 
           {/* Help Center */}
           <Pressable
-            onPress={() => showInfo("সহায়তা কেন্দ্র", "মাসেবা ক্লিনিক্যাল সাপোর্ট সার্ভিস লাইনে যুক্ত হতে কল করুন ১৬৭৮৯ নম্বরে।")}
+            onPress={() => showInfo(
+              language === "en" ? "Help Center" : "সহায়তা কেন্দ্র", 
+              language === "en" ? "To connect with MaaSheba clinical support service line, call 16789." : "মাসেবা ক্লিনিক্যাল সাপোর্ট সার্ভিস লাইনে যুক্ত হতে কল করুন ১৬৭৮৯ নম্বরে।"
+            )}
             style={styles.actionRow}
           >
             <View style={styles.actionLeft}>
               <View style={styles.actionIconWrap}>
                 <Icon name="help-outline" color="#70605A" size={18} />
               </View>
-              <Text style={styles.actionText}>সহায়তা কেন্দ্র</Text>
+              <Text style={styles.actionText}>{language === "en" ? "Help Center" : "সহায়তা কেন্দ্র"}</Text>
             </View>
             <Icon name="chevron-right" color="#A08E88" size={18} />
           </Pressable>
@@ -275,7 +302,7 @@ export default function ChwProfileScreen() {
               <View style={[styles.actionIconWrap, styles.actionIconWrapRed]}>
                 <Icon name="logout" color="#B3261E" size={18} />
               </View>
-              <Text style={[styles.actionText, styles.textRed]}>লগ আউট</Text>
+              <Text style={[styles.actionText, styles.textRed]}>{copy.common.logout}</Text>
             </View>
             <Icon name="chevron-right" color="#E57A58" size={18} />
           </Pressable>

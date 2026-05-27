@@ -73,15 +73,43 @@ Your role:
 - Keep responses under 120 words unless a detailed protocol is needed
 - If offline or uncertain: say "তথ্য যাচাই করুন" and give the safest conservative advice`;
 
-const FOOD_CARDS = [
-  { emoji: "🥛", labelKey: "foodMilk" },
-  { emoji: "🥚", labelKey: "foodEgg" },
-  { emoji: "🍌", labelKey: "foodBanana" },
-  { emoji: "🐟", labelKey: "foodFish" },
-  { emoji: "🥬", labelKey: "foodGreens" },
-  { emoji: "🍊", labelKey: "foodOrange" },
-  { emoji: "🫘", labelKey: "foodLentils" },
-  { emoji: "🍠", labelKey: "foodPotato" }
+const CLINICAL_GUIDE_CARDS = [
+  { 
+    emoji: "🩺", 
+    labelKey: "clinicalBP" as const, 
+    queryEn: "What is the emergency triage advice and referral protocol for BP >= 140/90 mmHg during pregnancy?", 
+    queryBn: "গর্ভকালীন সময়ে রক্তচাপ ১৪০/৯০ mmHg বা বেশি হলে জরুরি ট্রায়াজ এবং রেফারেল প্রোটোকল কী?"
+  },
+  { 
+    emoji: "🦵", 
+    labelKey: "clinicalEdema" as const, 
+    queryEn: "Give maternal edema triage grading and danger signs referral protocol.", 
+    queryBn: "গর্ভকালীন সময়ে পা ফোলার গ্রেডিং এবং সতর্কতার লক্ষণসহ রেফারেল প্রোটোকলটি বলুন।"
+  },
+  { 
+    emoji: "🩸", 
+    labelKey: "clinicalAnemia" as const, 
+    queryEn: "What are the WHO hemoglobin cutoffs for mild, moderate, and severe anemia during pregnancy and when to refer?", 
+    queryBn: "গর্ভাবস্থায় মৃদু, মাঝারি এবং গুরুতর রক্তশূন্যতার জন্য WHO নির্ধারিত হিমোগ্লোবিন লেভেল কত এবং কখন রেফার করতে হবে?"
+  },
+  { 
+    emoji: "👶", 
+    labelKey: "clinicalKickCount" as const, 
+    queryEn: "Give fetal movement kick count protocol and danger signs guide.", 
+    queryBn: "গর্ভস্থ শিশুর নড়াচড়া (কিক কাউন্ট) পরিমাপের নিয়ম এবং সতর্কতার লক্ষণগুলোর গাইড দিন।"
+  },
+  { 
+    emoji: "📅", 
+    labelKey: "clinicalAncVisits" as const, 
+    queryEn: "What is the WHO 8-contact antenatal care visit timing and monitoring schedule?", 
+    queryBn: "WHO নির্দেশিত গর্ভাবস্থায় ৮টি এএনসি (ANC) ভিজিটের সময়সূচি এবং পর্যবেক্ষণ তালিকাটি বলুন।"
+  },
+  { 
+    emoji: "🚨", 
+    labelKey: "clinicalEclampsia" as const, 
+    queryEn: "What are the immediate emergency first-aid protocols for eclampsia before referral?", 
+    queryBn: "রেফারের আগে গর্ভবতী মায়ের খিঁচুনি (এক্লাম্পসিয়া) হলে তাৎক্ষণিক করণীয় এবং প্রথমিক চিকিৎসা কী?"
+  }
 ] as const;
 
 async function askClinicalOnline(question: string): Promise<ClinicalChatResponse | null> {
@@ -427,36 +455,23 @@ export default function ClinicalChatScreen() {
   // ----------------------------------------------------
   // Render Food Cards List (Stitch suggestion cards)
   // ----------------------------------------------------
-  const renderFoodCards = () => {
+  const renderClinicalGuideCards = () => {
     const isAiWelcomeOnly = aiMessages.length <= 1;
-    const lastMsg = aiMessages[aiMessages.length - 1];
-    const isNutritionReply = lastMsg && lastMsg.role === "ai" && (
-      lastMsg.text.includes("পুষ্টি") ||
-      lastMsg.text.includes("খাবার") ||
-      lastMsg.text.includes("দুধ") ||
-      lastMsg.text.includes("ডিম") ||
-      lastMsg.text.includes("কলা") ||
-      lastMsg.text.includes("মাছ") ||
-      lastMsg.text.includes("শাক") ||
-      lastMsg.text.includes("কমলা") ||
-      lastMsg.text.includes("ডাল") ||
-      lastMsg.text.includes("মিষ্টি আলু")
-    );
-
-    if (!isAiWelcomeOnly && !isNutritionReply) return null;
+    if (!isAiWelcomeOnly) return null;
 
     return (
       <View style={styles.foodCardsWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.foodCardsScroll}>
-          {FOOD_CARDS.map((item) => {
-            const foodName = copy.clinicalChat[item.labelKey];
+          {CLINICAL_GUIDE_CARDS.map((item) => {
+            const guideLabel = copy.clinicalChat[item.labelKey];
             return (
               <Pressable
-                accessibilityLabel={foodName}
+                accessibilityLabel={guideLabel}
                 key={item.labelKey}
                 onPress={() => {
                   if (!online) return;
-                  void submitAiQuestion(`${copy.clinicalChat.askAboutFoodPrefix}${foodName}`);
+                  const queryText = language === "en" ? item.queryEn : item.queryBn;
+                  void submitAiQuestion(queryText);
                 }}
                 style={({ pressed }) => [
                   styles.foodCard,
@@ -465,7 +480,7 @@ export default function ClinicalChatScreen() {
                 ]}
               >
                 <Text style={styles.foodCardEmoji}>{item.emoji}</Text>
-                <Text style={styles.foodCardLabel} numberOfLines={2}>{foodName}</Text>
+                <Text style={styles.foodCardLabel} numberOfLines={2}>{guideLabel}</Text>
               </Pressable>
             );
           })}
@@ -655,7 +670,7 @@ export default function ClinicalChatScreen() {
           )}
 
           {/* Food Cards & Quick replies chips stacked above input bar */}
-          {renderFoodCards()}
+          {renderClinicalGuideCards()}
           {renderQuickReplies()}
 
           <View style={styles.inputRow}>

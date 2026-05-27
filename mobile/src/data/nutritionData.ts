@@ -380,10 +380,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "১ম মাস: গর্ভাবস্থার শুরু: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 1: Early pregnancy: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -596,10 +602,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "২য় মাস: বমি বমি ভাব থাকলে সহজ খাবার: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 2: Nausea-friendly eating: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -794,10 +806,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৩য় মাস: সুষম প্লেটের দিকে যাওয়া: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 3: Transition to balanced plate: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -992,10 +1010,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৪র্থ মাস: দ্বিতীয় ত্রৈমাসিকে খাবার একটু বাড়ানো: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 4: Increasing food in second trimester: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -1214,10 +1238,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৫ম মাস: সুষম খাবারের মাস: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 5: Month of balanced eating: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -1436,10 +1466,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৬ষ্ঠ মাস: পুষ্টিসমৃদ্ধ খাবার ধরে রাখা: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 6: Maintaining nutrient-dense eating: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -1635,10 +1671,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৭ম মাস: তৃতীয় ত্রৈমাসিকে ভাগ করে খাবার: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 7: Portioning meals in third trimester: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -1827,10 +1869,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৮ম মাস: আরাম, ক্যালসিয়াম ও আঁশ: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 8: Rest, Calcium & Fiber: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     },
     {
@@ -2038,10 +2086,16 @@ export const NUTRITION_DATA = {
         }
       ],
       "app_display_summary_bn": "৯ম মাস: প্রসবের আগে সহজ ও পুষ্টিকর খাবার: প্রতিদিন ভাত/রুটি, ডাল, শাক-সবজি, ডিম বা মাছ, স্থানীয় ফল এবং নিরাপদ পানি রাখুন।",
+      "app_display_summary_en": "Month 9: Easy & nutritious eating before birth: Include rice/roti, lentils, green vegetables, egg or fish, local fruits and safe water daily.",
       "cautions_bn": [
         "শুধু ভাত বা চা-বিস্কুটে খাবার সীমাবদ্ধ করবেন না।",
         "অপরিষ্কার পানি, বাসি খাবার, কাঁচা/আধা-সেদ্ধ ডিম-মাছ-মাংস এড়িয়ে চলুন।",
         "গ্রামের প্রচলিত ভুল ধারণার কারণে ডিম, মাছ, শাক বা ফল বাদ দেবেন না, যদি না ডাক্তার নিষেধ করেন।"
+      ],
+      "cautions_en": [
+        "Do not restrict food to only rice or tea-biscuits.",
+        "Avoid unsafe water, stale food, and raw/undercooked eggs, fish, or meat.",
+        "Do not skip eggs, fish, leafy greens, or fruits due to local misconceptions, unless advised by a doctor."
       ]
     }
   ],

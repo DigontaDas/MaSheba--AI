@@ -97,8 +97,8 @@ async function seedLocalChwDemoData() {
         'visit-1', 'patient-1', 'chw-demo-id', 140, 95, 62.5, 10.2, 1, '{"headache":true}', 'HIGH', '${new Date().toISOString()}', 'emulator-device', '${new Date().toISOString()}'
       );
     `);
-  } catch (dbErr) {
-    console.error("Local SQLite seeding visits error:", dbErr);
+  } catch (_dbErr) {
+    // console.error("Local SQLite seeding visits error:", _dbErr)
   }
 }
 
@@ -220,9 +220,8 @@ export default function LoginScreen() {
           await saveUserRole("CHW");
           setModalVisible(false);
           router.replace("/(tabs)/home");
-        } catch (bootstrapError) {
-          // For CHW, fall back gracefully to local offline demo mode
-          console.warn("Supabase CHW bootstrap failed, falling back to offline demo:", bootstrapError);
+        } catch (_bootstrapError) {
+          // console.warn("Supabase CHW bootstrap failed, falling back to offline demo:", _bootstrapError)
           await seedLocalChwDemoData();
           setModalVisible(false);
           router.replace("/(tabs)/home");
@@ -238,7 +237,7 @@ export default function LoginScreen() {
       router.replace("/(mother-tabs)/home");
     } catch (loginError) {
       const msg = loginError instanceof Error ? loginError.message : "লগইন ব্যর্থ হয়েছে";
-      console.error("Login error:", msg);
+      // console.error("Login error:", msg)
       setError(msg);
     } finally {
       setLoadingAction(null);
