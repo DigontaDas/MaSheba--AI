@@ -6,12 +6,16 @@ export interface NutritionFood {
   name_bn: string;
   name_en: string;
   amount_bn: string;
+  amount_en?: string;
   frequency_bn: string;
+  frequency_en?: string;
   nutrient_focus: string[];
   cost_level: string;
   rural_affordable: boolean;
   substitutions_bn?: string[];
+  substitutions_en?: string[];
   caution_bn?: string;
+  caution_en?: string;
 }
 
 export interface MonthlyPlan {
@@ -20,10 +24,14 @@ export interface MonthlyPlan {
   month_bn: string;
   weeks_range: string;
   stage_label_bn: string;
+  stage_label_en?: string;
   daily_energy_note_bn: string;
+  daily_energy_note_en?: string;
   daily_foods: NutritionFood[];
   app_display_summary_bn: string;
+  app_display_summary_en?: string;
   cautions_bn: string[];
+  cautions_en?: string[];
 }
 
 export interface SymptomGuidance {
@@ -35,9 +43,13 @@ export interface SymptomGuidance {
 export interface SupplementGuidance {
   id: string;
   name_bn: string;
+  name_en?: string;
   dose_bn: string;
+  dose_en?: string;
   timing_bn: string;
+  timing_en?: string;
   side_effects_bn?: string;
+  side_effects_en?: string;
 }
 
 export const NUTRITION_DATA = {
@@ -2137,9 +2149,9 @@ export function getMonthlyPlan(gestationalWeek: number): MonthlyPlan | null {
 
 export function getFoodsByCategory(
   plan: MonthlyPlan,
-  category: "খাবার" | "পানীয়" | "ওষুধ" | "বিশ্রাম" | "সব"
+  category: "খাবার" | "পানীয়" | "ওষুধ" | "বিশ্রাম" | "সব" | "food" | "drinks" | "medicine" | "rest" | "all"
 ): NutritionFood[] {
-  if (category === "সব") {
+  if (category === "সব" || category === "all") {
     return plan.daily_foods;
   }
 
@@ -2147,7 +2159,11 @@ export function getFoodsByCategory(
     খাবার: ["energy", "protein", "iron", "folate", "vitamin A", "vitamins", "calcium", "fiber"],
     পানীয়: ["hydration"],
     ওষুধ: [],
-    বিশ্রাম: []
+    বিশ্রাম: [],
+    food: ["energy", "protein", "iron", "folate", "vitamin A", "vitamins", "calcium", "fiber"],
+    drinks: ["hydration"],
+    medicine: [],
+    rest: []
   };
   categoryMap["à¦–à¦¾à¦¬à¦¾à¦°"] = categoryMap["খাবার"];
   categoryMap["à¦ªà¦¾à¦¨à§€à¦¯à¦¼"] = categoryMap["পানীয়"];

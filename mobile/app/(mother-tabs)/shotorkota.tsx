@@ -13,9 +13,10 @@ import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { MenuModal } from "@/components/ui/MenuModal";
 import { colors, radius, spacing, typography } from "@/theme";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { SYMPTOM_GUIDANCE } from "@/data/nutritionData";
 import { OFFLINE_QA_SEED } from "@/data/offlineQaSeed.bn";
+import { OFFLINE_QA_SEED_EN } from "@/data/offlineQaSeed.en";
 import { clearRoleSession } from "@/auth/roleSession";
 import { clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
@@ -31,8 +32,19 @@ const EMERGENCY_SIGNS = [
   "খিঁচুনি বা অজ্ঞান হয়ে যাওয়া"
 ];
 
+const EMERGENCY_SIGNS_EN = [
+  "Heavy bleeding",
+  "Severe headache and blurred vision",
+  "Sudden swelling of hands or face",
+  "Baby movement suddenly stops",
+  "Severe belly pain",
+  "Fever above 101°F",
+  "Fits or fainting"
+];
+
 export default function ShotorkotaScreen() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const copy = useCopy();
   const [expandedSymptom, setExpandedSymptom] = useState<string | null>(null);
   const [expandedQa, setExpandedQa] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -51,8 +63,13 @@ export default function ShotorkotaScreen() {
   };
 
   const showNotifications = () => {
-    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+    Alert.alert(language === "en" ? "Notifications" : "নোটিফিকেশন", language === "en" ? "No new notifications." : "কোনো নতুন নোটিফিকেশন নেই।", [
+      { text: language === "en" ? "OK" : "ঠিক আছে" }
+    ]);
   };
+
+  const emergencySigns = language === "en" ? EMERGENCY_SIGNS_EN : EMERGENCY_SIGNS;
+  const highRiskQa = (language === "en" ? OFFLINE_QA_SEED_EN : OFFLINE_QA_SEED).filter((item) => item.severity === "HIGH").slice(0, 6);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -63,11 +80,11 @@ export default function ShotorkotaScreen() {
       />
       {/* Uniform Top Header Bar */}
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Menu" : "মেনু"} accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
           <Icon name="menu" color="#70605A" size={24} />
         </Pressable>
         <Text style={styles.appName}>{copy.common.appName}</Text>
-        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Notifications" : "নোটিফিকেশন"} accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
           <Icon name="notifications" color="#70605A" size={24} />
         </Pressable>
       </View>
@@ -83,22 +100,24 @@ export default function ShotorkotaScreen() {
         <View style={styles.faqEmergencyCard}>
           <View style={styles.faqEmergencyHeader}>
             <Icon name="error" color="#B91C1C" size={24} />
-            <Text style={styles.faqEmergencyTitle}>জরুরি সতর্কতা</Text>
+            <Text style={styles.faqEmergencyTitle}>{language === "en" ? "Emergency warning" : "জরুরি সতর্কতা"}</Text>
           </View>
-          <Text style={styles.faqEmergencySub}>নিচের যেকোনো লক্ষণ দেখা দিলে এখনই হাসপাতালে যান।</Text>
+          <Text style={styles.faqEmergencySub}>
+            {language === "en" ? "If any of the symptoms below appear, go to a hospital immediately." : "নিচের যেকোনো লক্ষণ দেখা দিলে এখনই হাসপাতালে যান।"}
+          </Text>
           <Pressable
             onPress={() => Linking.openURL("tel:16767")}
             style={styles.faqCallButton}
           >
-            <Text style={styles.faqCallButtonText}>১৬৭৬৭ কল করুন</Text>
+            <Text style={styles.faqCallButtonText}>{language === "en" ? "Call 16767" : "১৬৭৬৭ কল করুন"}</Text>
           </Pressable>
         </View>
 
         {/* Emergency Signs Grid */}
         <View style={styles.faqSection}>
-          <Text style={styles.faqSectionTitle}>জরুরি লক্ষণসমূহ</Text>
+          <Text style={styles.faqSectionTitle}>{language === "en" ? "Emergency signs" : "জরুরি লক্ষণসমূহ"}</Text>
           <View style={styles.gridContainer}>
-            {EMERGENCY_SIGNS.map((sign) => (
+            {emergencySigns.map((sign) => (
               <View key={sign} style={styles.gridCard}>
                 <Icon name="warning" color="#D97706" size={16} />
                 <Text style={styles.gridCardText}>{sign}</Text>
@@ -109,7 +128,7 @@ export default function ShotorkotaScreen() {
 
         {/* Symptom Accordion list */}
         <View style={styles.faqSection}>
-          <Text style={styles.faqSectionTitle}>উপসর্গ অনুযায়ী পরামর্শ</Text>
+          <Text style={styles.faqSectionTitle}>{language === "en" ? "Advice by symptom" : "উপসর্গ অনুযায়ী পরামর্শ"}</Text>
           {SYMPTOM_GUIDANCE.map((symptom) => {
             const isExpanded = expandedSymptom === symptom.id;
             return (
@@ -118,14 +137,14 @@ export default function ShotorkotaScreen() {
                   onPress={() => setExpandedSymptom(isExpanded ? null : symptom.id)}
                   style={styles.accordionHeader}
                 >
-                  <Text style={styles.accordionTitle}>{symptom.symptom_bn}</Text>
+                  <Text style={styles.accordionTitle}>{language === "en" ? (symptom as { symptom_en?: string }).symptom_en ?? symptom.symptom_bn : symptom.symptom_bn}</Text>
                   <Icon name={isExpanded ? "expand-less" : "expand-more"} color="#70605A" size={24} />
                 </Pressable>
                 {isExpanded && (
                   <View style={styles.accordionBody}>
                     {symptom.recommendations.map((recommendation, idx) => (
                       <Text key={idx} style={styles.accordionBulletText}>
-                        • {recommendation.bn}
+                        • {language === "en" ? (recommendation as { en?: string }).en ?? recommendation.bn : recommendation.bn}
                       </Text>
                     ))}
                   </View>
@@ -137,8 +156,8 @@ export default function ShotorkotaScreen() {
 
         {/* Off-line Q&As */}
         <View style={styles.faqSection}>
-          <Text style={styles.faqSectionTitle}>জিজ্ঞাসা ও উত্তর (FAQ)</Text>
-          {OFFLINE_QA_SEED.filter((item) => item.severity === "HIGH").slice(0, 6).map((item) => {
+          <Text style={styles.faqSectionTitle}>{language === "en" ? "Questions and answers (FAQ)" : "জিজ্ঞাসা ও উত্তর (FAQ)"}</Text>
+          {highRiskQa.map((item) => {
             const isExpanded = expandedQa === item.id;
             return (
               <View key={item.id} style={styles.accordionContainer}>

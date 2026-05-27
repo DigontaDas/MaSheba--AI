@@ -6,7 +6,8 @@ import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { getQaByTopic, getQaCategories, searchQa, type QaCategory } from "@/features/qa/offlineQaStore";
 import { colors, radius, spacing, typography } from "@/theme";
 import type { OfflineQa, OfflineQaTrimester } from "@/types/schema";
@@ -20,12 +21,16 @@ type Message = {
 };
 
 const trim: OfflineQaTrimester = "T3";
-const emergencyBannerTitle = "জরুরি লক্ষণ";
-const emergencyBannerMessage = "নিচের যেকোনো লক্ষণ দেখা দিলে এখনই হাসপাতালে যান।";
+const emergencyTopic = "জরুরি_লক্ষণ";
 
 export function QaChatScreen() {
   const segments = useSegments();
-  const categories = useMemo(() => getQaCategories(), []);
+  const { language } = useLanguage();
+  const copy = useCopy();
+  const categories = useMemo(() => getQaCategories(language), [language]);
+  const emergencyBannerTitle = language === "en" ? "Danger signs" : "জরুরি লক্ষণ";
+  const emergencyBannerMessage =
+    language === "en" ? "If any warning sign appears, go to a hospital or health centre immediately." : "নিচের যেকোনো লক্ষণ দেখা দিলে এখনই হাসপাতালে যান।";
   const [category, setCategory] = useState<QaCategory | null>(null);
   const [items, setItems] = useState<OfflineQa[]>([]);
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -43,7 +48,7 @@ export function QaChatScreen() {
     setLoadingQuestions(true);
     try {
       setLoadError(null);
-      const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: trim });
+      const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: trim, language });
       setItems(options?.emergencyOnly ? nextItems.filter((item) => item.emergency) : nextItems);
     } catch (loadError) {
       setItems([]);
@@ -51,7 +56,7 @@ export function QaChatScreen() {
     } finally {
       setLoadingQuestions(false);
     }
-  }, []);
+  }, [copy.common.loadFailed, language]);
 
   const goBack = () => {
     if (router.canGoBack()) {
@@ -63,7 +68,7 @@ export function QaChatScreen() {
 
   const showEmergencyQuestions = async () => {
     const emergencyCategory = categories.find(
-      (nextCategory) => nextCategory.label === emergencyBannerTitle || nextCategory.topic === "জরুরি_লক্ষণ" || nextCategory.topic.includes("জরুরি")
+      (nextCategory) => nextCategory.id === "danger_signs" || nextCategory.topic === emergencyTopic
     );
     if (emergencyCategory) {
       await selectCategory(emergencyCategory, { emergencyOnly: true });
@@ -106,14 +111,14 @@ export function QaChatScreen() {
         return;
       }
 
-      const offlineResults = await searchQa(question, trim);
+      const offlineResults = await searchQa(question, trim, language);
       if (!offlineResults.length) {
         setMessages((current) => [
           ...current,
           {
             id: `offline-empty-${Date.now()}`,
             role: "ai",
-            text: "এই বিষয়ে আমার কাছে তথ্য নেই। নিচের বিভাগ থেকে প্রশ্ন বেছে নিন।"
+            text: copy.qa.noAnswer
           }
         ]);
         return;
@@ -134,7 +139,7 @@ export function QaChatScreen() {
               {
                 id: `offline-related-${Date.now()}`,
                 role: "ai" as const,
-                text: `সম্পর্কিত প্রশ্ন:\n${related.map((entry) => `• ${entry.question_bn}`).join("\n")}`
+                text: `${copy.qa.relatedQuestions}:\n${related.map((entry) => `• ${entry.question_bn}`).join("\n")}`
               }
             ]
           : [])
@@ -142,7 +147,7 @@ export function QaChatScreen() {
     } catch {
       setMessages((current) => [
         ...current,
-        { id: `offline-error-${Date.now()}`, role: "ai", text: "সমস্যা হয়েছে। আবার চেষ্টা করুন।" }
+        { id: `offline-error-${Date.now()}`, role: "ai", text: copy.clinicalChat.error }
       ]);
     } finally {
       setIsLoading(false);

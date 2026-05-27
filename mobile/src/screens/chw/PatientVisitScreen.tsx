@@ -88,6 +88,7 @@ export default function PatientVisitScreen() {
   return (
     <View style={styles.screen}>
       <FlatList
+        disableVirtualization
         data={filteredPatients}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}

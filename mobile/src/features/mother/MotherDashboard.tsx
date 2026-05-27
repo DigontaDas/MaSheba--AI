@@ -10,9 +10,10 @@ import { clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { getUnreadCount } from "@/api/chatService";
 import { useLanguage } from "@/context/LanguageContext";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { formatNumber, weekLabel, weeksLeftLabel } from "@/utils/localizedFormat";
 import { callPhoneNumber } from "@/utils/phone";
 
 const imageByIcon = {
@@ -29,7 +30,8 @@ export function MotherDashboard({
   variant?: "home" | "progress";
   week?: number;
 }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const copy = useCopy();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -75,32 +77,46 @@ export function MotherDashboard({
   };
 
   const showNotifications = () => {
-    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+    Alert.alert(language === "en" ? "Notifications" : "নোটিফিকেশন", language === "en" ? "No new notifications." : "কোনো নতুন নোটিফিকেশন নেই।", [
+      { text: language === "en" ? "OK" : "ঠিক আছে" }
+    ]);
   };
 
   const showComingSoon = () => {
-    Alert.alert("শীঘ্রই আসছে", "এই বৈশিষ্ট্যটি শীঘ্রই আসছে।", [{ text: "ঠিক আছে" }]);
+    Alert.alert(language === "en" ? "Coming soon" : "শীঘ্রই আসছে", language === "en" ? "This feature is coming soon." : "এই বৈশিষ্ট্যটি শীঘ্রই আসছে।", [
+      { text: language === "en" ? "OK" : "ঠিক আছে" }
+    ]);
   };
 
   const showEmergencyHelp = () => {
-    Alert.alert("⚠️ জরুরি সাহায্য", "এখনই সাহায্যের জন্য কল করুন:", [
-      { text: "বন্ধ করুন", style: "cancel" },
-      { text: "স্বাস্থ্য হটলাইন: ১৬৭৬৭", onPress: () => callPhoneNumber("16767") },
-      { text: "জরুরি: ৯৯৯", onPress: () => callPhoneNumber("999") }
+    Alert.alert(language === "en" ? "Emergency help" : "জরুরি সাহায্য", language === "en" ? "Call now for help:" : "এখনই সাহায্যের জন্য কল করুন:", [
+      { text: language === "en" ? "Close" : "বন্ধ করুন", style: "cancel" },
+      { text: language === "en" ? "Health hotline: 16767" : "স্বাস্থ্য হটলাইন: ১৬৭৬৭", onPress: () => callPhoneNumber("16767") },
+      { text: language === "en" ? "Emergency: 999" : "জরুরি: ৯৯৯", onPress: () => callPhoneNumber("999") }
     ]);
   };
 
   const title =
     variant === "progress"
-      ? `সপ্তাহ ${toBanglaNumber(week)}: আপনার গর্ভকালীন অগ্রগতি`
-      : `সপ্তাহ ${toBanglaNumber(week)}: আপনার শিশুর বৃদ্ধি`;
+      ? language === "en"
+        ? `Week ${week}: your pregnancy progress`
+        : `সপ্তাহ ${toBanglaNumber(week)}: আপনার গর্ভকালীন অগ্রগতি`
+      : language === "en"
+        ? `Week ${week}: your baby's growth`
+        : `সপ্তাহ ${toBanglaNumber(week)}: আপনার শিশুর বৃদ্ধি`;
   const body =
     variant === "progress"
-      ? "শান্ত থাকুন এবং সাহায্যের জন্য প্রস্তুত থাকুন। কোনো জরুরি লক্ষণ দেখা দিলে দ্রুত স্বাস্থ্যকর্মীকে জানান।"
-      : "এই সপ্তাহে পুষ্টিকর খাবার, বিশ্রাম, ও নিয়মিত চেকআপ চালিয়ে যান। কোনো অস্বস্তি হলে স্বাস্থ্যকর্মীকে জানান।";
+      ? language === "en"
+        ? "Stay calm and keep your birth plan ready. Tell the health worker quickly if any danger sign appears."
+        : "শান্ত থাকুন এবং সাহায্যের জন্য প্রস্তুত থাকুন। কোনো জরুরি লক্ষণ দেখা দিলে দ্রুত স্বাস্থ্যকর্মীকে জানান।"
+      : language === "en"
+        ? "Continue nutritious food, rest, and regular checkups this week. Tell the health worker if you feel unwell."
+        : "এই সপ্তাহে পুষ্টিকর খাবার, বিশ্রাম, ও নিয়মিত চেকআপ চালিয়ে যান। কোনো অস্বস্তি হলে স্বাস্থ্যকর্মীকে জানান।";
   const checklist =
     variant === "progress"
-      ? ["প্রসব বেদনা যেকোনো সময় শুরু হতে পারে", "শিশুর নড়াচড়া খেয়াল রাখুন", "আপনার হাসপাতাল ব্যাগ প্রস্তুত রাখুন"]
+      ? language === "en"
+        ? ["Labour pain may start at any time", "Watch your baby's movement", "Keep your hospital bag ready"]
+        : ["প্রসব বেদনা যেকোনো সময় শুরু হতে পারে", "শিশুর নড়াচড়া খেয়াল রাখুন", "আপনার হাসপাতাল ব্যাগ প্রস্তুত রাখুন"]
       : [copy.mother.babySize, copy.mother.babyMovement, copy.mother.checkupFood];
 
   return (
@@ -111,22 +127,22 @@ export function MotherDashboard({
         onLogout={handleLogout} 
       />
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Menu" : "মেনু"} accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
           <Icon name="menu" />
         </Pressable>
         <View style={styles.brand}>
           <Text style={styles.appName}>{copy.common.appName}</Text>
-          <Text style={styles.weekLabel}>সপ্তাহ {toBanglaNumber(week)}</Text>
+          <Text style={styles.weekLabel}>{weekLabel(week, language)}</Text>
         </View>
-        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Notifications" : "নোটিফিকেশন"} accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
           <Icon name="notifications" />
         </Pressable>
       </View>
 
       <View style={styles.progressCard}>
         <View style={styles.weekRow}>
-          <Text style={styles.weekTitle}>সপ্তাহ {toBanglaNumber(week)}</Text>
-          <Text style={styles.remaining}>আর {toBanglaNumber(Math.max(0, 40 - week))} সপ্তাহ বাকি</Text>
+          <Text style={styles.weekTitle}>{weekLabel(week, language)}</Text>
+          <Text style={styles.remaining}>{weeksLeftLabel(Math.max(0, 40 - week), language)}</Text>
         </View>
         <ProgressBar value={week} max={40} showMarkers />
       </View>
@@ -134,7 +150,7 @@ export function MotherDashboard({
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.sectionTitle}>{title}</Text>
-          <Pressable accessibilityLabel="অডিও শুনুন" accessibilityRole="button" onPress={showComingSoon} style={styles.smallIconButton}>
+          <Pressable accessibilityLabel={language === "en" ? "Listen to audio" : "অডিও শুনুন"} accessibilityRole="button" onPress={showComingSoon} style={styles.smallIconButton}>
             <Icon name="volume-up" color={colors.primary} />
           </Pressable>
         </View>
@@ -165,7 +181,7 @@ export function MotherDashboard({
         </View>
         {unreadCount > 0 ? (
           <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>{toBanglaNumber(unreadCount)}</Text>
+            <Text style={styles.unreadText}>{formatNumber(unreadCount, language)}</Text>
           </View>
         ) : null}
       </Pressable>

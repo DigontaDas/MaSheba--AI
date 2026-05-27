@@ -137,6 +137,7 @@ async function renderTree(node: React.ReactElement) {
 
 describe("mobile interactive elements", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     jest.spyOn(Alert, "alert").mockImplementation(jest.fn());
     mockRouter.canGoBack.mockReturnValue(true);
@@ -160,13 +161,19 @@ describe("mobile interactive elements", () => {
     ]);
   });
 
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+  });
+
   it("wires mother dashboard menu, notification, audio, and emergency actions", async () => {
     const tree = await renderTree(<MotherDashboard week={24} />);
 
     act(() => {
       tree.root.findByProps({ accessibilityLabel: "মেনু" }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith("মেনু", "", expect.any(Array));
+    expect(JSON.stringify(tree.toJSON())).toContain("প্রধান মেনু");
 
     act(() => {
       tree.root.findByProps({ accessibilityLabel: "নোটিফিকেশন" }).props.onPress();
@@ -181,7 +188,7 @@ describe("mobile interactive elements", () => {
     act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.mother.emergencyHelp }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith("⚠️ জরুরি সাহায্য", "এখনই সাহায্যের জন্য কল করুন:", expect.any(Array));
+    expect(Alert.alert).toHaveBeenCalledWith("জরুরি সাহায্য", "এখনই সাহায্যের জন্য কল করুন:", expect.any(Array));
   });
 
   it("wires profile settings rows and password reset flow", async () => {
@@ -216,7 +223,7 @@ describe("mobile interactive elements", () => {
     act(() => {
       tree.root.findByProps({ accessibilityLabel: "মেনু" }).props.onPress();
     });
-    expect(Alert.alert).toHaveBeenCalledWith("মেনু", "", expect.any(Array));
+    expect(JSON.stringify(tree.toJSON())).toContain("প্রধান মেনু");
 
     act(() => {
       tree.root.findByProps({ accessibilityLabel: "নোটিফিকেশন" }).props.onPress();

@@ -7,7 +7,7 @@ import { clearSession } from "@/auth/secureSession";
 import { clearRoleSession, getCurrentMotherProfile, type MotherProfile } from "@/auth/roleSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { useLanguage } from "@/context/LanguageContext";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
@@ -15,6 +15,7 @@ import { callPhoneNumber } from "@/utils/phone";
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<MotherProfile | null>(null);
   const { language, setLanguage, t } = useLanguage();
+  const copy = useCopy();
 
   useEffect(() => {
     getCurrentMotherProfile().then(setProfile).catch(() => undefined);
@@ -42,30 +43,32 @@ export default function ProfileScreen() {
   };
 
   const showNotificationAlert = () => {
-    Alert.alert("নোটিফিকেশন", "নোটিফিকেশন সেটআপ শীঘ্রই আসছে।", [{ text: "ঠিক আছে" }]);
+    Alert.alert(language === "en" ? "Notifications" : "নোটিফিকেশন", language === "en" ? "Notification setup is coming soon." : "নোটিফিকেশন সেটআপ শীঘ্রই আসছে।", [
+      { text: language === "en" ? "OK" : "ঠিক আছে" }
+    ]);
   };
 
   const requestPasswordReset = () => {
-    Alert.alert("পাসওয়ার্ড পরিবর্তন", "পাসওয়ার্ড পরিবর্তনের জন্য আপনার ইমেইলে একটি লিঙ্ক পাঠানো হবে।", [
-      { text: "বাতিল", style: "cancel" },
+    Alert.alert(language === "en" ? "Change password" : "পাসওয়ার্ড পরিবর্তন", language === "en" ? "A password reset link will be sent to your email." : "পাসওয়ার্ড পরিবর্তনের জন্য আপনার ইমেইলে একটি লিঙ্ক পাঠানো হবে।", [
+      { text: language === "en" ? "Cancel" : "বাতিল", style: "cancel" },
       {
-        text: "পাঠান",
+        text: language === "en" ? "Send" : "পাঠান",
         onPress: async () => {
           try {
             const session = await supabase.auth.getSession();
             const email = session.data.session?.user?.email;
             if (!email) {
-              Alert.alert("সমস্যা", "ইমেইল পাওয়া যায়নি।", [{ text: "ঠিক আছে" }]);
+              Alert.alert(language === "en" ? "Problem" : "সমস্যা", language === "en" ? "Email was not found." : "ইমেইল পাওয়া যায়নি।", [{ text: language === "en" ? "OK" : "ঠিক আছে" }]);
               return;
             }
             const { error } = await supabase.auth.resetPasswordForEmail(email);
             if (error) {
-              Alert.alert("সমস্যা", "ইমেইল পাঠানো যায়নি।", [{ text: "ঠিক আছে" }]);
+              Alert.alert(language === "en" ? "Problem" : "সমস্যা", language === "en" ? "Could not send email." : "ইমেইল পাঠানো যায়নি।", [{ text: language === "en" ? "OK" : "ঠিক আছে" }]);
               return;
             }
-            Alert.alert("সফল", "ইমেইল পাঠানো হয়েছে।", [{ text: "ঠিক আছে" }]);
+            Alert.alert(language === "en" ? "Success" : "সফল", language === "en" ? "Email has been sent." : "ইমেইল পাঠানো হয়েছে।", [{ text: language === "en" ? "OK" : "ঠিক আছে" }]);
           } catch {
-            Alert.alert("সমস্যা", "ইমেইল পাঠানো যায়নি।", [{ text: "ঠিক আছে" }]);
+            Alert.alert(language === "en" ? "Problem" : "সমস্যা", language === "en" ? "Could not send email." : "ইমেইল পাঠানো যায়নি।", [{ text: language === "en" ? "OK" : "ঠিক আছে" }]);
           }
         }
       }
@@ -73,16 +76,16 @@ export default function ProfileScreen() {
   };
 
   const showSupportAlert = () => {
-    Alert.alert("সাহায্য ও সাপোর্ট", "স্বাস্থ্য সেবা হটলাইন: ১৬৭৬৭\nজরুরি: ৯৯৯", [
-      { text: "বন্ধ করুন", style: "cancel" },
-      { text: "১৬৭৬৭ কল করুন", onPress: () => callPhoneNumber("16767") }
+    Alert.alert(language === "en" ? "Help and support" : "সাহায্য ও সাপোর্ট", language === "en" ? "Health hotline: 16767\nEmergency: 999" : "স্বাস্থ্য সেবা হটলাইন: ১৬৭৬৭\nজরুরি: ৯৯৯", [
+      { text: language === "en" ? "Close" : "বন্ধ করুন", style: "cancel" },
+      { text: language === "en" ? "Call 16767" : "১৬৭৬৭ কল করুন", onPress: () => callPhoneNumber("16767") }
     ]);
   };
 
   const showSettingsAlert = () => {
-    Alert.alert("সেটিংস", "অ্যাকাউন্ট সেটিংস", [
-      { text: "বাতিল", style: "cancel" },
-      { text: "লগ আউট", style: "destructive", onPress: logout }
+    Alert.alert(language === "en" ? "Settings" : "সেটিংস", language === "en" ? "Account settings" : "অ্যাকাউন্ট সেটিংস", [
+      { text: language === "en" ? "Cancel" : "বাতিল", style: "cancel" },
+      { text: language === "en" ? "Log out" : "লগ আউট", style: "destructive", onPress: logout }
     ]);
   };
 
@@ -96,7 +99,7 @@ export default function ProfileScreen() {
           <Icon name="arrow-back" />
         </Pressable>
         <Text style={styles.title}>{copy.profile.title}</Text>
-        <Pressable accessibilityLabel="সেটিংস" accessibilityRole="button" onPress={showSettingsAlert} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Settings" : "সেটিংস"} accessibilityRole="button" onPress={showSettingsAlert} style={styles.iconButton}>
           <Icon name="settings" />
         </Pressable>
       </View>
@@ -126,7 +129,7 @@ export default function ProfileScreen() {
         title={copy.profile.pregnancyDetails}
         rows={[
           [copy.profile.edd, copy.profile.eddValue],
-          [copy.profile.currentWeek, `${toBanglaNumber(week)} সপ্তাহ`],
+          [copy.profile.currentWeek, language === "en" ? `${week} weeks` : `${toBanglaNumber(week)} সপ্তাহ`],
           [copy.profile.bloodGroup, copy.profile.bloodGroupValue]
         ]}
       />

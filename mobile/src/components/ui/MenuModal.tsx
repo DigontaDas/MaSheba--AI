@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View, Animated, Dimensions } from "
 import { router } from "expo-router";
 import { Icon } from "./Icon";
 import { colors, radius, spacing, typography } from "@/theme";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface MenuModalProps {
   visible: boolean;
@@ -11,6 +12,7 @@ interface MenuModalProps {
 }
 
 export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
+  const { language } = useLanguage();
   const [scaleAnim] = React.useState(new Animated.Value(0.95));
   const [opacityAnim] = React.useState(new Animated.Value(0));
 
@@ -76,7 +78,7 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
 
           <View style={styles.header}>
             <Icon name="apps" color={colors.primary} size={24} />
-            <Text style={styles.title}>প্রধান মেনু</Text>
+            <Text style={styles.title}>{language === "en" ? "Main menu" : "প্রধান মেনু"}</Text>
           </View>
 
           <View style={styles.menuList}>
@@ -90,8 +92,8 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
                   <Icon name="home" color={colors.primary} size={20} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>হোম স্ক্রিন</Text>
-                  <Text style={styles.rowSubTitle}>গর্ভকালীন বিবরণী ও সেবা</Text>
+                  <Text style={styles.rowTitle}>{language === "en" ? "Home screen" : "হোম স্ক্রিন"}</Text>
+                  <Text style={styles.rowSubTitle}>{language === "en" ? "Pregnancy overview and services" : "গর্ভকালীন বিবরণী ও সেবা"}</Text>
                 </View>
               </View>
               <Icon name="chevron-right" color={colors.outlineVariant} size={20} />
@@ -107,8 +109,8 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
                   <Icon name="restaurant" color={colors.secondary} size={20} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>পুষ্টি ও যত্ন</Text>
-                  <Text style={styles.rowSubTitle}>খাদ্য তালিকা ও ক্যালকুলেটর</Text>
+                  <Text style={styles.rowTitle}>{language === "en" ? "Nutrition and care" : "পুষ্টি ও যত্ন"}</Text>
+                  <Text style={styles.rowSubTitle}>{language === "en" ? "Food list and tools" : "খাদ্য তালিকা ও ক্যালকুলেটর"}</Text>
                 </View>
               </View>
               <Icon name="chevron-right" color={colors.outlineVariant} size={20} />
@@ -124,8 +126,8 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
                   <Icon name="warning" color="#E57A58" size={20} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>গর্ভকালীন সতর্কতা</Text>
-                  <Text style={styles.rowSubTitle}>জরুরি লক্ষণ ও সাহায্য</Text>
+                  <Text style={styles.rowTitle}>{language === "en" ? "Pregnancy warnings" : "গর্ভকালীন সতর্কতা"}</Text>
+                  <Text style={styles.rowSubTitle}>{language === "en" ? "Danger signs and help" : "জরুরি লক্ষণ ও সাহায্য"}</Text>
                 </View>
               </View>
               <Icon name="chevron-right" color={colors.outlineVariant} size={20} />
@@ -141,8 +143,8 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
                   <Icon name="person" color={colors.tertiary} size={20} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>আপনার প্রোফাইল</Text>
-                  <Text style={styles.rowSubTitle}>ব্যক্তিগত তথ্য ও ভাষা</Text>
+                  <Text style={styles.rowTitle}>{language === "en" ? "Your profile" : "আপনার প্রোফাইল"}</Text>
+                  <Text style={styles.rowSubTitle}>{language === "en" ? "Personal info and language" : "ব্যক্তিগত তথ্য ও ভাষা"}</Text>
                 </View>
               </View>
               <Icon name="chevron-right" color={colors.outlineVariant} size={20} />
@@ -161,14 +163,14 @@ export function MenuModal({ visible, onClose, onLogout }: MenuModalProps) {
               <View style={styles.logoutIconWrap}>
                 <Icon name="logout" color={colors.error} size={18} />
               </View>
-              <Text style={styles.logoutText}>অ্যাকাউন্ট থেকে লগ আউট</Text>
+              <Text style={styles.logoutText}>{language === "en" ? "Log out of account" : "অ্যাকাউন্ট থেকে লগ আউট"}</Text>
             </View>
             <Icon name="arrow-forward" color={colors.error} size={18} />
           </Pressable>
 
           {/* Close button */}
           <Pressable style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>বন্ধ করুন</Text>
+            <Text style={styles.closeBtnText}>{language === "en" ? "Close" : "বন্ধ করুন"}</Text>
           </Pressable>
         </Animated.View>
       </Pressable>

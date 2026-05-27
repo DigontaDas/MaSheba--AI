@@ -29,8 +29,9 @@ import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
 import { notificationTitleForMessage, scheduleLocalNotification } from "@/notifications/notificationService";
 import { colors, radius, spacing, typography } from "@/theme";
-import { toBanglaNumber } from "@/utils/banglaNumerals";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
+import { formatNumber } from "@/utils/localizedFormat";
 import React from "react";
 
 type Mode = "mothers" | "ai";
@@ -123,6 +124,7 @@ interface CustomBubbleProps {
 }
 
 const ChatBubbleComponent = React.memo(({ role, text, timestamp, status, onRetry }: CustomBubbleProps) => {
+  const bubbleCopy = useCopy();
   const isAi = role === "ai";
 
   return (
@@ -151,11 +153,11 @@ const ChatBubbleComponent = React.memo(({ role, text, timestamp, status, onRetry
         <View style={styles.errorPillRow}>
           <View style={styles.errorPill}>
             <Icon name="error" color="#B3261E" size={14} />
-            <Text style={styles.errorTextCopy}>{copy.clinicalChat.error}</Text>
+            <Text style={styles.errorTextCopy}>{bubbleCopy.clinicalChat.error}</Text>
           </View>
           {onRetry && (
             <Pressable onPress={onRetry} style={styles.retryBtn}>
-              <Text style={styles.retryBtnText}>{copy.clinicalChat.retryText}</Text>
+              <Text style={styles.retryBtnText}>{bubbleCopy.clinicalChat.retryText}</Text>
             </Pressable>
           )}
         </View>
@@ -224,6 +226,8 @@ const TypingIndicator = () => {
 // Main Chat Screen Component
 // ----------------------------------------------------
 export default function ClinicalChatScreen() {
+  const { language } = useLanguage();
+  const copy = useCopy();
   const [mode, setMode] = useState<Mode>("mothers");
   const [chwId, setChwId] = useState<string | null>(null);
   const [mothers, setMothers] = useState<ChatMother[]>([]);
@@ -236,12 +240,23 @@ export default function ClinicalChatScreen() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
 
+  const categoryLabel = useCallback(
+    (item: ChatCategory) => {
+      if (language === "bn") return item;
+      if (item === "জরুরি") return "Emergency";
+      if (item === "স্বাভাবিক") return "Normal";
+      if (item === "পুষ্টি") return "Nutrition";
+      return "Warning";
+    },
+    [language]
+  );
+
   // Initialize welcome message once
   useEffect(() => {
     setAiMessages([
       { id: "hello", role: "ai", text: copy.clinicalChat.chatWelcomeAi }
     ]);
-  }, []);
+  }, [copy.clinicalChat.chatWelcomeAi]);
 
   const load = useCallback(async () => {
     const session = await getSession();
@@ -368,7 +383,7 @@ export default function ClinicalChatScreen() {
   // ----------------------------------------------------
   const renderMotherItem = useCallback(({ item }: { item: ChatMessage }) => {
     if (item.message_type === "alert") {
-      return <EmergencyBanner title={item.category ?? "জরুরি"} message={item.message} />;
+      return <EmergencyBanner title={item.category ? categoryLabel(item.category) : copy.common.emergency} message={item.message} />;
     }
     const time = new Date(item.created_at).toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
     return (
@@ -383,7 +398,7 @@ export default function ClinicalChatScreen() {
 
   const renderAiItem = useCallback(({ item }: { item: AiMessage }) => {
     if (item.emergency) {
-      return <EmergencyBanner title="জরুরি সতর্কতা" message={item.text} />;
+      return <EmergencyBanner title={language === "en" ? "Emergency warning" : "জরুরি সতর্কতা"} message={item.text} />;
     }
     const handleRetry = () => {
       void submitAiQuestion(item.text);
@@ -480,7 +495,7 @@ export default function ClinicalChatScreen() {
             };
             return (
               <Pressable
-                accessibilityLabel={item}
+                accessibilityLabel={categoryLabel(item)}
                 key={item}
                 onPress={handleChipPress}
                 style={[
@@ -489,7 +504,7 @@ export default function ClinicalChatScreen() {
                 ]}
               >
                 <Text style={[styles.chipText, isActive ? styles.chipTextActive : styles.chipTextInactive]}>
-                  {item}
+                  {categoryLabel(item)}
                 </Text>
               </Pressable>
             );
@@ -552,7 +567,7 @@ export default function ClinicalChatScreen() {
       </View>
 
       <View style={styles.modeTabs}>
-        <ModeButton active={mode === "mothers"} label="মায়েরা" onPress={() => setMode("mothers")} />
+        <ModeButton active={mode === "mothers"} label={language === "en" ? "Mothers" : "মায়েরা"} onPress={() => setMode("mothers")} />
         <ModeButton active={mode === "ai"} label="CHW AI" onPress={() => setMode("ai")} />
       </View>
 
@@ -560,6 +575,7 @@ export default function ClinicalChatScreen() {
         <View style={styles.chatLayout}>
           <View style={{ height: 60, paddingVertical: 4 }}>
             <FlatList
+              disableVirtualization
               data={mothers}
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -574,7 +590,7 @@ export default function ClinicalChatScreen() {
                     {item.name}
                   </Text>
                   <Text style={[styles.motherWeek, selectedMother?.id === item.id && styles.motherChipTextActive]}>
-                    সপ্তাহ {toBanglaNumber(item.gestational_age_weeks ?? item.patient?.gestational_age_weeks ?? 0)}
+                    {language === "en" ? "Week" : "সপ্তাহ"} {formatNumber(item.gestational_age_weeks ?? item.patient?.gestational_age_weeks ?? 0, language)}
                   </Text>
                 </Pressable>
               )}
@@ -585,6 +601,7 @@ export default function ClinicalChatScreen() {
             renderEmptyCard()
           ) : (
             <FlatList
+              disableVirtualization
               data={selectedMother ? messages : []}
               keyExtractor={motherKeyExtractor}
               renderItem={renderMotherItem}
@@ -602,7 +619,7 @@ export default function ClinicalChatScreen() {
             <TextInput
               onChangeText={setMessageInput}
               onSubmitEditing={submitMotherMessage}
-              placeholder="মাকে বার্তা লিখুন..."
+              placeholder={language === "en" ? "Write a message to the mother..." : "মাকে বার্তা লিখুন..."}
               placeholderTextColor="#A08E88"
               style={styles.input}
               value={messageInput}
@@ -625,6 +642,7 @@ export default function ClinicalChatScreen() {
             renderEmptyCard()
           ) : (
             <FlatList
+              disableVirtualization
               data={aiMessages}
               keyExtractor={aiKeyExtractor}
               renderItem={renderAiItem}

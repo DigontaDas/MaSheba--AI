@@ -11,10 +11,12 @@ import { Icon } from "@/components/ui/Icon";
 import { QaChatScreen } from "@/features/qa/QaChatScreen";
 import { notificationTitleForMessage, scheduleLocalNotification } from "@/notifications/notificationService";
 import { colors, radius, spacing, typography } from "@/theme";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Mode = "ai" | "chw";
 
 export default function MotherChatScreen() {
+  const { language } = useLanguage();
   const [mode, setMode] = useState<Mode>("ai");
   const [motherId, setMotherId] = useState<string | null>(null);
   const [chwId, setChwId] = useState<string | null>(null);
@@ -79,7 +81,9 @@ export default function MotherChatScreen() {
       });
       setMessages((current) => [...current, sent]);
     } catch {
-      Alert.alert("বার্তা পাঠানো যায়নি", "ইন্টারনেট বা ডাটাবেস সংযোগ পরীক্ষা করুন।", [{ text: "ঠিক আছে" }]);
+      Alert.alert(language === "en" ? "Message not sent" : "বার্তা পাঠানো যায়নি", language === "en" ? "Check your internet or database connection." : "ইন্টারনেট বা ডাটাবেস সংযোগ পরীক্ষা করুন।", [
+        { text: language === "en" ? "OK" : "ঠিক আছে" }
+      ]);
     }
   };
 
@@ -102,8 +106,8 @@ export default function MotherChatScreen() {
           <Icon name="arrow-back" color={colors.onSurface} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title}>স্বাস্থ্যকর্মী</Text>
-          <Text style={styles.subtitle}>সরাসরি বার্তা পাঠান</Text>
+          <Text style={styles.title}>{language === "en" ? "Health worker" : "স্বাস্থ্যকর্মী"}</Text>
+          <Text style={styles.subtitle}>{language === "en" ? "Send a direct message" : "সরাসরি বার্তা পাঠান"}</Text>
         </View>
       </View>
 
@@ -112,16 +116,18 @@ export default function MotherChatScreen() {
           messages.length ? (
             messages.map((message) =>
               message.message_type === "alert" ? (
-                <EmergencyBanner key={message.id} title={message.category ?? "জরুরি"} message={message.message} />
+                <EmergencyBanner key={message.id} title={message.category ?? (language === "en" ? "Emergency" : "জরুরি")} message={message.message} />
               ) : (
                 <ChatBubble key={message.id} role={message.sender_type === "mother" ? "user" : "ai"} text={message.message} />
               )
             )
           ) : (
-            <Text style={styles.empty}>এখনও কোনো বার্তা নেই।</Text>
+            <Text style={styles.empty}>{language === "en" ? "No messages yet." : "এখনও কোনো বার্তা নেই।"}</Text>
           )
         ) : (
-          <Text style={styles.empty}>স্বাস্থ্যকর্মী সংযোগ পাওয়া যায়নি। লগইন বা ইন্টারনেট সংযোগ পরীক্ষা করুন।</Text>
+          <Text style={styles.empty}>
+            {language === "en" ? "Health worker connection was not found. Check login or internet connection." : "স্বাস্থ্যকর্মী সংযোগ পাওয়া যায়নি। লগইন বা ইন্টারনেট সংযোগ পরীক্ষা করুন।"}
+          </Text>
         )}
       </ScrollView>
 
@@ -130,7 +136,7 @@ export default function MotherChatScreen() {
           editable={Boolean(chwId && motherId)}
           onChangeText={setInput}
           onSubmitEditing={submit}
-          placeholder="বার্তা লিখুন..."
+          placeholder={language === "en" ? "Write a message..." : "বার্তা লিখুন..."}
           placeholderTextColor="#A08E88"
           style={styles.input}
           value={input}
@@ -144,13 +150,14 @@ export default function MotherChatScreen() {
 }
 
 function TopTabs({ active, onChange }: { active: Mode; onChange: (mode: Mode) => void }) {
+  const { language } = useLanguage();
   return (
     <View style={styles.tabs}>
       <Pressable onPress={() => onChange("ai")} style={[styles.tab, active === "ai" && styles.tabActive]}>
-        <Text style={[styles.tabText, active === "ai" && styles.tabTextActive]}>মাশেবা AI</Text>
+        <Text style={[styles.tabText, active === "ai" && styles.tabTextActive]}>{language === "en" ? "MaaSheba AI" : "মাশেবা AI"}</Text>
       </Pressable>
       <Pressable onPress={() => onChange("chw")} style={[styles.tab, active === "chw" && styles.tabActive]}>
-        <Text style={[styles.tabText, active === "chw" && styles.tabTextActive]}>স্বাস্থ্যকর্মী</Text>
+        <Text style={[styles.tabText, active === "chw" && styles.tabTextActive]}>{language === "en" ? "Health worker" : "স্বাস্থ্যকর্মী"}</Text>
       </Pressable>
     </View>
   );

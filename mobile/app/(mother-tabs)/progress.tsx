@@ -15,6 +15,8 @@ import { Icon } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { useLanguage } from "@/context/LanguageContext";
+import { formatNumber } from "@/utils/localizedFormat";
 import { getWeeklySize, type WeeklySize } from "@/data/babySizeData";
 import { colors, radius, spacing, typography } from "@/theme";
 
@@ -26,7 +28,50 @@ interface KickSession {
   duration: string;
 }
 
+function sizeValue(value: string, language: "bn" | "en") {
+  if (language === "bn") return value;
+  return value
+    .replace(/[০-৯]/g, (digit) => String("০১২৩৪৫৬৭৮۹".indexOf(digit)))
+    .replace(/গ্রাম/g, "g")
+    .replace(/কেজি/g, "kg")
+    .replace(/মিলিমিটার/g, "mm")
+    .replace(/সেন্টিমিটার/g, "cm");
+}
+
+function formatSizeValue(value: string, language: "bn" | "en") {
+  if (language === "bn") return value;
+  const digits: Record<string, string> = {
+    "০": "0",
+    "১": "1",
+    "২": "2",
+    "৩": "3",
+    "৪": "4",
+    "۵": "5",
+    "۶": "6",
+    "۷": "7",
+    "۸": "8",
+    "۹": "9"
+  };
+  return value
+    .replace(/[۰-۹]/g, (digit) => digits[digit] ?? digit)
+    .replace(/গ্রাম/g, "g")
+    .replace(/কেজি/g, "kg")
+    .replace(/মিলিমিটার/g, "mm")
+    .replace(/সেন্টিমিটার/g, "cm");
+}
+
+function localizedSizeValue(value: string, language: "bn" | "en") {
+  if (language === "bn") return value;
+  return value
+    .replace(/[\u09E6-\u09EF]/g, (digit) => String(digit.charCodeAt(0) - 0x09e6))
+    .replace(/গ্রাম/g, "g")
+    .replace(/কেজি/g, "kg")
+    .replace(/মিলিমিটার/g, "mm")
+    .replace(/সেন্টিমিটার/g, "cm");
+}
+
 export default function MotherProgressScreen() {
+  const { language } = useLanguage();
   const [gestationalWeek, setGestationalWeek] = useState(24);
   const [selectedExplorerWeek, setSelectedExplorerWeek] = useState(24);
   const [loading, setLoading] = useState(true);
@@ -93,20 +138,20 @@ export default function MotherProgressScreen() {
     setKicksCount(newCount);
     if (newCount === 10) {
       Alert.alert(
-        "🎉 অভিনন্দন!",
-        "১০টি নড়াচড়া সম্পূর্ণ হয়েছে! আপনার শিশুটি গর্ভে সুস্থ ও সক্রিয় রয়েছে।"
+        language === "en" ? "Complete" : "অভিনন্দন!",
+        language === "en" ? "10 movements are complete. Your baby is active." : "১০টি নড়াচড়া সম্পূর্ণ হয়েছে! আপনার শিশুটি গর্ভে সুস্থ ও সক্রিয় রয়েছে।"
       );
     }
   };
 
   const cancelSession = () => {
     Alert.alert(
-      "সেশন বাতিল করুন",
-      "আপনি কি নিশ্চিত যে আপনি বর্তমান নড়াচড়া গণনার সেশনটি বাতিল করতে চান?",
+      language === "en" ? "Cancel session" : "সেশন বাতিল করুন",
+      language === "en" ? "Are you sure you want to cancel the current movement counting session?" : "আপনি কি নিশ্চিত যে আপনি বর্তমান নড়াচড়া গণনার সেশনটি বাতিল করতে চান?",
       [
-        { text: "না", style: "cancel" },
+        { text: language === "en" ? "No" : "না", style: "cancel" },
         {
-          text: "হ্যাঁ",
+          text: language === "en" ? "Yes" : "হ্যাঁ",
           style: "destructive",
           onPress: () => {
             setIsTracking(false);
@@ -121,18 +166,19 @@ export default function MotherProgressScreen() {
   const formatDuration = (totalSeconds: number): string => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
-    return `${toBanglaNumber(mins)} মিনিট ${toBanglaNumber(secs)} সেকেন্ড`;
+    return language === "en" ? `${mins} min ${secs} sec` : `${toBanglaNumber(mins)} মিনিট ${toBanglaNumber(secs)} সেকেন্ড`;
   };
 
   const saveSession = async () => {
     if (kicksCount === 0) {
-      Alert.alert("সংকেত", "সংরক্ষণ করার জন্য অন্তত ১টি নড়াচড়া নথিভুক্ত করুন।");
+      Alert.alert(language === "en" ? "Notice" : "সংকেত", language === "en" ? "Log at least 1 movement before saving." : "সংরক্ষণ করার জন্য অন্তত ১টি নড়াচড়া নথিভুক্ত করুন।");
       return;
     }
 
     const today = new Date();
-    const dateStr = today.toLocaleDateString("bn-BD", { month: "short", day: "numeric" });
-    const timeStr = today.toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
+    const locale = language === "en" ? "en-US" : "bn-BD";
+    const dateStr = today.toLocaleDateString(locale, { month: "short", day: "numeric" });
+    const timeStr = today.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
     const newSession: KickSession = {
       id: Date.now().toString(),
@@ -147,12 +193,12 @@ export default function MotherProgressScreen() {
 
     try {
       await SecureStore.setItemAsync("fetal_kick_history", JSON.stringify(updatedHistory));
-      Alert.alert("💾 সংরক্ষিত", "নড়াচড়া বিবরণী অফলাইনে সফলভাবে সংরক্ষণ করা হয়েছে।");
+      Alert.alert(language === "en" ? "Saved" : "সংরক্ষিত", language === "en" ? "Movement log has been saved offline." : "নড়াচড়া বিবরণী অফলাইনে সফলভাবে সংরক্ষণ করা হয়েছে।");
       setIsTracking(false);
       setKicksCount(0);
       setElapsedSeconds(0);
     } catch (err) {
-      Alert.alert("ত্রুটি", "সংরক্ষণ করতে সমস্যা হয়েছে");
+      Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Could not save." : "সংরক্ষণ করতে সমস্যা হয়েছে");
     }
   };
 
@@ -171,10 +217,10 @@ export default function MotherProgressScreen() {
     <ScreenShell>
       {/* Header */}
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="ফিরে যান" accessibilityRole="button" onPress={() => router.replace("/(mother-tabs)/home")} style={styles.backButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Go back" : "ফিরে যান"} accessibilityRole="button" onPress={() => router.replace("/(mother-tabs)/home")} style={styles.backButton}>
           <Icon name="arrow-back" color="#70605A" size={24} />
         </Pressable>
-        <Text style={styles.appName}>গর্ভকালীন অগ্রগতি</Text>
+        <Text style={styles.appName}>{language === "en" ? "Pregnancy Progress" : "গর্ভকালীন অগ্রগতি"}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -182,47 +228,50 @@ export default function MotherProgressScreen() {
         
         {/* 1. Baby Size Visualizer Card */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>শিশুর বৃদ্ধির অগ্রগতি</Text>
-          <Text style={styles.sectionSubtitle}>গর্ভকালীন প্রতি সপ্তাহে আপনার শিশুর আকার তুলনা করুন</Text>
+          <Text style={styles.sectionTitle}>{language === "en" ? "Baby Growth Progress" : "শিশুর বৃদ্ধির অগ্রগতি"}</Text>
+          <Text style={styles.sectionSubtitle}>{language === "en" ? "Compare your baby's size by pregnancy week" : "গর্ভকালীন প্রতি সপ্তাহে আপনার শিশুর আকার তুলনা করুন"}</Text>
         </View>
 
         <View style={styles.sizeHeroCard}>
           <View style={styles.sizeHeroMain}>
             <View style={styles.weekIndicator}>
-              <Text style={styles.weekIndicatorText}>সপ্তাহ {toBanglaNumber(explorerSize.week)}</Text>
+              <Text style={styles.weekIndicatorText}>{language === "en" ? "Week" : "সপ্তাহ"} {formatNumber(explorerSize.week, language)}</Text>
             </View>
             <Text style={styles.sizeTitle}>
-              আপনার শিশু এখন একটি <Text style={styles.sizeFoodName}>{explorerSize.foodNameBn}</Text>-এর সমান!
+              {language === "en" ? "Your baby is now about the size of a " : "আপনার শিশু এখন একটি "}
+              <Text style={styles.sizeFoodName}>{language === "en" ? explorerSize.foodNameEn : explorerSize.foodNameBn}</Text>
+              {language === "en" ? "!" : "-এর সমান!"}
             </Text>
             <Text style={styles.sizeSub}>
-              ({explorerSize.foodNameEn})
+              ({language === "en" ? explorerSize.foodNameBn : explorerSize.foodNameEn})
             </Text>
           </View>
 
           <View style={styles.sizeStatsRow}>
             <View style={styles.sizeStat}>
               <Icon name="straighten" color="#E57A58" size={20} />
-              <Text style={styles.sizeStatLabel}>গড় দৈর্ঘ্য</Text>
-              <Text style={styles.sizeStatValue}>{explorerSize.lengthBn}</Text>
+              <Text style={styles.sizeStatLabel}>{language === "en" ? "Avg length" : "গড় দৈর্ঘ্য"}</Text>
+              <Text style={styles.sizeStatValue}>{localizedSizeValue(explorerSize.lengthBn, language)}</Text>
             </View>
             <View style={styles.sizeStatDivider} />
             <View style={styles.sizeStat}>
               <Icon name="scale" color="#E57A58" size={20} />
-              <Text style={styles.sizeStatLabel}>গড় ওজন</Text>
-              <Text style={styles.sizeStatValue}>{explorerSize.weightBn}</Text>
+              <Text style={styles.sizeStatLabel}>{language === "en" ? "Avg weight" : "গড় ওজন"}</Text>
+              <Text style={styles.sizeStatValue}>{localizedSizeValue(explorerSize.weightBn, language)}</Text>
             </View>
           </View>
 
           <View style={styles.milestoneBlock}>
-            <Text style={styles.milestoneTitle}>💡 এই সপ্তাহের শারীরিক পরিবর্তন:</Text>
-            <Text style={styles.milestoneText}>{explorerSize.milestoneBn}</Text>
+            <Text style={styles.milestoneTitle}>{language === "en" ? "This week's physical change:" : "এই সপ্তাহের শারীরিক পরিবর্তন:"}</Text>
+            <Text style={styles.milestoneText}>{language === "en" ? explorerSize.milestoneEn : explorerSize.milestoneBn}</Text>
           </View>
         </View>
 
         {/* Horizontal Week Explorer */}
         <View style={styles.explorerSection}>
-          <Text style={styles.explorerLabel}>অন্যান্য সপ্তাহ অনুসন্ধান করুন:</Text>
+          <Text style={styles.explorerLabel}>{language === "en" ? "Explore other weeks:" : "অন্যান্য সপ্তাহ অনুসন্ধান করুন:"}</Text>
           <FlatList
+            disableVirtualization
             horizontal
             showsHorizontalScrollIndicator={false}
             data={Array.from({ length: 40 }).map((_, i) => i + 1)}
@@ -247,7 +296,7 @@ export default function MotherProgressScreen() {
                       isCurrent && !isSelected && styles.weekChipTextCurrent
                     ]}
                   >
-                    সপ্তাহ {toBanglaNumber(item)}
+                    {language === "en" ? "Week" : "সপ্তাহ"} {formatNumber(item, language)}
                   </Text>
                 </Pressable>
               );
@@ -257,8 +306,8 @@ export default function MotherProgressScreen() {
 
         {/* 2. Stateful Fetal Kick Counter Card */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Fetal Kick Counter (নড়াচড়া ট্র্যাকার)</Text>
-          <Text style={styles.sectionSubtitle}>শিশুর দৈনিক নড়াচড়া বা লাথি গণনা করুন (WHO নির্দেশিকা অনুযায়ী)</Text>
+          <Text style={styles.sectionTitle}>{language === "en" ? "Fetal Kick Counter" : "Fetal Kick Counter (নড়াচড়া ট্র্যাকার)"}</Text>
+          <Text style={styles.sectionSubtitle}>{language === "en" ? "Count your baby's daily movements." : "শিশুর দৈনিক নড়াচড়া বা লাথি গণনা করুন (WHO নির্দেশিকা অনুযায়ী)"}</Text>
         </View>
 
         <View style={styles.kickCard}>
@@ -268,11 +317,11 @@ export default function MotherProgressScreen() {
                 <Icon name="favorite" color="#E57A58" size={48} />
               </View>
               <Text style={styles.kickInstruction}>
-                দিনে ২ বার শিশুর নড়াচড়া পর্যবেক্ষণ করা ভালো। ২ ঘণ্টায় ১০টি নড়াচড়া সুস্থতার লক্ষণ।
+                {language === "en" ? "It is good to observe baby movement twice daily. 10 movements in 2 hours is a reassuring sign." : "দিনে ২ বার শিশুর নড়াচড়া পর্যবেক্ষণ করা ভালো। ২ ঘণ্টায় ১০টি নড়াচড়া সুস্থতার লক্ষণ।"}
               </Text>
               <Pressable onPress={startSession} style={styles.startSessionBtn}>
                 <Icon name="play-arrow" color="#FFFFFF" size={20} />
-                <Text style={styles.startSessionBtnText}>নড়াচড়া গণনা শুরু করুন</Text>
+                <Text style={styles.startSessionBtnText}>{language === "en" ? "Start movement count" : "নড়াচড়া গণনা শুরু করুন"}</Text>
               </Pressable>
             </View>
           ) : (
@@ -285,29 +334,29 @@ export default function MotherProgressScreen() {
                 {kicksCount >= 10 && (
                   <View style={styles.completedBadge}>
                     <Icon name="check-circle" color="#4A6047" size={16} />
-                    <Text style={styles.completedBadgeText}>১০টি সম্পূর্ণ</Text>
+                    <Text style={styles.completedBadgeText}>{language === "en" ? "10 complete" : "১০টি সম্পূর্ণ"}</Text>
                   </View>
                 )}
               </View>
 
-              <Text style={styles.kicksCountLabel}>নড়াচড়ার সংখ্যা</Text>
-              <Text style={styles.kicksCountValue}>{toBanglaNumber(kicksCount)}</Text>
+              <Text style={styles.kicksCountLabel}>{language === "en" ? "Movement count" : "নড়াচড়ার সংখ্যা"}</Text>
+              <Text style={styles.kicksCountValue}>{formatNumber(kicksCount, language)}</Text>
 
               {/* Massive Tap Counter Button */}
               <Pressable onPress={logKick} style={styles.kickTapButton}>
                 <Icon name="favorite" color="#FFFFFF" size={44} />
-                <Text style={styles.kickTapBtnText}>নড়াচড়া নথিভুক্ত করুন</Text>
+                <Text style={styles.kickTapBtnText}>{language === "en" ? "Log movement" : "নড়াচড়া নথিভুক্ত করুন"}</Text>
               </Pressable>
 
               <View style={styles.kickSessionActions}>
                 <Pressable onPress={cancelSession} style={styles.cancelBtn}>
                   <Icon name="close" color="#B3261E" size={18} />
-                  <Text style={styles.cancelBtnText}>বাতিল করুন</Text>
+                  <Text style={styles.cancelBtnText}>{language === "en" ? "Cancel" : "বাতিল করুন"}</Text>
                 </Pressable>
 
                 <Pressable onPress={saveSession} style={styles.saveBtn}>
                   <Icon name="save" color="#FFFFFF" size={18} />
-                  <Text style={styles.saveBtnText}>সেশন সেভ করুন</Text>
+                  <Text style={styles.saveBtnText}>{language === "en" ? "Save session" : "সেশন সেভ করুন"}</Text>
                 </Pressable>
               </View>
             </View>
@@ -316,10 +365,10 @@ export default function MotherProgressScreen() {
 
         {/* Kick History Logs */}
         <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>📊 বিগত নড়াচড়ার বিবরণী লগ</Text>
+          <Text style={styles.historyTitle}>{language === "en" ? "Past movement logs" : "বিগত নড়াচড়ার বিবরণী লগ"}</Text>
           {kickHistory.length === 0 ? (
             <View style={styles.emptyHistory}>
-              <Text style={styles.emptyHistoryText}>এখনো কোনো নড়াচড়া বিবরণী সংরক্ষিত নেই।</Text>
+              <Text style={styles.emptyHistoryText}>{language === "en" ? "No movement logs saved yet." : "এখনো কোনো নড়াচড়া বিবরণী সংরক্ষিত নেই।"}</Text>
             </View>
           ) : (
             <View style={styles.historyCardList}>
@@ -331,11 +380,11 @@ export default function MotherProgressScreen() {
                     </View>
                     <View>
                       <Text style={styles.historyDate}>{item.date} • {item.time}</Text>
-                      <Text style={styles.historyDuration}>সময়কাল: {item.duration}</Text>
+                      <Text style={styles.historyDuration}>{language === "en" ? "Duration" : "সময়কাল"}: {item.duration}</Text>
                     </View>
                   </View>
                   <View style={styles.historyRight}>
-                    <Text style={styles.historyCountText}>{toBanglaNumber(item.count)} টি</Text>
+                    <Text style={styles.historyCountText}>{formatNumber(item.count, language)} {language === "en" ? "times" : "টি"}</Text>
                   </View>
                 </View>
               ))}

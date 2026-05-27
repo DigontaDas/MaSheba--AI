@@ -1,4 +1,6 @@
+import type { Language } from "@/context/LanguageContext";
 import { OFFLINE_QA_CATEGORIES } from "@/data/offlineQaCategories";
+import { OFFLINE_QA_SEED_EN } from "@/data/offlineQaSeed.en";
 import { getDB } from "@/db/database";
 import { getLocalDbErrorMessage, runLocalDb } from "@/db/localDbAccess";
 import type { OfflineQa, OfflineQaTrimester } from "@/types/schema";
@@ -9,6 +11,7 @@ type OfflineQaRow = Omit<OfflineQa, "see_doctor" | "emergency"> & {
 };
 
 export type QaCategory = {
+  id: string;
   label: string;
   topic: string;
 };
@@ -21,17 +24,33 @@ function mapOfflineQa(row: OfflineQaRow): OfflineQa {
   };
 }
 
-export function getQaCategories(): QaCategory[] {
-  return OFFLINE_QA_CATEGORIES.map((label) => ({
-    label,
-    topic: label.replace(/\s+/g, "_")
+export function getQaCategories(language: Language = "bn"): QaCategory[] {
+  return OFFLINE_QA_CATEGORIES.map((category) => ({
+    id: category.id,
+    label: category.label[language],
+    topic: category.topic
   }));
+}
+
+function matchesTrimester(item: OfflineQa, trimester: OfflineQaTrimester): boolean {
+  return item.trimester === trimester || item.trimester === "ALL";
+}
+
+function sortQaRows(a: OfflineQa, b: OfflineQa): number {
+  if (a.emergency !== b.emergency) return a.emergency ? -1 : 1;
+  if (a.see_doctor !== b.see_doctor) return a.see_doctor ? -1 : 1;
+  return a.id.localeCompare(b.id);
 }
 
 export async function getQaByTopic(params: {
   topic: string;
   trimester: OfflineQaTrimester;
+  language?: Language;
 }): Promise<OfflineQa[]> {
+  if (params.language === "en") {
+    return OFFLINE_QA_SEED_EN.filter((item) => item.topic === params.topic && matchesTrimester(item, params.trimester)).sort(sortQaRows);
+  }
+
   try {
     return await runLocalDb(async () => {
       const db = await getDB();
@@ -57,10 +76,21 @@ function normalizeKeywords(question: string): string[] {
     .filter((part) => part.length >= 2);
 }
 
-export async function searchQa(question: string, trimester: OfflineQaTrimester): Promise<OfflineQa[]> {
+export async function searchQa(question: string, trimester: OfflineQaTrimester, language: Language = "bn"): Promise<OfflineQa[]> {
   const keywords = normalizeKeywords(question);
   if (!keywords.length) {
     return [];
+  }
+
+  if (language === "en") {
+    const lowerKeywords = keywords.map((keyword) => keyword.toLowerCase());
+    return OFFLINE_QA_SEED_EN.filter(
+      (item) =>
+        matchesTrimester(item, trimester) &&
+        lowerKeywords.some((keyword) => `${item.question_bn} ${item.answer_bn}`.toLowerCase().includes(keyword))
+    )
+      .sort(sortQaRows)
+      .slice(0, 5);
   }
 
   try {

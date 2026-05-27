@@ -29,7 +29,7 @@ export function trimesterFromWeeks(weeks: number): OfflineQaTrimester {
 }
 
 export function getOfflineQaCategories(): readonly string[] {
-  return OFFLINE_QA_CATEGORIES;
+  return OFFLINE_QA_CATEGORIES.map((category) => category.label.bn);
 }
 
 export async function getOfflineQaByTopic(params: {

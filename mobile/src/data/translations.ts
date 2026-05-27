@@ -27,10 +27,9 @@ export const EN_STRINGS: Record<string, string> = {
   "nav.progress": "Progress",
   "nav.shotorkota": "FAQ",
   "profile.language": "Change language",
-  "profile.languageValue": "English -> বাংলা",
+  "profile.languageValue": "Switch to Bengali",
   "mother.chatCard.title": "Talk to your health worker",
   "mother.chatCard.subtitle": "Send a direct message for any concern",
   "chw.profile.role": "Senior Health Worker",
-  "chw.profile.languageValue": "English -> বাংলা"
+  "chw.profile.languageValue": "Switch to Bengali"
 };
-

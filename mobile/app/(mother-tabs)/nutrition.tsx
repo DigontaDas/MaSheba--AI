@@ -9,7 +9,8 @@ import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearRoleSession, getCurrentMotherProfile } from "@/auth/roleSession";
 import { clearSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
-import { copy } from "@/data/stitchCopy.bn";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCopy } from "@/data/useCopy";
 import { getFoodImage } from "@/data/foodImageMap";
 import {
   getFoodsByCategory,
@@ -22,10 +23,37 @@ import {
   type NutritionFood
 } from "@/data/nutritionData";
 import { colors, radius, spacing, typography } from "@/theme";
+import { formatNumber } from "@/utils/localizedFormat";
 
-const TABS = ["সব", "খাবার", "পানীয়", "ওষুধ", "বিশ্রাম"] as const;
+const TABS = [
+  { id: "all", copyKey: "all" },
+  { id: "food", copyKey: "food" },
+  { id: "drinks", copyKey: "drinks" },
+  { id: "medicine", copyKey: "medicine" },
+  { id: "rest", copyKey: "rest" }
+] as const;
 
-function nutrientLabel(nutrient?: string): string {
+type TabId = (typeof TABS)[number]["id"];
+
+function nutrientLabel(nutrient: string | undefined, language: "bn" | "en"): string {
+  if (language === "en") {
+    switch (nutrient) {
+      case "protein":
+        return "Protein";
+      case "iron":
+        return "Iron";
+      case "calcium":
+        return "Calcium";
+      case "energy":
+        return "Energy";
+      case "hydration":
+        return "Water";
+      case "folate":
+        return "Folate";
+      default:
+        return "Nutrition";
+    }
+  }
   switch (nutrient) {
     case "protein":
       return "প্রোটিন";
@@ -44,24 +72,10 @@ function nutrientLabel(nutrient?: string): string {
   }
 }
 
-const toBengaliNumeral = (num: number): string => {
-  const numerals: Record<string, string> = {
-    "0": "০",
-    "1": "১",
-    "2": "২",
-    "3": "৩",
-    "4": "৪",
-    "5": "৫",
-    "6": "৬",
-    "7": "৭",
-    "8": "৮",
-    "9": "৯"
-  };
-  return num.toString().split("").map((char) => numerals[char] || char).join("");
-};
-
 export default function NutritionScreen() {
-  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("সব");
+  const { language } = useLanguage();
+  const copy = useCopy();
+  const [activeTab, setActiveTab] = useState<TabId>("all");
   const [gestationalWeek, setGestationalWeek] = useState(32); // Default to 32 (Month 8) matching mockup
   const [waterGlasses, setWaterGlasses] = useState(0); // Starts at 0 matching request
   const [riskLevel, setRiskLevel] = useState<NutritionRiskLevel>("LOW");
@@ -209,13 +223,27 @@ export default function NutritionScreen() {
   };
 
   const showNotifications = () => {
-    Alert.alert("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
+    Alert.alert(language === "en" ? "Notifications" : "নোটিফিকেশন", language === "en" ? "No new notifications." : "কোনো নতুন নোটিফিকেশন নেই।", [
+      { text: language === "en" ? "OK" : "ঠিক আছে" }
+    ]);
   };
 
   const showFoodInfo = (food: NutritionFood) => {
-    const substitutions = food.substitutions_bn?.length ? `\nবিকল্প: ${food.substitutions_bn.join(", ")}` : "";
-    const caution = food.caution_bn ? `\nসতর্কতা: ${food.caution_bn}` : "";
-    Alert.alert(food.name_bn, `${food.amount_bn}\n${nutrientLabel(food.nutrient_focus[0])}${substitutions}${caution}`, [{ text: "ঠিক আছে" }]);
+    const substitutions =
+      language === "en"
+        ? food.substitutions_en?.length
+          ? `\nAlternatives: ${food.substitutions_en.join(", ")}`
+          : ""
+        : food.substitutions_bn?.length
+          ? `\nবিকল্প: ${food.substitutions_bn.join(", ")}`
+          : "";
+    const caution =
+      language === "en" ? (food.caution_en ? `\nCaution: ${food.caution_en}` : "") : food.caution_bn ? `\nসতর্কতা: ${food.caution_bn}` : "";
+    Alert.alert(
+      language === "en" ? food.name_en : food.name_bn,
+      `${language === "en" ? food.amount_en ?? food.amount_bn : food.amount_bn}\n${nutrientLabel(food.nutrient_focus[0], language)}${substitutions}${caution}`,
+      [{ text: language === "en" ? "OK" : "ঠিক আছে" }]
+    );
   };
 
   return (
@@ -227,11 +255,11 @@ export default function NutritionScreen() {
       />
       {/* Top Header Bar */}
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="মেনু" accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Menu" : "মেনু"} accessibilityRole="button" onPress={showMenu} style={styles.iconButton}>
           <Icon name="menu" color="#70605A" size={24} />
         </Pressable>
         <Text style={styles.appName}>{copy.common.appName}</Text>
-        <Pressable accessibilityLabel="নোটিফিকেশন" accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
+        <Pressable accessibilityLabel={language === "en" ? "Notifications" : "নোটিফিকেশন"} accessibilityRole="button" onPress={showNotifications} style={styles.iconButton}>
           <Icon name="notifications" color="#70605A" size={24} />
         </Pressable>
       </View>
@@ -239,22 +267,24 @@ export default function NutritionScreen() {
       {/* Header Title Block */}
       <View style={styles.header}>
         <Text style={styles.title}>{copy.nutrition.title}</Text>
-        {plan ? <Text style={styles.subtitle}>{plan.stage_label_bn}</Text> : null}
+        {plan ? <Text style={styles.subtitle}>{language === "en" ? plan.stage_label_en ?? plan.stage_label_bn : plan.stage_label_bn}</Text> : null}
       </View>
 
       {/* Interactive Stateful Water Intake Card */}
       <View style={styles.waterCard}>
         <View style={styles.waterHeaderRow}>
-          <Text style={styles.waterTitle}>আজ ৮ গ্লাস পানি পান করুন</Text>
+          <Text style={styles.waterTitle}>{copy.nutrition.water}</Text>
           <View style={styles.waterBadge}>
-            <Text style={styles.waterBadgeText}>{toBengaliNumeral(waterGlasses)}/৮</Text>
+            <Text style={styles.waterBadgeText}>{formatNumber(waterGlasses, language)}/{formatNumber(8, language)}</Text>
           </View>
         </View>
 
         <Text style={waterGlasses === 8 ? styles.waterSubCompleted : styles.waterSub}>
           {waterGlasses === 8
-            ? "🎉 অভিনন্দন! আজকের লক্ষ্য সম্পূর্ণ হয়েছে! আপনি দারুণ করেছেন।"
-            : "অ্যামনিওটিক তরল বজায় রাখতে হাইড্রেটেড থাকা জরুরি।"}
+            ? language === "en"
+              ? "Today's water goal is complete."
+              : "অভিনন্দন! আজকের লক্ষ্য সম্পূর্ণ হয়েছে! আপনি দারুণ করেছেন।"
+            : copy.nutrition.waterDescription}
         </Text>
 
         <View style={styles.glassesRow}>
@@ -277,18 +307,22 @@ export default function NutritionScreen() {
       {/* Daily Nutrition Checklist Component */}
       <View style={styles.checklistCard}>
         <View style={styles.checklistHeaderRow}>
-          <Text style={styles.checklistTitle}>আজকের পুষ্টি চেকলিস্ট</Text>
+          <Text style={styles.checklistTitle}>{language === "en" ? "Today's nutrition checklist" : "আজকের পুষ্টি চেকলিস্ট"}</Text>
           <View style={styles.checklistScoreBadge}>
             <Text style={styles.checklistScoreText}>
-              {toBengaliNumeral(Object.values(checklist).filter(Boolean).length)}/৭
+              {formatNumber(Object.values(checklist).filter(Boolean).length, language)}/{formatNumber(7, language)}
             </Text>
           </View>
         </View>
 
         <Text style={Object.values(checklist).every(Boolean) ? styles.checklistCompletedText : styles.checklistSubText}>
           {Object.values(checklist).every(Boolean)
-            ? "🎉 চমৎকার! আজকের সুষম পুষ্টি সম্পূর্ণ হয়েছে! আপনি সেরা যত্ন নিচ্ছেন।"
-            : "সুস্থ গর্ভাবস্থার জন্য প্রতিদিন নিচের খাবার ও ওষুধগুলো নিশ্চিত করুন।"}
+            ? language === "en"
+              ? "Today's balanced nutrition checklist is complete."
+              : "চমৎকার! আজকের সুষম পুষ্টি সম্পূর্ণ হয়েছে! আপনি সেরা যত্ন নিচ্ছেন।"
+            : language === "en"
+              ? "For a healthy pregnancy, confirm the foods and supplements below each day."
+              : "সুস্থ গর্ভাবস্থার জন্য প্রতিদিন নিচের খাবার ও ওষুধগুলো নিশ্চিত করুন।"}
         </Text>
 
         {/* Dynamic Progress Bar */}
@@ -304,13 +338,18 @@ export default function NutritionScreen() {
         {/* Checklist Items */}
         <View style={styles.checklistItemsList}>
           {[
-            { key: "iron", label: "আয়রন ও ফলিক এসিড ওষুধ" },
-            { key: "calcium", label: "ক্যালসিয়াম ওষুধ" },
-            { key: "protein", label: "মসুর ডাল ও প্রোটিন সমৃদ্ধ খাবার (মাছ/মাংস)" },
-            { key: "greens", label: "সবুজ শাকসবজি" },
-            { key: "milkEgg", label: "দুধ ও ডিম" },
-            { key: "water", label: "বিশুদ্ধ পানি (৮ গ্লাস)", disabled: true, note: "(পানি ট্র্যাকার পূরণ হলে অটো-চেক হবে)" },
-            { key: "fruits", label: "মৌসুমী ফলমূল" }
+            { key: "iron", label: language === "en" ? "Iron and folic acid tablet" : "আয়রন ও ফলিক এসিড ওষুধ" },
+            { key: "calcium", label: language === "en" ? "Calcium tablet" : "ক্যালসিয়াম ওষুধ" },
+            { key: "protein", label: language === "en" ? "Lentils and protein-rich food (fish/meat)" : "মসুর ডাল ও প্রোটিন সমৃদ্ধ খাবার (মাছ/মাংস)" },
+            { key: "greens", label: language === "en" ? "Green leafy vegetables" : "সবুজ শাকসবজি" },
+            { key: "milkEgg", label: language === "en" ? "Milk and egg" : "দুধ ও ডিম" },
+            {
+              key: "water",
+              label: language === "en" ? "Safe water (8 glasses)" : "বিশুদ্ধ পানি (৮ গ্লাস)",
+              disabled: true,
+              note: language === "en" ? "(Auto-checked when the water tracker is complete)" : "(পানি ট্র্যাকার পূরণ হলে অটো-চেক হবে)"
+            },
+            { key: "fruits", label: language === "en" ? "Seasonal fruits" : "মৌসুমী ফলমূল" }
           ].map((item) => {
             const isChecked = checklist[item.key as keyof typeof checklist];
             const isDisabled = item.disabled;
@@ -341,40 +380,40 @@ export default function NutritionScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabContent}>
           {TABS.map((tab) => (
             <Pressable
-              accessibilityLabel={tab}
+              accessibilityLabel={copy.nutrition[tab.copyKey]}
               accessibilityRole="button"
-              accessibilityState={{ selected: activeTab === tab }}
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              accessibilityState={{ selected: activeTab === tab.id }}
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+              <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{copy.nutrition[tab.copyKey]}</Text>
             </Pressable>
           ))}
         </ScrollView>
       </View>
 
       {/* Summary Guidelines Card */}
-      {plan && activeTab === "সব" ? (
+      {plan && activeTab === "all" ? (
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryText}>{plan.app_display_summary_bn}</Text>
+          <Text style={styles.summaryText}>{language === "en" ? plan.app_display_summary_en ?? plan.app_display_summary_bn : plan.app_display_summary_bn}</Text>
         </View>
       ) : null}
 
-      {riskLevel !== "LOW" && riskOverlay.alert_bn ? (
+      {riskLevel !== "LOW" && (language === "en" ? riskOverlay.alert_en : riskOverlay.alert_bn) ? (
         <View style={[styles.riskAlert, riskLevel === "HIGH" ? styles.riskHigh : styles.riskModerate]}>
           <View style={styles.riskHeader}>
             <Icon name="warning" color={riskLevel === "HIGH" ? "#B3261E" : "#8A5A00"} size={20} />
-            <Text style={styles.riskTitle}>{riskOverlay.title_bn}</Text>
+            <Text style={styles.riskTitle}>{language === "en" ? riskOverlay.title_en : riskOverlay.title_bn}</Text>
           </View>
-          <Text style={styles.riskBody}>{riskOverlay.alert_bn}</Text>
-          {riskOverlay.extra_foods_bn.map((food) => (
+          <Text style={styles.riskBody}>{language === "en" ? riskOverlay.alert_en : riskOverlay.alert_bn}</Text>
+          {(language === "en" ? riskOverlay.extra_foods_en : riskOverlay.extra_foods_bn).map((food) => (
             <Text key={food} style={styles.riskFoodItem}>✓ {food}</Text>
           ))}
-          {riskOverlay.avoid_bn.length ? (
+          {(language === "en" ? riskOverlay.avoid_en : riskOverlay.avoid_bn).length ? (
             <View style={styles.avoidBlock}>
-              <Text style={styles.avoidTitle}>এড়িয়ে চলুন:</Text>
-              {riskOverlay.avoid_bn.map((item) => (
+              <Text style={styles.avoidTitle}>{language === "en" ? "Avoid:" : "এড়িয়ে চলুন:"}</Text>
+              {(language === "en" ? riskOverlay.avoid_en : riskOverlay.avoid_bn).map((item) => (
                 <Text key={item} style={styles.avoidItem}>× {item}</Text>
               ))}
             </View>
@@ -383,18 +422,18 @@ export default function NutritionScreen() {
       ) : null}
 
       {/* Recommended Food Grid */}
-      {activeTab !== "ওষুধ" && activeTab !== "বিশ্রাম" ? (
+      {activeTab !== "medicine" && activeTab !== "rest" ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>প্রস্তাবিত খাবার</Text>
+          <Text style={styles.sectionTitle}>{copy.nutrition.recommended}</Text>
           <View style={styles.grid}>
             {visibleFoods.map((food) => (
               <NutritionCard
                 key={food.id}
                 imageSource={getFoodImage(food.name_bn, food.name_en) ?? undefined}
                 onPress={() => showFoodInfo(food)}
-                subtitle={food.amount_bn}
-                tag={nutrientLabel(food.nutrient_focus[0])}
-                title={food.name_bn}
+                subtitle={language === "en" ? food.amount_en ?? food.amount_bn : food.amount_bn}
+                tag={nutrientLabel(food.nutrient_focus[0], language)}
+                title={language === "en" ? food.name_en : food.name_bn}
               />
             ))}
           </View>
@@ -402,16 +441,16 @@ export default function NutritionScreen() {
       ) : null}
 
       {/* Supplements Tab content */}
-      {activeTab === "ওষুধ" ? (
+      {activeTab === "medicine" ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>সাপ্লিমেন্ট</Text>
+          <Text style={styles.sectionTitle}>{language === "en" ? "Supplements" : "সাপ্লিমেন্ট"}</Text>
           {SUPPLEMENT_GUIDANCE.map((supplement) => (
             <View key={supplement.id} style={styles.supplementCard}>
-              <Text style={styles.suppName}>{supplement.name_bn}</Text>
-              <Text style={styles.suppBody}>{supplement.dose_bn}</Text>
-              <Text style={styles.suppTiming}>⏰ {supplement.timing_bn}</Text>
-              {supplement.side_effects_bn ? (
-                <Text style={styles.suppSideEffect}>⚠️ {supplement.side_effects_bn}</Text>
+              <Text style={styles.suppName}>{language === "en" ? supplement.name_en ?? supplement.name_bn : supplement.name_bn}</Text>
+              <Text style={styles.suppBody}>{language === "en" ? supplement.dose_en ?? supplement.dose_bn : supplement.dose_bn}</Text>
+              <Text style={styles.suppTiming}>⏰ {language === "en" ? supplement.timing_en ?? supplement.timing_bn : supplement.timing_bn}</Text>
+              {(language === "en" ? supplement.side_effects_en : supplement.side_effects_bn) ? (
+                <Text style={styles.suppSideEffect}>⚠️ {language === "en" ? supplement.side_effects_en : supplement.side_effects_bn}</Text>
               ) : null}
             </View>
           ))}
@@ -419,16 +458,24 @@ export default function NutritionScreen() {
       ) : null}
 
       {/* Rest Tab content */}
-      {activeTab === "বিশ্রাম" ? (
+      {activeTab === "rest" ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>বিশ্রামের পরামর্শ</Text>
-          {[
-            "দিনে কমপক্ষে ৮ ঘণ্টা ঘুমান।",
-            "বাম পাশে শুয়ে ঘুমানো ভালো — এতে রক্তচলাচল ভালো হয়।",
-            "ভারী কাজ এড়িয়ে চলুন, বিশেষ করে শেষ তিন মাসে।",
-            "প্রতি ১-২ ঘণ্টা পর পর উঠে একটু হাঁটুন।",
-            "মানসিক চাপ কমাতে পরিবারের সাথে কথা বলুন।"
-          ].map((tip) => (
+          <Text style={styles.sectionTitle}>{language === "en" ? "Rest advice" : "বিশ্রামের পরামর্শ"}</Text>
+          {(language === "en"
+            ? [
+                "Sleep at least 8 hours a day.",
+                "Sleeping on the left side can improve circulation.",
+                "Avoid heavy work, especially in the last three months.",
+                "Walk a little every 1-2 hours when possible.",
+                "Talk with family to reduce stress."
+              ]
+            : [
+                "দিনে কমপক্ষে ৮ ঘণ্টা ঘুমান।",
+                "বাম পাশে শুয়ে ঘুমানো ভালো — এতে রক্তচলাচল ভালো হয়।",
+                "ভারী কাজ এড়িয়ে চলুন, বিশেষ করে শেষ তিন মাসে।",
+                "প্রতি ১-২ ঘণ্টা পর পর উঠে একটু হাঁটুন।",
+                "মানসিক চাপ কমাতে পরিবারের সাথে কথা বলুন।"
+              ]).map((tip) => (
             <View key={tip} style={styles.restTip}>
               <Text style={styles.restTipText}>✓ {tip}</Text>
             </View>
@@ -439,8 +486,8 @@ export default function NutritionScreen() {
       {/* Cautions section */}
       {plan?.cautions_bn?.length ? (
         <View style={styles.cautionSection}>
-          <Text style={styles.cautionTitle}>⚠️ সতর্কতা</Text>
-          {plan.cautions_bn.map((caution) => (
+          <Text style={styles.cautionTitle}>⚠️ {language === "en" ? "Caution" : "সতর্কতা"}</Text>
+          {(language === "en" ? plan.cautions_en ?? plan.cautions_bn : plan.cautions_bn).map((caution) => (
             <Text key={caution} style={styles.cautionText}>
               • {caution}
             </Text>

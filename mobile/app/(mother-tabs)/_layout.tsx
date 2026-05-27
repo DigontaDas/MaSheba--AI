@@ -1,11 +1,12 @@
 import { Tabs } from "expo-router";
 import { BottomNavigation } from "@/components/navigation/BottomNavigation";
-import { copy } from "@/data/stitchCopy.bn";
+import { useCopy } from "@/data/useCopy";
 import { colors } from "@/theme";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function MotherTabsLayout() {
   const { t } = useLanguage();
+  const copy = useCopy();
 
   return (
     <Tabs
@@ -22,4 +23,3 @@ export default function MotherTabsLayout() {
     </Tabs>
   );
 }
-
