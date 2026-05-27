@@ -756,6 +756,36 @@ Result: 100% offline AI — zero external dependencies
 
 ---
 
+## ✨ Key Features
+
+### 👩‍⚕️ For Community Health Workers (CHWs)
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| 📋 **Patient Visit Recording** | ✅ | One-tap vitals entry (BP, weight, hemoglobin, symptoms) |
+| 🎯 **Instant Risk Assessment** | ✅ | Deterministic rule-based offline scoring + safety checks |
+| 💬 **Clinical AI Chat** | ✅ | Live cloud-based Bangla maternal chat (Requires Internet) |
+| 🔄 **Offline Sync** | ✅ | Outbox pattern with background polling and auto-retry |
+| 💊 **Medicine Verification** | ✅ | Drug safety checker for pregnant women |
+| 🚨 **Emergency Alerts** | ✅ | Auto-detect critical symptoms → immediate referral details |
+
+### 👩 For Mothers
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| 🏠 **Mother Dashboard** | ✅ | Personal pregnancy tracker and gestational age milestones |
+| ❓ **Q&A Chat** | ✅ | Live AI chat when online; falls back to categorized local offline Q&A |
+| 📊 **Progress Tracking** | ✅ | Track daily water intake (out of 8 glasses) and visit counts |
+
+### 👨‍💼 For Health Officers (Admin)
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| 📈 **Risk Summary Dashboard** | ✅ | Bar charts of LOW/MODERATE/HIGH risk patients by CHW |
+| 👥 **CHW Management** | ✅ | View assigned health workers and active case counts |
+| 🗺️ **Geographic Coverage** | ✅ | compliance monitoring for union and upazila health complexes |
+
+---
 ### Appendix A: Key Design Decisions Log
 
 | Decision | Options Considered | Choice | Rationale |
@@ -874,36 +904,8 @@ Masheba--AI/
 
 ---
 
-## ✨ Key Features
 
-### 👩‍⚕️ For Community Health Workers (CHWs)
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| 📋 **Patient Visit Recording** | ✅ | One-tap vitals entry (BP, weight, hemoglobin, symptoms) |
-| 🎯 **Instant Risk Assessment** | ✅ | Deterministic rule-based offline scoring + safety checks |
-| 💬 **Clinical AI Chat** | ✅ | Live cloud-based Bangla maternal chat (Requires Internet) |
-| 🔄 **Offline Sync** | ✅ | Outbox pattern with background polling and auto-retry |
-| 💊 **Medicine Verification** | ✅ | Drug safety checker for pregnant women |
-| 🚨 **Emergency Alerts** | ✅ | Auto-detect critical symptoms → immediate referral details |
-
-### 👩 For Mothers
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 🏠 **Mother Dashboard** | ✅ | Personal pregnancy tracker and gestational age milestones |
-| ❓ **Q&A Chat** | ✅ | Live AI chat when online; falls back to categorized local offline Q&A |
-| 📊 **Progress Tracking** | ✅ | Track daily water intake (out of 8 glasses) and visit counts |
-
-### 👨‍💼 For Health Officers (Admin)
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 📈 **Risk Summary Dashboard** | ✅ | Bar charts of LOW/MODERATE/HIGH risk patients by CHW |
-| 👥 **CHW Management** | ✅ | View assigned health workers and active case counts |
-| 🗺️ **Geographic Coverage** | ✅ | compliance monitoring for union and upazila health complexes |
-
----
 
 ## 🚀 Getting Started
 
