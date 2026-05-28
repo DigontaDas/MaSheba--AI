@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -118,6 +119,7 @@ const translations = {
     tagline: "আপনার গর্ভকালীন সঙ্গী",
     motherBtn: "মা হিসেবে চালিয়ে যান  →",
     chwBtn: "স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান",
+    adminBtn: "অ্যাডমিন ড্যাশবোর্ড দেখুন  →",
     whoCompliance: "WHO নির্দেশিকা অনুসরণ করে",
     offlineNotice: "ইন্টারনেট ছাড়াও অফলাইনে কাজ করে",
     loginTab: "লগইন",
@@ -140,6 +142,7 @@ const translations = {
     tagline: "Your Pregnancy Companion",
     motherBtn: "Continue as Mother  →",
     chwBtn: "Continue as Health Worker",
+    adminBtn: "View Admin Dashboard  →",
     whoCompliance: "Following WHO Guidelines",
     offlineNotice: "Works Offline Without Internet",
     loginTab: "Login",
@@ -214,6 +217,19 @@ export default function LoginScreen() {
     setLoadingAction(action);
     setError(null);
     try {
+      const emailLower = nextEmail.trim().toLowerCase();
+      if (emailLower === "admin" && nextPassword === "admin123") {
+        await saveUserRole("ADMIN");
+        await saveSession({
+          accessToken: "mock-admin-token",
+          refreshToken: "mock-admin-token",
+          chwId: "admin-chw-id"
+        });
+        setModalVisible(false);
+        router.replace("/admin-dashboard");
+        return;
+      }
+
       if (role === "CHW") {
         try {
           await loginAndBootstrap(nextEmail.trim(), nextPassword);

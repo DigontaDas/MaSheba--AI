@@ -5,7 +5,7 @@ import { supabase } from "./supabaseAuth";
 const USER_ROLE_KEY = "maasheba.user_role";
 const MOTHER_ID_KEY = "maasheba.mother_id";
 
-export type UserRole = "CHW" | "MOTHER";
+export type UserRole = "CHW" | "MOTHER" | "ADMIN";
 
 type MotherRow = {
   id: string;
@@ -30,7 +30,7 @@ export async function saveUserRole(role: UserRole): Promise<void> {
 
 export async function getUserRole(): Promise<UserRole | null> {
   const role = await SecureStore.getItemAsync(USER_ROLE_KEY);
-  return role === "CHW" || role === "MOTHER" ? role : null;
+  return role === "CHW" || role === "MOTHER" || role === "ADMIN" ? role as UserRole : null;
 }
 
 export async function saveMotherId(motherId: string): Promise<void> {

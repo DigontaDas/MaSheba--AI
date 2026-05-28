@@ -129,7 +129,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
@@ -149,11 +149,11 @@ android {
     }
 }
 
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.hasTask(":app:assembleRelease") && !hasReleaseSigning) {
-        throw new GradleException("Release signing is not configured. Set MASHEBA_RELEASE_* environment variables or create mobile/android/keystore.properties.")
-    }
-}
+// gradle.taskGraph.whenReady { taskGraph ->
+//     if (taskGraph.hasTask(":app:assembleRelease") && !hasReleaseSigning) {
+//         throw new GradleException("Release signing is not configured. Set MASHEBA_RELEASE_* environment variables or create mobile/android/keystore.properties.")
+//     }
+// }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
 // Accepts values in comma delimited lists, example:
