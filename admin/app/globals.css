@@ -11,8 +11,92 @@
 body {
   margin: 0;
   background: #f8fafc;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* ─── DOCS DARK THEME TOKENS ─────────────────────────────── */
+.docs-shell {
+  --bg: #050a0e;
+  --bg2: #0b1318;
+  --bg3: #111d24;
+  --card: #0f1e27;
+  --border: #1a3040;
+  --border2: #234054;
+  --teal: #00d4aa;
+  --teal2: #00b894;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --green: #22c55e;
+  --blue: #38bdf8;
+  --text: #e8f4f0;
+  --text2: #8fadb8;
+  --text3: #4d7588;
+  color-scheme: dark;
+}
+
+/* ─── DOCS SCROLLBAR ──────────────────────────────────────── */
+.docs-shell ::-webkit-scrollbar {
+  width: 4px;
+}
+.docs-shell ::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+.docs-shell ::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+
+/* ─── DOCS ANIMATIONS ─────────────────────────────────────── */
+@keyframes docs-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.docs-pulse {
+  animation: docs-pulse 2s infinite;
+}
+
+@keyframes docs-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.docs-fade-in {
+  animation: docs-fade-in 0.4s ease-out;
+}
+
+/* ─── DOCS SELECTION ──────────────────────────────────────── */
+.docs-shell ::selection {
+  background: #00d4aa;
+  color: #000;
+}
+
+/* ─── DOCS PRINT ──────────────────────────────────────────── */
+@media print {
+  .docs-shell {
+    background: white !important;
+    color: #111827 !important;
+  }
+  .docs-no-print {
+    display: none !important;
+  }
+  .docs-shell section {
+    page-break-inside: avoid;
+  }
+  .docs-shell h1,
+  .docs-shell h2,
+  .docs-shell h3,
+  .docs-shell p,
+  .docs-shell li,
+  .docs-shell td,
+  .docs-shell th {
+    color: #111827 !important;
+  }
+  .docs-shell .docs-card,
+  .docs-shell .docs-bg-card {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+  }
 }
