@@ -17,10 +17,10 @@ import { formatNumber, weekLabel, weeksLeftLabel } from "@/utils/localizedFormat
 import { callPhoneNumber } from "@/utils/phone";
 
 const imageByIcon = {
-  "monitor-heart": require("../../../assets/images/1.png"),
-  "restaurant-menu": require("../../../assets/images/2.png"),
-  "warning": require("../../../assets/images/3.png"),
-  "local-hospital": require("../../../assets/images/4.png")
+  "monitor-heart": require("../../../assets/images/1.webp"),
+  "restaurant-menu": require("../../../assets/images/2.webp"),
+  "warning": require("../../../assets/images/3.webp"),
+  "local-hospital": require("../../../assets/images/4.webp")
 };
 
 export function MotherDashboard({

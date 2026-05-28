@@ -1,18 +1,18 @@
 export const FOOD_IMAGES: Record<string, any> = {
-  milk: require("../../assets/images/milk.jpg"),
-  gorom_dudh: require("../../assets/images/milk.jpg"),
-  dudh: require("../../assets/images/milk.jpg"),
-  moshur: require("../../assets/images/moshur.jpg"),
-  moshur_dal: require("../../assets/images/moshur.jpg"),
-  masoor: require("../../assets/images/moshur.jpg"),
-  palong: require("../../assets/images/palong.jpg"),
-  palong_shak: require("../../assets/images/palong.jpg"),
-  shak: require("../../assets/images/palong.jpg"),
-  dalim: require("../../assets/images/dalim.jpg"),
-  pomegranate: require("../../assets/images/dalim.jpg"),
-  rice_roti: require("../../assets/images/rice_roti.png"),
-  water: require("../../assets/images/water_glass.png"),
-  blood_pressure: require("../../assets/images/Manual_Blood_Pressure.jpg")
+  milk: require("../../assets/images/milk.webp"),
+  gorom_dudh: require("../../assets/images/milk.webp"),
+  dudh: require("../../assets/images/milk.webp"),
+  moshur: require("../../assets/images/moshur.webp"),
+  moshur_dal: require("../../assets/images/moshur.webp"),
+  masoor: require("../../assets/images/moshur.webp"),
+  palong: require("../../assets/images/palong.webp"),
+  palong_shak: require("../../assets/images/palong.webp"),
+  shak: require("../../assets/images/palong.webp"),
+  dalim: require("../../assets/images/dalim.webp"),
+  pomegranate: require("../../assets/images/dalim.webp"),
+  rice_roti: require("../../assets/images/rice_roti.webp"),
+  water: require("../../assets/images/water_glass.webp"),
+  blood_pressure: require("../../assets/images/Manual_Blood_Pressure.webp")
 };
 
 export function getFoodImage(nameBn: string, nameEn: string): any | null {
