@@ -18,24 +18,24 @@ body {
   box-sizing: border-box;
 }
 
-/* ─── DOCS DARK THEME TOKENS ─────────────────────────────── */
+/* ─── DOCS LIGHT WARM THEME TOKENS (MASHEBA MOBILE BRAND) ─── */
 .docs-shell {
-  --bg: #050a0e;
-  --bg2: #0b1318;
-  --bg3: #111d24;
-  --card: #0f1e27;
-  --border: #1a3040;
-  --border2: #234054;
-  --teal: #00d4aa;
-  --teal2: #00b894;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --green: #22c55e;
-  --blue: #38bdf8;
-  --text: #e8f4f0;
-  --text2: #8fadb8;
-  --text3: #4d7588;
-  color-scheme: dark;
+  --bg: #fff8f7; /* colors.background - Soft pinkish warm white */
+  --bg2: #fff0f0; /* colors.surfaceContainerLow - Soft warm pink-white */
+  --bg3: #ffe9e8; /* colors.surfaceContainer - Light cream input backplate */
+  --card: #ffffff; /* colors.surfaceContainerLowest - Clean solid white for cards */
+  --border: #dac1ba; /* colors.outlineVariant - Warm rose border outline */
+  --border2: #87726c; /* colors.outline - Warm brown active borders */
+  --teal: #96482e; /* colors.primary - Terracotta / Warm Brick Red */
+  --teal2: #e8896a; /* colors.primaryContainer - Light Terracotta highlight */
+  --amber: #f59e0b; /* Warning gold */
+  --red: #ba1a1a; /* colors.error - Error Red */
+  --green: #4b6546; /* colors.secondary - Soft Moss Green */
+  --blue: #446371; /* colors.tertiary - Steel Blue */
+  --text: #271818; /* colors.onBackground - Dark charcoal brown */
+  --text2: #54433d; /* colors.onSurfaceVariant - Muted dark charcoal brown */
+  --text3: #87726c; /* colors.outline - Outlines and subtitles */
+  color-scheme: light;
 }
 
 /* ─── DOCS SCROLLBAR ──────────────────────────────────────── */
@@ -69,8 +69,8 @@ body {
 
 /* ─── DOCS SELECTION ──────────────────────────────────────── */
 .docs-shell ::selection {
-  background: #00d4aa;
-  color: #000;
+  background: #96482e;
+  color: #fff;
 }
 
 /* ─── DOCS PRINT ──────────────────────────────────────────── */

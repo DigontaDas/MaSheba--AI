@@ -156,8 +156,8 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
       <div
         className="docs-no-print"
         style={{
-          background: "rgba(0,212,170,.07)",
-          borderBottom: "1px solid rgba(0,212,170,.15)",
+          background: "rgba(150,72,46,.07)",
+          borderBottom: "1px solid rgba(150,72,46,.15)",
           padding: "10px 60px",
           display: "flex",
           alignItems: "center",
@@ -202,8 +202,8 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5,
-                background: "rgba(0,212,170,.12)",
-                border: "1px solid rgba(0,212,170,.25)",
+                background: "rgba(150,72,46,.12)",
+                border: "1px solid rgba(150,72,46,.25)",
                 color: "var(--teal)",
                 fontSize: 10,
                 fontFamily: "var(--font-dm-mono), monospace",
@@ -256,7 +256,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
           {/* ── HERO ──────────────────────────────────────────── */}
           <section
             style={{
-              background: "linear-gradient(135deg, var(--bg2) 0%, #071520 50%, #041010 100%)",
+              background: "linear-gradient(135deg, var(--bg2) 0%, #fff0f0 50%, #ffe9e8 100%)",
               borderBottom: "1px solid var(--border)",
               padding: "72px 60px 60px",
               position: "relative",
@@ -606,7 +606,7 @@ function navLinkStyle(isActive: boolean): React.CSSProperties {
     borderRadius: 7,
     fontSize: 13,
     color: isActive ? "var(--teal)" : "var(--text2)",
-    background: isActive ? "rgba(0,212,170,.1)" : "transparent",
+    background: isActive ? "rgba(150,72,46,.1)" : "transparent",
     cursor: "pointer",
     transition: "all .15s",
     textDecoration: "none",
@@ -632,7 +632,7 @@ function NavGroup({ label, items, active, setActive }: { label: string; items: N
 
 function EyebrowTag({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ background: "rgba(0,212,170,.12)", border: "1px solid rgba(0,212,170,.2)", padding: "3px 10px", borderRadius: 20 }}>
+    <span style={{ background: "rgba(150,72,46,.12)", border: "1px solid rgba(150,72,46,.2)", padding: "3px 10px", borderRadius: 20 }}>
       {children}
     </span>
   );
@@ -724,14 +724,14 @@ function PitchCard({ num, title, highlight, children }: { num: string; title: st
   return (
     <div
       style={{
-        background: highlight ? "linear-gradient(135deg, var(--card), rgba(0,212,170,.04))" : "var(--card)",
-        border: `1px solid ${highlight ? "rgba(0,212,170,.3)" : "var(--border)"}`,
+        background: highlight ? "linear-gradient(135deg, var(--card), rgba(150,72,46,.04))" : "var(--card)",
+        border: `1px solid ${highlight ? "rgba(150,72,46,.3)" : "var(--border)"}`,
         borderRadius: 12,
         padding: 28,
         transition: "border-color .2s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 36, fontWeight: 800, color: highlight ? "rgba(0,212,170,.3)" : "var(--border2)", letterSpacing: -2, marginBottom: 12, lineHeight: 1 }}>{num}</div>
+      <div style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 36, fontWeight: 800, color: highlight ? "rgba(150,72,46,.3)" : "var(--border2)", letterSpacing: -2, marginBottom: 12, lineHeight: 1 }}>{num}</div>
       <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</h3>
       <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.65 }}>{children}</p>
     </div>
