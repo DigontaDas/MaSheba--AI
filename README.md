@@ -436,7 +436,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ### 🇧🇩 Built with ❤️ for Bangladesh's mothers
 
-*মাষেবা (Masheba) — "Service to Mother"*
+*মাসেবা (Masheba) — "Service to Mother"*
 
 **Every mother deserves a safety net. Masheba AI ensures no one falls through.**
 
