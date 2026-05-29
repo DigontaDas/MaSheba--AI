@@ -779,7 +779,7 @@ function TeamCard({ member }: { member: TeamMember }) {
         textAlign: "center",
         transition: "border-color .2s, transform .2s",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(0,212,170,.35)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(150,72,46,.35)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       {member.avatar_url ? (
@@ -830,7 +830,7 @@ function FeatureTable({ rows }: { rows: FeatureRow[] }) {
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={`${row.feature}-${i}`} style={{ transition: "background .15s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.02)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+            <tr key={`${row.feature}-${i}`} style={{ transition: "background .15s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg2)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
               <td style={{ padding: "13px 16px", borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none" }}>{row.feature}</td>
               <td style={{ padding: "13px 16px", borderBottom: i < rows.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <StatusBadge status={row.status} />
@@ -857,9 +857,9 @@ function StatusBadge({ status }: { status: string }) {
         padding: "3px 9px",
         borderRadius: 20,
         whiteSpace: "nowrap",
-        background: isLive ? "rgba(34,197,94,.12)" : "rgba(56,189,248,.1)",
+        background: isLive ? "rgba(75,101,70,.12)" : "rgba(68,99,113,.1)",
         color: isLive ? "var(--green)" : "var(--blue)",
-        border: `1px solid ${isLive ? "rgba(34,197,94,.25)" : "rgba(56,189,248,.2)"}`,
+        border: `1px solid ${isLive ? "rgba(75,101,70,.25)" : "rgba(68,99,113,.2)"}`,
       }}
     >
       {isLive && <span className="docs-pulse" style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />}
@@ -918,8 +918,20 @@ function ArchLayer({ dotColor, label, sub, children }: { dotColor: string; label
 
 function ArchNode({ title, sub }: { title: string; sub: string }) {
   return (
-    <div style={{ background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}>
-      <strong style={{ display: "block", fontFamily: "var(--font-syne), sans-serif", fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{title}</strong>
+    <div
+      style={{
+        background: "var(--bg3)",
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+        padding: "12px 16px",
+        fontSize: 13,
+        transition: "border-color .15s, transform .15s",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.transform = "scale(1.02)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "scale(1)"; }}
+    >
+      <strong style={{ display: "block", fontFamily: "var(--font-syne), sans-serif", fontSize: 13, fontWeight: 600, marginBottom: 3, color: "var(--text)" }}>{title}</strong>
       <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-dm-mono), monospace" }}>{sub}</span>
     </div>
   );
@@ -953,8 +965,8 @@ function CascadeFlow() {
 }
 
 function CascadeStep({ label, name, note, variant }: { label: string; name: string; note: string; variant: "primary" | "fb1" | "fb2" | "offline" }) {
-  const borderColors = { primary: "rgba(0,212,170,.3)", fb1: "rgba(56,189,248,.25)", fb2: "rgba(245,158,11,.2)", offline: "rgba(239,68,68,.2)" };
-  const bgColors = { primary: "rgba(0,212,170,.05)", fb1: "var(--card)", fb2: "var(--card)", offline: "rgba(239,68,68,.03)" };
+  const borderColors = { primary: "rgba(150,72,46,.3)", fb1: "rgba(68,99,113,.25)", fb2: "rgba(232,137,106,.25)", offline: "rgba(186,26,26,.2)" };
+  const bgColors = { primary: "rgba(150,72,46,.05)", fb1: "var(--card)", fb2: "var(--card)", offline: "rgba(186,26,26,.03)" };
   return (
     <div style={{ background: bgColors[variant], border: `1px solid ${borderColors[variant]}`, borderRadius: 10, padding: "16px 20px", flex: 1, minWidth: 140 }}>
       <div style={{ fontFamily: "var(--font-dm-mono), monospace", fontSize: 10, color: "var(--text3)", letterSpacing: ".08em", textTransform: "uppercase" as const, marginBottom: 6 }}>{label}</div>
@@ -1062,9 +1074,9 @@ function ApiEndpoint({ method, path, description, params }: { method: string; pa
             fontWeight: 500,
             padding: "3px 10px",
             borderRadius: 5,
-            background: isPost ? "rgba(56,189,248,.12)" : "rgba(34,197,94,.15)",
+            background: isPost ? "rgba(68,99,113,.12)" : "rgba(75,101,70,.12)",
             color: isPost ? "var(--blue)" : "var(--green)",
-            border: `1px solid ${isPost ? "rgba(56,189,248,.2)" : "rgba(34,197,94,.2)"}`,
+            border: `1px solid ${isPost ? "rgba(68,99,113,.2)" : "rgba(75,101,70,.2)"}`,
           }}
         >
           {method}
