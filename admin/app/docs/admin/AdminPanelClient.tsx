@@ -30,6 +30,7 @@ type AdminPanelClientProps = {
   saveDocsConfig: (payload: DocsAdminConfigPayload, mode: "draft" | "publish") => Promise<SaveResult>;
   verifyLocalLogin?: (email: string, password: string) => Promise<SaveResult>;
   hasSupabase?: boolean;
+  supabaseError?: string;
 };
 
 const defaultTeam: TeamMember[] = [
@@ -60,7 +61,14 @@ function initials(name: string) {
   return name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig, verifyLocalLogin, hasSupabase = true }: AdminPanelClientProps) {
+export function AdminPanelClient({
+  initialConfig,
+  initialIsAdmin,
+  saveDocsConfig,
+  verifyLocalLogin,
+  hasSupabase = true,
+  supabaseError,
+}: AdminPanelClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => {
     if (hasSupabase) {
@@ -200,10 +208,28 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
           </div>
           
           {!hasSupabase && (
-            <div className="mt-4 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300 leading-relaxed">
-              <span className="font-semibold block mb-1">Local Demo Mode Enabled:</span>
-              Use Email: <strong className="text-white">admin@masheba.ai</strong><br />
-              Password: <strong className="text-white">masheba2026</strong>
+            <div className="mt-4 rounded-md border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-amber-200/90 leading-relaxed space-y-3">
+              <div>
+                <span className="font-bold text-amber-400 block mb-1 flex items-center gap-1.5">
+                  <span className="text-sm">⚠️</span> Running in Local Demo Mode
+                </span>
+                <p>
+                  Database (Supabase) integration is unconfigured. Settings edits are kept in temporary memory and <strong>will reset upon browser refresh or serverless instance recycle</strong>.
+                </p>
+                {supabaseError && (
+                  <div className="mt-2 rounded bg-rose-950/40 p-2 border border-rose-900/35">
+                    <p className="font-semibold text-rose-300 mb-0.5">Technical diagnostics:</p>
+                    <p className="font-mono text-[10px] text-rose-200/90 break-words">{supabaseError}</p>
+                  </div>
+                )}
+              </div>
+              <div className="border-t border-amber-500/10 pt-2.5">
+                <span className="font-semibold text-white block mb-1">Demo Credentials:</span>
+                <div className="bg-slate-950/60 p-2 rounded border border-slate-800 space-y-1">
+                  <p>Email: <strong className="text-emerald-400">admin@masheba.ai</strong></p>
+                  <p>Password: <strong className="text-emerald-400">masheba2026</strong></p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -239,6 +265,53 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
         </header>
 
         {message ? <p className="mt-5 rounded-md border border-slate-700 bg-slate-900 p-3 text-sm text-slate-200">{message}</p> : null}
+
+        {!hasSupabase && (
+          <div className="mt-6 rounded-md border border-amber-500/25 bg-amber-500/5 p-5 text-sm text-amber-200/90 leading-relaxed shadow-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl mt-0.5 leading-none">⚠️</span>
+              <div className="space-y-2.5">
+                <h3 className="font-bold text-base text-amber-400">Database Connection Required for Persistence</h3>
+                <p>
+                  You are editing documentation settings in <strong>Local Mode</strong>. Vercel deployment containers are stateless and read-only. Any changes you make here (such as updating the YouTube demo video URL) are written to a temporary local file, which <strong>will reset back to the default demo video</strong> as soon as Vercel recycles the serverless instance or a new request routes to another instance.
+                </p>
+                <div className="text-xs text-slate-300 border-t border-amber-500/10 pt-3 mt-1.5 space-y-2">
+                  <p className="font-semibold text-white">To restore full persistence and enable permanent saves:</p>
+                  <ol className="list-decimal list-inside space-y-1.5 pl-1">
+                    <li>Go to your <strong>Vercel Project Dashboard</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Environment Variables</strong>.</li>
+                    <li>Add these three environment variables pointing to your Supabase project:
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1.5 font-mono text-[11px] text-amber-300/80">
+                        <div className="bg-slate-950/70 p-1.5 px-2.5 rounded border border-slate-800">
+                          <code className="text-slate-400 block text-[9px] uppercase font-sans">Variable 1</code>
+                          <code>NEXT_PUBLIC_SUPABASE_URL</code>
+                        </div>
+                        <div className="bg-slate-950/70 p-1.5 px-2.5 rounded border border-slate-800">
+                          <code className="text-slate-400 block text-[9px] uppercase font-sans">Variable 2</code>
+                          <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>
+                        </div>
+                        <div className="bg-slate-950/70 p-1.5 px-2.5 rounded border border-slate-800">
+                          <code className="text-slate-400 block text-[9px] uppercase font-sans">Variable 3</code>
+                          <code>SUPABASE_SERVICE_ROLE_KEY</code>
+                        </div>
+                      </div>
+                    </li>
+                    <li className="mt-1">Redeploy your project on Vercel to load the environment variables.</li>
+                  </ol>
+                </div>
+                {supabaseError && (
+                  <details className="mt-3 text-xs bg-slate-950/40 border border-slate-900/60 rounded">
+                    <summary className="cursor-pointer text-slate-400 hover:text-slate-300 font-semibold p-2 select-none focus:outline-none flex items-center gap-1.5">
+                      <span className="text-[10px] transform transition-transform duration-200">&#9656;</span> Technical Diagnostics
+                    </summary>
+                    <div className="p-3 border-t border-slate-900/60 font-mono text-[11px] text-rose-300 bg-rose-950/10 break-words whitespace-pre-wrap">
+                      {supabaseError}
+                    </div>
+                  </details>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <section className="mt-6 space-y-6 rounded-md border border-slate-800 bg-slate-900 p-5">
           <div className="flex items-center justify-between gap-4 rounded-md border border-slate-800 bg-slate-950 p-4">

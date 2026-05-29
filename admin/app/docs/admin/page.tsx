@@ -63,6 +63,19 @@ export default async function DocsAdminPage() {
   let hasSupabase = hasSupabaseConfig();
   let initialConfig = null;
   let initialIsAdmin = false;
+  let supabaseError = "";
+
+  if (!hasSupabase) {
+    const missing = [];
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) missing.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+    if (missing.length > 0) {
+      supabaseError = `Missing environment variable(s): ${missing.join(", ")}`;
+    } else {
+      supabaseError = "Supabase integration is disabled.";
+    }
+  }
 
   if (hasSupabase) {
     try {
@@ -70,12 +83,25 @@ export default async function DocsAdminPage() {
       const authClient = createServerSupabaseClient();
       const adminClient = createAdminClient();
       
-      const { data: { user } } = await authClient.auth.getUser();
-      initialIsAdmin = isAdminUser(user);
+      const { data: { user }, error: authError } = await authClient.auth.getUser();
+      if (authError) {
+        supabaseError = `Supabase Auth Error: ${authError.message}`;
+        hasSupabase = false;
+      } else {
+        initialIsAdmin = isAdminUser(user);
+      }
       
-      const { data } = await adminClient.from("docs_config").select("*").eq("id", 1).maybeSingle();
-      initialConfig = data;
-    } catch {
+      if (hasSupabase) {
+        const { data, error: dbError } = await adminClient.from("docs_config").select("*").eq("id", 1).maybeSingle();
+        if (dbError) {
+          supabaseError = `Database Connection Error: ${dbError.message}`;
+          hasSupabase = false;
+        } else {
+          initialConfig = data;
+        }
+      }
+    } catch (e: any) {
+      supabaseError = `Supabase Client Error: ${e.message || "Failed to initialize server client"}`;
       hasSupabase = false; // Fall back to local JSON if Supabase fails
     }
   }
@@ -170,6 +196,7 @@ export default async function DocsAdminPage() {
       saveDocsConfig={saveDocsConfig}
       verifyLocalLogin={verifyLocalLogin}
       hasSupabase={hasSupabase}
+      supabaseError={supabaseError}
     />
   );
 }
