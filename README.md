@@ -108,9 +108,6 @@ graph TD
 
 ### 🤰 1. Maternal Health Portal (গর্ভবতী মা পোর্টাল)
 
-<div align="center">
-<img src="ICON.png" alt="Maternal Portal" width="60" />
-</div>
 
 Designed with highly readable, **pastel-toned**, and encouraging visual guides for pregnant mothers:
 
@@ -125,9 +122,7 @@ Designed with highly readable, **pastel-toned**, and encouraging visual guides f
 
 ### 🩺 2. Clinical Health Worker (CHW) Portal (স্বাস্থ্যকর্মী পোর্টাল)
 
-<div align="center">
-<img src="ICON.png" alt="CHW Portal" width="60" />
-</div>
+
 
 An **offline-first clinical workspace** for active workers in rural communities:
 
@@ -147,9 +142,7 @@ An **offline-first clinical workspace** for active workers in rural communities:
 
 ### 👑 3. Administrative Control Panel (অ্যাডমিন ড্যাশবোর্ড)
 
-<div align="center">
-<img src="ICON.png" alt="Admin Panel" width="60" />
-</div>
+
 
 An administrative dashboard for **district health officers** to monitor community operations:
 
@@ -181,9 +174,7 @@ An administrative dashboard for **district health officers** to monitor communit
 
 ## 🎨 Premium Design System
 
-<div align="center">
-<img src="ICON.png" alt="Design System" width="80" />
-</div>
+
 
 Masheba AI is crafted with **extreme attention to visual harmony** and premium user experiences:
 
