@@ -38,7 +38,7 @@ const defaultConfig = {
   is_public: true,
   start_at: "2026-06-10T00:00:00+06:00",
   end_at: "2026-06-14T23:59:59+06:00",
-  youtube_url: "https://www.youtube.com/embed/demo",
+  youtube_url: "https://www.youtube.com/embed/jImLDadVTL0",
   team_members: defaultTeam,
   feature_matrix: defaultFeatures,
 };

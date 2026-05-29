@@ -93,7 +93,7 @@ export function AdminPanelClient({
   const [isPublic, setIsPublic] = useState(source?.is_public ?? true);
   const [startAt, setStartAt] = useState(toDatetimeLocal(source?.start_at) || "2026-06-10T00:00");
   const [endAt, setEndAt] = useState(toDatetimeLocal(source?.end_at) || "2026-06-14T23:59");
-  const [youtubeUrl, setYoutubeUrl] = useState(source?.youtube_url ?? "https://www.youtube.com/embed/demo");
+  const [youtubeUrl, setYoutubeUrl] = useState(source?.youtube_url ?? "https://www.youtube.com/embed/jImLDadVTL0");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(source?.team_members ?? defaultTeam);
   const [featureJson, setFeatureJson] = useState(JSON.stringify(source?.feature_matrix ?? defaultFeatures, null, 2));
 

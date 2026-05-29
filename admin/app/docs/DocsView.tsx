@@ -68,7 +68,7 @@ const navItems: NavItem[] = [
 /* ─── HELPERS ─────────────────────────────────────────────── */
 
 function embedYoutube(url: string) {
-  if (!url) return "https://www.youtube.com/embed/demo";
+  if (!url) return "https://www.youtube.com/embed/jImLDadVTL0";
   const trimmed = url.trim();
   if (trimmed.includes("/embed/")) return trimmed;
 
