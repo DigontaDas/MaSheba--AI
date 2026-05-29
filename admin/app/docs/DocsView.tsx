@@ -69,9 +69,40 @@ const navItems: NavItem[] = [
 
 function embedYoutube(url: string) {
   if (!url) return "https://www.youtube.com/embed/demo";
-  if (url.includes("/embed/")) return url;
-  const id = new URLSearchParams(url.split("?")[1] ?? "").get("v");
-  return id ? `https://www.youtube.com/embed/${id}` : url;
+  const trimmed = url.trim();
+  if (trimmed.includes("/embed/")) return trimmed;
+
+  // Handle youtu.be/XYZ share links
+  if (trimmed.includes("youtu.be/")) {
+    const parts = trimmed.split("youtu.be/");
+    const id = parts[1]?.split("?")[0]?.split("/")[0];
+    if (id) return `https://www.youtube.com/embed/${id}`;
+  }
+
+  // Handle youtube.com/shorts/XYZ links
+  if (trimmed.includes("/shorts/")) {
+    const parts = trimmed.split("/shorts/");
+    const id = parts[1]?.split("?")[0]?.split("/")[0];
+    if (id) return `https://www.youtube.com/embed/${id}`;
+  }
+
+  // Handle standard watch links
+  try {
+    const urlObj = new URL(trimmed);
+    const id = urlObj.searchParams.get("v");
+    if (id) return `https://www.youtube.com/embed/${id}`;
+  } catch {
+    // Fallback if URL parsing fails
+  }
+
+  // General regex pattern matching for embed/watch/v/short video IDs
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = trimmed.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+
+  return trimmed;
 }
 
 function initialsFor(member: TeamMember) {
