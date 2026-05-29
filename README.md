@@ -84,6 +84,14 @@ Community Health Workers (CHWs) serve as the primary touchpoint for pregnant wom
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Dual-Portal Framework
+
+MaSheba AI features a **Dual-Portal Framework** with an integrated **Administrative Control Panel**:
+
+- **Maternal Health Portal** — Pregnancy tracking, nutritional guidance, and urgent warning systems for mothers
+- **Community Health Worker Portal** — Offline-first clinical workspace with AI triage and Groq + Gemini chat
+- **Admin Dashboard Control Suite** — Real-time analytics, CHW management, and relational patient filtering
+
 ### What Makes Masheba Different
 
 - **🔌 Works offline first** — Core database operations (SQLite) run locally, ensuring zero data loss during power or network cuts.
@@ -758,32 +766,44 @@ Result: 100% offline AI — zero external dependencies
 
 ## ✨ Key Features
 
-### 👩‍⚕️ For Community Health Workers (CHWs)
+### 🤰 Maternal Health Portal (গর্ভবতী মা পোর্টাল)
+
+Designed with highly readable, pastel-toned, and encouraging visual guides for pregnant mothers:
 
 | Feature | Status | Details |
 |---------|--------|---------|
+| 🎡 **Pregnancy Progress Wheel & Fetal Growth Tracker** | ✅ | Custom circular countdown matching gestational age in weeks (1–40) with dynamic size comparisons (e.g., pomegranate, lentils) |
+| 🥗 **Nutritional Intake Guide (পুষ্টি নির্দেশিকা)** | ✅ | Rich, categorized food galleries with visual guides for proteins, vitamins, dairy, and water intake |
+| ⚠️ **Urgent Warnings (শতর্কতা)** | ✅ | Direct highlight-alert panels warning about danger signs (severe swelling, high BP, preeclampsia indicators) |
+| 📖 **Offline Medical Q&A** | ✅ | Locally compiled questions and answers available without internet connectivity |
+| ❓ **Live AI Q&A Chat** | ✅ | Live AI chat when online; falls back to categorized local offline Q&A |
+| 📊 **Progress Tracking** | ✅ | Track daily water intake (out of 8 glasses) and visit counts |
+
+### 👩‍⚕️ Community Health Worker (CHW) Portal (স্বাস্থ্যকর্মী পোর্টাল)
+
+An offline-first clinical workspace for active workers in rural communities:
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| 🎯 **Intelligent AI Triage System** | ✅ | Automated risk profile evaluation as clinical data is logged (BP, age, gestational age, weight, symptoms) |
+| 🚦 **Pastel Glowing Risk Indicators** | ✅ | Three-tier classification — 🔴 উচ্চ ঝুঁকি (High) · 🟡 মাঝারি ঝুঁকি (Moderate) · 🟢 কম ঝুঁকি (Low) |
+| 💬 **Groq + Gemini Clinical AI Chat** | ✅ | Hybrid offline/online LLM chat — medical questions in Bengali or English with instant diagnostic guidance |
+| 🔄 **Offline SQLite Storage & Hot Sync** | ✅ | Local caching in rural areas with automatic cloud sync when network is detected |
 | 📋 **Patient Visit Recording** | ✅ | One-tap vitals entry (BP, weight, hemoglobin, symptoms) |
-| 🎯 **Instant Risk Assessment** | ✅ | Deterministic rule-based offline scoring + safety checks |
-| 💬 **Clinical AI Chat** | ✅ | Live cloud-based Bangla maternal chat (Requires Internet) |
-| 🔄 **Offline Sync** | ✅ | Outbox pattern with background polling and auto-retry |
 | 💊 **Medicine Verification** | ✅ | Drug safety checker for pregnant women |
 | 🚨 **Emergency Alerts** | ✅ | Auto-detect critical symptoms → immediate referral details |
 
-### 👩 For Mothers
+### 👑 Administrative Control Panel (অ্যাডমিন ড্যাশবোর্ড)
+
+An administrative dashboard for district health officers to monitor community operations:
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| 🏠 **Mother Dashboard** | ✅ | Personal pregnancy tracker and gestational age milestones |
-| ❓ **Q&A Chat** | ✅ | Live AI chat when online; falls back to categorized local offline Q&A |
-| 📊 **Progress Tracking** | ✅ | Track daily water intake (out of 8 glasses) and visit counts |
-
-### 👨‍💼 For Health Officers (Admin)
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 📈 **Risk Summary Dashboard** | ✅ | Bar charts of LOW/MODERATE/HIGH risk patients by CHW |
-| 👥 **CHW Management** | ✅ | View assigned health workers and active case counts |
-| 🗺️ **Geographic Coverage** | ✅ | compliance monitoring for union and upazila health complexes |
+| 🔐 **Invisible Credentials Gateway** | ✅ | Access integrated into CHW login form — enter `admin` / `admin123` to redirect to Admin Dashboard (no visible admin buttons) |
+| 📈 **Analytics Cards & Dynamic Risk Charts** | ✅ | Real-time metrics: total active workers, registered mothers, critical high-risk ratios with Recharts visualizations |
+| 🔍 **Unified Search & Directory Grid** | ✅ | Interactive tables with real-time filters for name, union, or upazila across all CHWs and mothers |
+| 📊 **Decluttered High-Flex Tables** | ✅ | Optimized column spacing with zero-line wrapping (tuned for Bengali scripts and multi-word areas) |
+| 🔗 **Relational Patient Filtering** | ✅ | Tap any CHW's row to view their metrics and filter the maternal registry to inspect that worker's active patients |
 
 ---
 ### Appendix A: Key Design Decisions Log
@@ -856,10 +876,16 @@ Masheba--AI/
 ├── admin/                           # 📊 Next.js admin dashboard
 │   ├── app/
 │   │   ├── dashboard/               #    Dashboard page (SSR)
+│   │   ├── docs/                    #    Embedded documentation portal
+│   │   │   ├── page.tsx             #      Product handbook viewer
+│   │   │   ├── DocsView.tsx         #      Rendered docs content
+│   │   │   └── admin/               #      Admin-specific docs
 │   │   ├── layout.tsx               #    Root layout
+│   │   ├── page.tsx                 #    Root page
 │   │   └── globals.css
 │   ├── components/
-│   │   └── RiskSummaryChart.tsx      #    Recharts bar chart
+│   │   ├── RiskSummaryChart.tsx      #    Recharts bar chart
+│   │   └── Mermaid.tsx              #    Mermaid diagram renderer
 │   ├── utils/                       #    Supabase server client
 │   └── package.json
 │
@@ -898,14 +924,56 @@ Masheba--AI/
 ├── maasheba_system_architecture.jpg #    Architecture diagram
 ├── maasheba_offline_data_flow.jpg   #    Offline data flow diagram
 ├── ARCHITECTURE.md                  #    Detailed architecture document
+├── maasheba_comprehensive_handbook.md.resolved  #    Comprehensive product handbook
 ├── .env.example                     #    Environment variable template
 └── .gitignore
 ```
 
 ---
 
+## 📖 How to Use the App
 
+### 🤰 For Pregnant Mothers
+1. **Welcome & Setup**: Tap **"গর্ভবতী মা হিসেবে চালিয়ে যান"** (Continue as Pregnant Mother) on the landing page.
+2. **Home Feed**: Check the center pregnancy wheel showing your current week, days remaining, and an animation of your baby's current size.
+3. **Explore Nutrition**: Navigate using the bottom tabs to the **"পুষ্টি"** (Nutrition) section. Browse food categories and adjust your daily diet.
+4. **View Warnings**: Visit the **"শতর্কতা"** (Warnings) page to learn about critical preeclampsia symptoms and high-risk indicators.
 
+### 🩺 For Community Health Workers (CHWs)
+1. **Clinical Login**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker) and log in with your worker ID.
+2. **Mother Directory**: View your registered patient lists, risk categories, and schedule pending visits.
+3. **Triage Assessment**: Conduct a checkup, enter vital signs (systolic/diastolic pressure, gestational age, symptoms), and let the system calculate the maternal risk status.
+4. **Consult AI**: Access the **"ক্লিনিক্যাল চ্যাট"** (Clinical Chat) to consult the AI assistant on complex symptoms.
+
+### 👑 For Administrators
+1. **Secret Access**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker).
+2. **Enter Credentials**: Enter `admin` in the email input and `admin123` in the password input.
+3. **Command Dashboard**: Instantly inspect the real-time active metrics cards at the top showing total active workers, registered mothers, and critical high-risk ratios.
+4. **Directory Auditing**: Use the search bar to locate workers in specific unions, tap their profile to view performance, and audit patients directly.
+
+---
+
+## 📈 Clinical & Operational Benefits
+
+| 💡 The Problem (Traditional Care) | 🛡️ The MaaSheba AI Solution | 🚀 Clinical Value |
+| :--- | :--- | :--- |
+| **High Maternal Mortality**: Critical symptoms like preeclampsia are often ignored until it is too late. | **Instant AI Triaging**: Instant calculations highlight severe warnings immediately. | **Early Detection**: Prevents critical delays in referrals, potentially saving maternal lives. |
+| **No Connectivity**: Rural clinics lose access to data due to unstable networks. | **Offline SQLite Cache**: The app functions fully offline, caching data safely. | **Uninterrupted Care**: Complete continuity of medical history in remote settings. |
+| **Medical Guidance Gaps**: Workers need immediate second opinions on complex symptoms. | **Groq + Gemini Assistant**: Workers get structured clinical guidance in their native language. | **Empowered Decisions**: Enhances the medical knowledge and confidence of front-line workers. |
+| **Scattered Admin Auditing**: Monitoring rural workers' efficiency is fragmented. | **Unified Relational Admin Dashboard**: Real-time auditing of patient distribution and risk categories. | **Efficient Resource Allocation**: Directs health assets to where high-risk mothers need them most. |
+
+---
+
+## 🎨 Premium Design System
+
+MaaSheba AI is crafted with extreme attention to visual harmony and premium user experiences:
+
+- **🎨 Palette**: Tailored HSL color models blending soft medical pastel tints (warm peach, healing green, soft rose) with smooth, anti-glare dark cards.
+- **📱 Notch Spacing**: Safe area layouts custom-tailored to avoid status bars and notches on both iOS and Android.
+- **🤖 Android Smooth Borders**: Circular status indicator dots to prevent border-line artifacts on Android's drawing canvas.
+- **🔤 Typography**: Clean Outfit/Inter sans-serif pairings alongside clear, beautiful Bengali font scaling to ensure accessibility.
+
+---
 
 ## 🚀 Getting Started
 
