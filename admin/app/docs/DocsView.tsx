@@ -326,31 +326,31 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
           <div style={{ padding: "0 60px 80px" }}>
 
             {/* Problem */}
-            <Section sectionRef={registerRef("problem")} id="problem" num="01" label="The Problem" title="A Preventable Crisis in Rural Bangladesh" sub="Bangladesh has one of the highest maternal mortality rates in South Asia. In rural areas, the situation is critical — and the root cause is not medicine, it's infrastructure.">
+            <Section sectionRef={registerRef("problem")} id="problem" num="01" label="The Heart of the Challenge" title="Supporting Expectant Mothers in Rural Communities" sub="Every pregnancy is a precious journey. In rural Bangladesh, however, expectant mothers and dedicated health workers often face hurdles not from a lack of care, but from infrastructure barriers. We are building a gentle bridge to cross these gaps together.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <ProblemRow icon="🌐" title="No Reliable Network" text="Grameenphone 3G drops every 10–15 minutes; hours without any signal in remote unions" />
-                <ProblemRow icon="📱" title="Low-End Devices" text="৳6,000–12,000 Android phones (2GB RAM, 16GB storage) are the norm — not the exception" />
-                <ProblemRow icon="⚡" title="Load Shedding" text="Power cuts keep batteries chronically at ~30%. Apps with heavy cloud dependency fail here" />
-                <ProblemRow icon="📝" title="Literacy Barriers" text="Semi-literate CHWs find typing difficult. Voice in Bangla is the natural interaction model" />
-                <ProblemRow icon="🏃" title="15–20 Visits Daily" text="CHWs walk between patients on foot. Multi-step forms and loading screens cost lives in an emergency" />
-                <ProblemRow icon="🚨" title="Zero Clinical Decision Support" text="No tool exists that works offline on cheap Android, speaks Bangla, and escalates pre-eclampsia, anemia, or hemorrhage automatically" />
+                <ProblemRow icon="🌐" title="Keeping the Connection Close" text="Mobile network coverage is highly intermittent. We ensure care remains continuous and reassuring, even when the connection fades." />
+                <ProblemRow icon="📱" title="Affordable, Accessible Tools" text="Optimized to run smoothly on simple, budget-friendly Android phones so that every family has equal access to protective guidance." />
+                <ProblemRow icon="⚡" title="Resilient in Power Storms" text="Frequent power cuts keep device batteries chronically low. MaSheba consumes minimal energy to offer continuous security during storms." />
+                <ProblemRow icon="📝" title="Conversational Bangla Voice" text="To remove barriers, health workers and mothers can interact naturally using spoken Bangla voice, making intake feel like a warm conversation." />
+                <ProblemRow icon="🏃" title="Supporting Walkers of Care" text="Community Health Workers walk hours between homes on foot. We save their precious energy by replacing slow forms with instant actions." />
+                <ProblemRow icon="🚨" title="Reassuring Safety Safeguards" text="An early safeguard is vital to prevent risks. MaSheba identifies critical warning signs instantly and guides mothers safely to clinical help." />
               </div>
             </Section>
 
             {/* Solution */}
-            <Section sectionRef={registerRef("solution")} id="solution" num="02" label="The Solution" title="Three Layers. One Safety Net." sub="MaSheba works even when the network doesn't. Every core feature has a fallback path — down to fully deterministic, offline rules.">
+            <Section sectionRef={registerRef("solution")} id="solution" num="02" label="A Sanctuary of Care" title="Three Reassuring Layers of Support" sub="MaSheba is built to be absolutely dependable when a mother needs it most. Every feature is crafted with deep empathy, providing a calm and steady support system offline or online.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
-                <PitchCard num="01" title="On-Device Intelligence" highlight>
-                  A 2–5MB ONNX-quantized XGBoost model scores maternal risk in under 200ms — entirely on-device. No server call. No API. No loading screen. Deterministic WHO safety rules (BP ≥ 140/90 → always HIGH) override the model whenever clinical thresholds are breached. Safety always wins.
+                <PitchCard num="01" title="Gentle On-Device Guidance" highlight>
+                  An offline intelligence model screens maternal well-being in under 200ms on the device. Reassuring safety rules aligned with official WHO guidelines are hardcoded to act as a gentle protective shield, instantly prioritizing clinical safety.
                 </PitchCard>
-                <PitchCard num="02" title="Outbox-First Sync">
-                  Every visit is written atomically to SQLite with WAL mode — crash-safe even during power cuts. A background worker flushes the outbox to Supabase every 2 minutes when online, using idempotency keys to prevent duplicates. Data is never lost. Ever.
+                <PitchCard num="02" title="Safe and Secure Memory" >
+                  Every visit record is kept completely safe locally in the phone's memory. When data returns, the app gently and automatically syncs it to the secure database without losing a single caring detail.
                 </PitchCard>
-                <PitchCard num="03" title="Cascading AI Chat">
-                  Bangla clinical Q&A via Groq (Llama 3.1 8B) → Gemini Flash fallback → offline Q&A library. Every response passes a 6-stage safety filter: Bangla-only, emergency keyword detection, hallucination rejection, and always-appended DGHS disclaimer. No drug dosages or diagnoses, ever.
+                <PitchCard num="03" title="Nurturing AI Chat" >
+                  A warm Bangla conversational assistant cascades from high-speed models to an offline library of trimester-specific guides. Includes a rigorous 6-stage safety filter to prevent incorrect medical advice and prioritize the mother's safety.
                 </PitchCard>
-                <PitchCard num="04" title="Dual User Modes">
-                  Community Health Workers get a full clinical workflow: visit recording, instant risk badge, AI chat, medicine verification, nutrition guidance. Mothers get a personal pregnancy dashboard with Bangla Q&A and milestone tracking — all accessible offline.
+                <PitchCard num="04" title="A Shared Maternal Journey" >
+                  A reassuring dashboard for dedicated health workers to manage checkups, and a personalized, easy-to-read home screen for expecting mothers to follow milestones and receive gentle nutrition guidelines.
                 </PitchCard>
               </div>
 
@@ -370,19 +370,19 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Market */}
-            <Section sectionRef={registerRef("market")} id="market" num="03" label="Market & Business Model" title="A 3M-Patient Opportunity" sub="The addressable market is the entire maternal health infrastructure of Bangladesh — and the problem exists in every low-LMIC country worldwide.">
+            <Section sectionRef={registerRef("market")} id="market" num="03" label="Reaching Families Everywhere" title="Nurturing Expecting Mothers at Scale" sub="MaSheba's architecture is crafted to scale gently, reaching every expecting family in rural Bangladesh and expanding to support remote maternal health programs globally.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
-                <Card icon="🇧🇩" title="3M+ Pregnant Women" text="Active pregnancies in rural Bangladesh at any given time — the core beneficiary population." />
-                <Card icon="👩‍⚕️" title="60,000+ CHWs" text="Community Health Workers deployed by DGHS and NGOs nationwide. Primary distribution channel." />
-                <Card icon="🌍" title="Global Expansion" text="Same constraints exist in rural India, Sub-Saharan Africa, Myanmar. The architecture is geography-agnostic." />
+                <Card icon="🤰" title="3M+ Expected Mothers" text="Nurturing active pregnancies across remote communities at any given time — our core focus of care." />
+                <Card icon="👩‍⚕️" title="60,000+ Caring Angels" text="Dedicated Community Health Workers bringing maternal checkups directly to front doors." />
+                <Card icon="🌍" title="Global Embrace" text="Designed with universal constraints in mind to protect mothers in India, Sub-Saharan Africa, and low-resource settings." />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Card title="Revenue Model" text="Phase 1: Free deployment, impact-driven. Phase 2: Government MoH licensing — SaaS per-upazila subscription. Phase 3: DGHS national integration. Phase 4: Licensing to international NGOs (UNFPA, WHO programs)." />
-                <Card title="Competitive Advantage" text="No existing tool combines: (1) fully offline AI risk scoring, (2) Bangla-native voice/chat, (3) deterministic safety rule overrides, (4) cascading LLM fallback, and (5) sub-$0 monthly operating cost per CHW at scale." />
+                <Card title="Sustainable Care Model" text="Phase 1: Free deployment, community-driven. Phase 2: Government health department partnerships — regional support licenses. Phase 3: National integration. Phase 4: Licensing to global maternal health NGOs (WHO, UNFPA)." />
+                <Card title="A Unique Shield of Safety" text="MaSheba uniquely combines: (1) fully offline on-device risk assessment, (2) gentle spoken Bangla support, (3) strict WHO clinical safety guards, (4) cascading conversational fallback, and (5) highly cost-effective scaling." />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-                <Card title="Go-To-Market" text="Pilot one upazila → train 50 CHWs → prove compliance and referral impact → expand district by district." />
-                <Card title="Vision" text="5,000+ CHWs, national DGHS integration, and on-device fine-tuned Llama 3.1 for resilient maternal care across Bangladesh." />
+                <Card title="Gently Growing Impact" text="Train 50 community health workers in one upazila → build a trusting circle of care → measure positive birth outcomes → expand district by district." />
+                <Card title="Our Vision" text="Connecting thousands of health workers, supporting national maternal registries, and deploying lightweight on-device guidance for resilient care across Bangladesh." />
               </div>
             </Section>
 
@@ -423,10 +423,10 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Architecture */}
-            <Section sectionRef={registerRef("architecture")} id="architecture" num="08" label="Architecture" title="Three Independent Layers." sub="Each layer is independently deployable and fails gracefully without the others. The mobile app works fully offline. The backend enhances it. The AI layer enriches it.">
+            <Section sectionRef={registerRef("architecture")} id="architecture" num="08" label="How it Works" title="A Harmonious and Resilient Structure" sub="Three independent layers work in perfect harmony to surround expecting mothers with a reliable, gentle circle of support. The mobile app provides offline comfort, enhanced by secure cloud intelligence.">
               <ArchitectureDiagram />
               <div style={{ marginTop: 24 }}>
-                <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 12, color: "var(--text2)" }}>Mermaid View</h3>
+                <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 12, color: "var(--text2)" }}>System Design Flow</h3>
                 <Mermaid chart={architectureDiagram} />
               </div>
             </Section>
