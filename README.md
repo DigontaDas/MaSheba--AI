@@ -2,7 +2,7 @@
 
 <img src="ICON.png" alt="Masheba AI Logo" width="180" />
 
-# 🤱 MaSheba AI — মাসেবা AI
+# MaSheba AI — মাসেবা AI
 
 ### *মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা*
 
