@@ -33,7 +33,7 @@ type AdminPanelClientProps = {
 };
 
 const defaultTeam: TeamMember[] = [
-  { name: "Mihir Das", role: "UI/UX Design", email: "mihir@example.com", initials: "MD" },
+  { name: "Mihir Das", role: "UI/UX Design", email: "dasmihir2911@gmail.com", initials: "MD", avatar_url: "/mihir.png" },
   { name: "Mehedi Hasan Nafis", role: "Backend Engineering", email: "nafismehedi37@gmail.com", initials: "MN", avatar_url: "/nafis.jpg" },
   { name: "Fayaz Bin Faruk", role: "Data Science / Business Analytics", email: "fayazcr79@gmail.com", initials: "FF", avatar_url: "/fayaz.png" },
   { name: "Hasnain Ashraf", role: "Presentation & Communication", email: "hasnainashraf003@gmail.com", initials: "HA", avatar_url: "/hasnain.jpg" },
