@@ -25,14 +25,16 @@
     {
       "name": "Hasnain Ashraf",
       "role": "Presentation & Communication",
-      "email": "hasnain@example.com",
-      "initials": "HA"
+      "email": "hasnainashraf003@gmail.com",
+      "initials": "HA",
+      "avatar_url": "/hasnain.jpg"
     },
     {
       "name": "Digonta Das",
       "role": "Project Manager",
-      "email": "digonta@example.com",
-      "initials": "DD"
+      "email": "digontadas0171@gmail.com",
+      "initials": "DD",
+      "avatar_url": "/digonta.png"
     }
   ],
   "feature_matrix": [
