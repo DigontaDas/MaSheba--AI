@@ -37,7 +37,7 @@ const defaultTeam: TeamMember[] = [
   { name: "Mehedi Hasan Nafis", role: "Backend Engineering", email: "nafis@example.com", initials: "MN" },
   { name: "Fayaz Bin Faruk", role: "Data Science / Business Analytics", email: "fayaz@example.com", initials: "FF" },
   { name: "Hasnain Ashraf", role: "Presentation & Communication", email: "hasnainashraf003@gmail.com", initials: "HA", avatar_url: "/hasnain.jpg" },
-  { name: "Digonta Das", role: "Project Manager", email: "digontadas0171@gmail.com", initials: "DD", avatar_url: "/digonta.png" },
+  { name: "Digonta Das", role: "Project Manager", email: "digontadas0171@gmail.com", initials: "DD", avatar_url: "/digonta.jpg" },
 ];
 
 const defaultFeatures: FeatureRow[] = [
