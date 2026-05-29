@@ -83,13 +83,8 @@ export default async function DocsAdminPage() {
       const authClient = createServerSupabaseClient();
       const adminClient = createAdminClient();
       
-      const { data: { user }, error: authError } = await authClient.auth.getUser();
-      if (authError) {
-        supabaseError = `Supabase Auth Error: ${authError.message}`;
-        hasSupabase = false;
-      } else {
-        initialIsAdmin = isAdminUser(user);
-      }
+      const { data: { user } } = await authClient.auth.getUser();
+      initialIsAdmin = isAdminUser(user);
       
       if (hasSupabase) {
         const { data, error: dbError } = await adminClient.from("docs_config").select("*").eq("id", 1).maybeSingle();
