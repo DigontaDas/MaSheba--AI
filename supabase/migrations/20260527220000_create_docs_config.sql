@@ -7,8 +7,8 @@ create table if not exists public.docs_config (
   youtube_url text not null default 'https://www.youtube.com/embed/demo',
   team_members jsonb not null default '[
     {"name": "Mihir Das", "role": "UI/UX Design", "email": "mihir@example.com", "initials": "MD"},
-    {"name": "Mehedi Hasan Nafis", "role": "Backend Engineering", "email": "nafis@example.com", "initials": "MN"},
-    {"name": "Fayaz Bin Faruk", "role": "Data Science / Business Analytics", "email": "fayaz@example.com", "initials": "FF"},
+    {"name": "Mehedi Hasan Nafis", "role": "Backend Engineering", "email": "nafismehedi37@gmail.com", "initials": "MN", "avatar_url": "/nafis.jpg"},
+    {"name": "Fayaz Bin Faruk", "role": "Data Science / Business Analytics", "email": "fayazcr79@gmail.com", "initials": "FF", "avatar_url": "/fayaz.png"},
     {"name": "Hasnain Ashraf", "role": "Presentation & Communication", "email": "hasnainashraf003@gmail.com", "initials": "HA", "avatar_url": "/hasnain.jpg"},
     {"name": "Digonta Das", "role": "Project Manager", "email": "digontadas0171@gmail.com", "initials": "DD", "avatar_url": "/digonta.jpg"}
   ]'::jsonb,

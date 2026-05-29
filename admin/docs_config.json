@@ -13,14 +13,16 @@
     {
       "name": "Mehedi Hasan Nafis",
       "role": "Backend Engineering",
-      "email": "nafis@example.com",
-      "initials": "MN"
+      "email": "nafismehedi37@gmail.com",
+      "initials": "MN",
+      "avatar_url": "/nafis.jpg"
     },
     {
       "name": "Fayaz Bin Faruk",
       "role": "Data Science / Business Analytics",
-      "email": "fayaz@example.com",
-      "initials": "FF"
+      "email": "fayazcr79@gmail.com",
+      "initials": "FF",
+      "avatar_url": "/fayaz.png"
     },
     {
       "name": "Hasnain Ashraf",
