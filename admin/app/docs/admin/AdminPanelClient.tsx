@@ -28,6 +28,8 @@ type AdminPanelClientProps = {
   initialConfig: DocsConfig | null;
   initialIsAdmin: boolean;
   saveDocsConfig: (payload: DocsAdminConfigPayload, mode: "draft" | "publish") => Promise<SaveResult>;
+  verifyLocalLogin?: (email: string, password: string) => Promise<SaveResult>;
+  hasSupabase?: boolean;
 };
 
 const defaultTeam: TeamMember[] = [
@@ -58,9 +60,19 @@ function initials(name: string) {
   return name.split(" ").map((part) => part[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig }: AdminPanelClientProps) {
+export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig, verifyLocalLogin, hasSupabase = true }: AdminPanelClientProps) {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => {
+    if (hasSupabase) {
+      try {
+        return createClient();
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [hasSupabase]);
+
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,6 +92,27 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+
+    if (!hasSupabase) {
+      if (verifyLocalLogin) {
+        startTransition(async () => {
+          const result = await verifyLocalLogin(email, password);
+          if (result.ok) {
+            setIsAdmin(true);
+            router.refresh();
+          } else {
+            setMessage(result.message);
+          }
+        });
+      }
+      return;
+    }
+
+    if (!supabase) {
+      setMessage("Supabase client not initialized.");
+      return;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setMessage(error.message);
@@ -100,7 +133,9 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    if (hasSupabase && supabase) {
+      await supabase.auth.signOut();
+    }
     setIsAdmin(false);
     router.refresh();
   }
@@ -163,9 +198,19 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
               <input type="password" required value={password} onChange={(event) => setPassword(event.target.value)} className="input" />
             </Field>
           </div>
+          
+          {!hasSupabase && (
+            <div className="mt-4 rounded-md border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300 leading-relaxed">
+              <span className="font-semibold block mb-1">Local Demo Mode Enabled:</span>
+              Use Email: <strong className="text-white">admin@masheba.ai</strong><br />
+              Password: <strong className="text-white">masheba2026</strong>
+            </div>
+          )}
+
           {message ? <p className="mt-4 rounded-md border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-200">{message}</p> : null}
-          <button className="mt-6 w-full rounded-md bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">
-            Sign in
+          
+          <button disabled={isPending} className="mt-6 w-full rounded-md bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60">
+            {isPending ? "Signing in..." : "Sign in"}
           </button>
         </form>
       </main>
@@ -177,7 +222,14 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
-            <p className="text-sm font-semibold text-emerald-300">MaaSheba AI</p>
+            <p className="text-sm font-semibold text-emerald-300 flex items-center gap-2">
+              MaaSheba AI
+              {!hasSupabase && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] border border-emerald-500/20 font-medium text-emerald-400">
+                  Local Mode
+                </span>
+              )}
+            </p>
             <h1 className="text-2xl font-semibold text-white">Documentation Settings</h1>
           </div>
           <div className="flex gap-2">

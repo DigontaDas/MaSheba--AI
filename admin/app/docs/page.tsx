@@ -1,4 +1,6 @@
 import { DocsView, type FeatureRow, type TeamMember } from "./DocsView";
+import { promises as fs } from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -56,10 +58,28 @@ function hasSupabaseConfig(): boolean {
   );
 }
 
+async function getLocalConfig(): Promise<DocsConfig | null> {
+  try {
+    const filePath = path.join(process.cwd(), "docs_config.json");
+    console.log("[getLocalConfig] Reading path:", filePath);
+    const fileContent = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(fileContent);
+    console.log("[getLocalConfig] Loaded config is_public:", parsed.is_public, "start_at:", parsed.start_at);
+    return parsed;
+  } catch (e: any) {
+    console.error("[getLocalConfig] Failed to load config:", e.message);
+    return null;
+  }
+}
+
 async function getConfig(): Promise<{ config: DocsConfig; features: FeatureRow[] }> {
-  // If Supabase is not configured, use hardcoded defaults (works without any database)
+  // Try reading from local JSON config first
+  const localConfig = await getLocalConfig();
+
+  // If Supabase is not configured, use local JSON or hardcoded defaults
   if (!hasSupabaseConfig()) {
-    return { config: defaultConfig, features: defaultFeatures };
+    const config = localConfig ?? defaultConfig;
+    return { config, features: config.feature_matrix ?? defaultFeatures };
   }
 
   try {

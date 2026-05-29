@@ -1,0 +1,127 @@
+{
+  "is_public": true,
+  "start_at": "2026-05-01T00:00:00.000Z",
+  "end_at": "2026-12-31T23:59:59.000Z",
+  "youtube_url": "https://www.youtube.com/embed/demo",
+  "team_members": [
+    {
+      "name": "Mihir Das",
+      "role": "UI/UX Design",
+      "email": "mihir@example.com",
+      "initials": "MD"
+    },
+    {
+      "name": "Mehedi Hasan Nafis",
+      "role": "Backend Engineering",
+      "email": "nafis@example.com",
+      "initials": "MN"
+    },
+    {
+      "name": "Fayaz Bin Faruk",
+      "role": "Data Science / Business Analytics",
+      "email": "fayaz@example.com",
+      "initials": "FF"
+    },
+    {
+      "name": "Hasnain Ashraf",
+      "role": "Presentation & Communication",
+      "email": "hasnain@example.com",
+      "initials": "HA"
+    },
+    {
+      "name": "Digonta Das",
+      "role": "Project Manager",
+      "email": "digonta@example.com",
+      "initials": "DD"
+    }
+  ],
+  "feature_matrix": [
+    {
+      "feature": "Offline risk assessment",
+      "status": "Live",
+      "notes": "On-device intake and risk badge for CHW visits."
+    },
+    {
+      "feature": "ONNX model",
+      "status": "Live",
+      "notes": "XGBoost model packaged for low-end Android inference."
+    },
+    {
+      "feature": "Outbox sync",
+      "status": "Live",
+      "notes": "SQLite WAL queue retries events when connectivity returns."
+    },
+    {
+      "feature": "Bangla AI chat",
+      "status": "Live",
+      "notes": "Groq-first LLM cascade with Gemini fallback and local safety checks."
+    },
+    {
+      "feature": "Offline Q&A",
+      "status": "Live",
+      "notes": "Seeded maternal health answers available without network."
+    },
+    {
+      "feature": "Medicine verify",
+      "status": "Live",
+      "notes": "Offline medicine and dosage guidance workflow."
+    },
+    {
+      "feature": "FCM push",
+      "status": "Live",
+      "notes": "Push alerts for care reminders and admin broadcasts."
+    },
+    {
+      "feature": "Admin dashboard",
+      "status": "Live",
+      "notes": "Next.js dashboard with Supabase analytics views."
+    },
+    {
+      "feature": "Emergency auto-referral",
+      "status": "Live",
+      "notes": "Keyword detection triggers hospital referral alert."
+    },
+    {
+      "feature": "Nutrition guidance",
+      "status": "Live",
+      "notes": "Trimester-specific dietary recommendations."
+    },
+    {
+      "feature": "Mother dashboard",
+      "status": "Live",
+      "notes": "Personal pregnancy progress tracker and visit history."
+    },
+    {
+      "feature": "Full RAG pipeline",
+      "status": "Planned",
+      "notes": "WHO and DGHS guideline chunks embedded in pgvector."
+    },
+    {
+      "feature": "Whisper voice input",
+      "status": "Planned",
+      "notes": "Bangla voice capture for hands-free CHW intake."
+    },
+    {
+      "feature": "Coqui TTS",
+      "status": "Planned",
+      "notes": "Audio guidance for low-literacy mother journeys."
+    },
+    {
+      "feature": "SMS/IVR alerts",
+      "status": "Planned",
+      "notes": "Fallback alerts for households without data connectivity."
+    },
+    {
+      "feature": "Geographic heat maps",
+      "status": "Planned",
+      "notes": "Upazila-level risk and compliance visualization."
+    },
+    {
+      "feature": "On-device LLM",
+      "status": "Planned",
+      "notes": "Fine-tuned Llama 3.1 8B in GGUF 4-bit format."
+    }
+  ],
+  "draft_config": null,
+  "updated_at": "2026-05-28T19:02:00.000Z"
+}
