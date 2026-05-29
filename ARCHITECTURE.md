@@ -1,7 +1,7 @@
 # Masheba AI — System Architecture Document
 
-> **Version:** 1.0  
-> **Last Updated:** May 27, 2026  
+> **Version:** 1.1  
+> **Last Updated:** May 29, 2026  
 > **Authors:** Team DareDevil  
 > **Status:** Production-ready (Hackathon Submission)
 
@@ -18,10 +18,12 @@
 7. [Sync Architecture — Offline-First Design](#7-sync-architecture--offline-first-design)
 8. [Security Architecture](#8-security-architecture)
 9. [Deployment Architecture](#9-deployment-architecture)
-10. [Observability & Monitoring](#10-observability--monitoring)
-11. [Scalability Considerations](#11-scalability-considerations)
-12. [Failure Modes & Recovery](#12-failure-modes--recovery)
-13. [Future Architecture — On-Device LLM](#13-future-architecture--on-device-llm)
+10. [Admin Dashboard Architecture](#10-admin-dashboard-architecture)
+11. [Observability & Monitoring](#11-observability--monitoring)
+12. [Scalability Considerations](#12-scalability-considerations)
+13. [Failure Modes & Recovery](#13-failure-modes--recovery)
+14. [Premium Design System](#14-premium-design-system)
+15. [Future Architecture — On-Device LLM](#15-future-architecture--on-device-llm)
 
 ---
 
@@ -50,6 +52,12 @@ Masheba's architecture is built around **six non-negotiable constraints** derive
 ---
 
 ## 2. System Overview
+
+MaSheba AI features a **Dual-Portal Framework** with an integrated **Administrative Control Panel**:
+
+- **Maternal Health Portal** — Pregnancy tracking, nutritional guidance, and urgent warning systems for mothers
+- **Community Health Worker Portal** — Offline-first clinical workspace with AI triage and Groq + Gemini chat
+- **Admin Dashboard Control Suite** — Real-time analytics, CHW management, and relational patient filtering
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -101,6 +109,8 @@ Masheba's architecture is built around **six non-negotiable constraints** derive
 │  ┌───────────────────────────────────────────────────────────┐       │
 │  │  ADMIN LAYER — Next.js 14 (Vercel)                       │       │
 │  │  Dashboard · CHW list · Risk summary chart · Heat maps    │       │
+│  │  Invisible Credentials Gateway · Relational Filtering     │       │
+│  │  Docs Portal · Mermaid Diagrams                           │       │
 │  └───────────────────────────────────────────────────────────┘       │
 │                                                                       │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -563,9 +573,50 @@ Mobile App                    Supabase Auth                   Postgres
 
 ---
 
-## 10. Observability & Monitoring
+## 10. Admin Dashboard Architecture
 
-### 10.1 Current Monitoring
+The Admin Dashboard is a Next.js 14 web application providing district health officers with full visibility over community operations.
+
+### 10.1 Access Model — Invisible Credentials Gateway
+
+Access is fully integrated into the standard health worker login form. By entering the secret credentials (**Username: `admin` / Password: `admin123`**), the app intercepts and redirects instantly to the Admin Dashboard. There are no visible admin buttons to clutter the user experience.
+
+### 10.2 Dashboard Components
+
+| Component | Purpose |
+|-----------|---------|
+| **Analytics Cards** | Real-time metrics: total active workers, registered mothers, critical high-risk ratios |
+| **Dynamic Risk Charts** | Recharts stacked bar chart showing LOW/MODERATE/HIGH patient distribution by CHW |
+| **Unified Search & Directory Grid** | Interactive tables with real-time filters for name, union, or upazila |
+| **Decluttered High-Flex Tables** | Optimized column spacing with zero-line wrapping (tuned for Bengali scripts) |
+| **Relational Patient Filtering** | Tap any CHW's row to view their metrics and filter the maternal registry |
+| **Docs Portal** | Embedded documentation viewer with Mermaid diagram rendering |
+
+### 10.3 Admin Application Structure
+
+```
+admin/
+├── app/
+│   ├── dashboard/                   # Dashboard page (SSR)
+│   ├── docs/                        # Embedded documentation portal
+│   │   ├── page.tsx                 #   Product handbook viewer
+│   │   ├── DocsView.tsx             #   Rendered docs content
+│   │   └── admin/                   #   Admin-specific docs
+│   ├── layout.tsx                   # Root layout
+│   ├── page.tsx                     # Root page
+│   └── globals.css
+├── components/
+│   ├── RiskSummaryChart.tsx          # Recharts bar chart
+│   └── Mermaid.tsx                   # Mermaid diagram renderer
+├── utils/                            # Supabase server client
+└── package.json
+```
+
+---
+
+## 11. Observability & Monitoring
+
+### 11.1 Current Monitoring
 
 | Component | Monitoring | Mechanism |
 |-----------|-----------|-----------|
@@ -575,7 +626,7 @@ Mobile App                    Supabase Auth                   Postgres
 | RLS verification | SQL tests | `rls_verify.sql` script |
 | Sync stress | Automated test | `stress_sync.py` — 50 SYNCED / 50 DUPLICATE |
 
-### 10.2 Admin Dashboard Metrics
+### 11.2 Admin Dashboard Metrics
 
 | Metric | Source | Visualization |
 |--------|--------|---------------|
@@ -585,9 +636,9 @@ Mobile App                    Supabase Auth                   Postgres
 
 ---
 
-## 11. Scalability Considerations
+## 12. Scalability Considerations
 
-### 11.1 Current Capacity (Hackathon)
+### 12.1 Current Capacity (Hackathon)
 
 | Dimension | Capacity |
 |-----------|----------|
@@ -596,7 +647,7 @@ Mobile App                    Supabase Auth                   Postgres
 | Visits per patient | ~20 (auto-pruning of SYNCED outbox rows) |
 | LLM requests/min | ~60 (Groq free tier) |
 
-### 11.2 Scale-Up Path
+### 12.2 Scale-Up Path
 
 | Stage | Users | Changes Needed |
 |-------|-------|---------------|
@@ -607,7 +658,7 @@ Mobile App                    Supabase Auth                   Postgres
 
 ---
 
-## 12. Failure Modes & Recovery
+## 13. Failure Modes & Recovery
 
 | Failure | Impact | Recovery |
 |---------|--------|----------|
@@ -620,9 +671,23 @@ Mobile App                    Supabase Auth                   Postgres
 
 ---
 
-## 13. Future Architecture — On-Device LLM
+## 14. Premium Design System
 
-### 13.1 Custom Model Training Path
+MaaSheba AI is crafted with extreme attention to visual harmony and premium user experiences:
+
+| Element | Implementation |
+|---------|---------------|
+| **Palette** | Tailored HSL color models blending soft medical pastel tints (warm peach, healing green, soft rose) with smooth, anti-glare dark cards |
+| **Notch Spacing** | Safe area layouts custom-tailored to avoid status bars and notches on both iOS and Android |
+| **Android Smooth Borders** | Circular status indicator dots to prevent border-line artifacts on Android's drawing canvas |
+| **Typography** | Clean Outfit/Inter sans-serif pairings alongside clear, beautiful Bengali font scaling for accessibility |
+| **Risk Indicators** | Pastel glowing risk indicator dots — three-tier classification using soft, high-contrast colors |
+
+---
+
+## 15. Future Architecture — On-Device LLM
+
+### 15.1 Custom Model Training Path
 
 ```
 Phase 1 (Month 6-12): Data Collection
@@ -644,7 +709,7 @@ Phase 3 (Month 13): Quantization & Deployment
 Result: 100% offline AI — zero external dependencies
 ```
 
-### 13.2 Target On-Device Architecture
+### 15.2 Target On-Device Architecture
 
 ```
 ┌──────────────────────────────────────────────┐

@@ -1,0 +1,104 @@
+# 🤱 MaaSheba AI (মাষেবা AI) — Comprehensive Product Handbook
+
+**MaaSheba AI (মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা)** is a state-of-the-art, offline-first, AI-driven maternal healthcare platform. It bridges the gap between rural pregnant mothers, Community Health Workers (CHWs), and health administrators. 
+
+Through highly refined user interfaces, dynamic AI risk triaging, and real-time medical query support, MaaSheba AI ensures that no pregnancy goes unmonitored.
+
+---
+
+## 🌟 Core Product Architecture
+
+MaaSheba AI features a **Dual-Portal Framework** with an **Administrative Control Panel** integrated seamlessly under the hood:
+
+```mermaid
+graph TD
+    A[MaaSheba AI App] --> B[Maternal Health Portal]
+    A --> C[Community Health Worker Portal]
+    A --> D[Admin Dashboard Control Suite]
+    
+    B --> B1[Fetal Growth Tracker]
+    B --> B2[Nutritional Image Guide]
+    B --> B3[Urgent Warning System]
+    
+    C --> C1[Intelligent AI Triage]
+    C --> C2[Groq + Gemini Clinical Chat]
+    C --> C3[Offline SQLite Sync]
+    
+    D --> D1[Admin Analytics Cards]
+    D --> D2[Dynamic Risk Charts]
+    D --> D3[Relational Mother Filter]
+```
+
+---
+
+## 🛠️ Key Product Features
+
+### 1. Maternal Health Portal (গর্ভবতী মা পোর্টাল)
+Designed with highly readable, pastel-toned, and encouraging visual guides for pregnant mothers:
+*   **Pregnancy Progress Wheel & Fetal Growth Tracker**: A custom circular countdown matching the gestational age in weeks (1–40). Features dynamic comparisons (e.g., comparing the baby's size to fruits/vegetables like pomegranate or lentils) to make tracking engaging.
+*   **Nutritional Intake Guide (পুষ্টি নির্দেশিকা)**: Rich, categorized food galleries with visual guides showing key food categories (proteins, vitamins, dairy, water intake) to guide daily diet.
+*   **Urgent Warnings (শতর্কতা)**: Direct, highlight-alert panels warning mothers about danger signs (e.g., severe swelling, high blood pressure, preeclampsia indicators) requiring immediate clinical visits.
+*   **Offline Medical Q&A**: Locally compiled questions and answers to provide advice even without internet connectivity.
+
+### 2. Clinical Health Worker (CHW) Portal (স্বাস্থ্যকর্মী পোর্টাল)
+An offline-first clinical workspace for active workers in rural communities:
+*   **Intelligent AI Triage System**: As health workers log clinical data (blood pressure, maternal age, gestational age, weight, symptoms), an automated triage system evaluates the mother's risk profile instantly.
+*   **Pastel Glowing Risk Indicators**: Classifies mothers into three tiers using clear status indicators:
+    *   🔴 **উচ্চ ঝুঁকি (High Risk)**: Prompts immediate critical action or clinical referral.
+    *   🟡 **মাঝারি ঝুঁকি (Moderate Risk)**: Alerts the worker to schedule frequent checkups.
+    *   🟢 **কম ঝুঁকি (Low Risk)**: Normal pregnancy metrics.
+*   **Groq + Gemini Clinical AI Assistant**: A hybrid offline/online LLM chat service. Workers can type medical questions in Bengali or English to receive instant diagnostic guidance.
+*   **Offline SQLite Storage & Hot Sync**: Allows health workers to log visits deep in rural areas without internet. The application caches data locally and synchronizes automatically with the cloud database the moment a network connection is detected.
+
+### 3. Administrative Control Panel (অ্যাডমিন ড্যাশবোর্ড)
+An administrative dashboard for district health officers to monitor community operations:
+*   **Invisible Credentials Gateway**: Access is fully integrated into the standard health worker login form. By entering the secret credentials (**Username: `admin` / Password: `admin123`**), the app intercepts and redirects instantly to the Admin Dashboard. There are no visible admin buttons to clutter the user experience.
+*   **Unified Search & Directory Grid**: Interactive tables showing all registered Health Workers and Pregnant Mothers with real-time filters for name, union, or upazila.
+*   **Decluttered High-Flex Tables**: Optimized table column spacing with zero-line wrapping on text (specifically tuned for Bengali scripts and multi-word administrative areas like Narsingdi Sadar).
+*   **Relational Patient Filtering**: Officers can tap any Health Worker's row to view their detailed metrics and immediately filter the maternal registry to inspect that specific worker's active patients.
+
+---
+
+## 📖 Operational Guide: How to Use the App
+
+### 🤰 For Pregnant Mothers
+1.  **Welcome & Setup**: Tap **"গর্ভবতী মা হিসেবে চালিয়ে যান"** (Continue as Pregnant Mother) on the landing page.
+2.  **Home Feed**: Check the center pregnancy wheel showing your current week, days remaining, and an animation of your baby's current size.
+3.  **Explore Nutrition**: Navigate using the bottom tabs to the **"পুষ্টি"** (Nutrition) section. Browse food categories and adjust your daily diet.
+4.  **View Warnings**: Visit the **"শতর্কতা"** (Warnings) page to learn about critical preeclampsia symptoms and high-risk indicators.
+
+### 🩺 For Community Health Workers (CHWs)
+1.  **Clinical Login**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker) and log in with your worker ID.
+2.  **Mother Directory**: View your registered patient lists, risk categories, and schedule pending visits.
+3.  **Triage Assessment**: Conduct a checkup, enter vital signs (systolic/diastolic pressure, gestational age, symptoms), and let the system calculate the maternal risk status.
+4.  **Consult AI**: Access the **"ক্লিনিক্যাল চ্যাট"** (Clinical Chat) to consult the AI assistant on complex symptoms.
+
+### 👑 For Administrators
+1.  **Secret Access**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker). 
+2.  **Enter Credentials**: Enter `admin` in the email input and `admin123` in the password input. 
+3.  **Command Dashboard**: Instantly inspect the real-time active metrics cards at the top showing total active workers, registered mothers, and critical high-risk ratios.
+4.  **Directory Auditing**: Use the search bar to locate workers in specific unions, tap their profile to view performance, and audit patients directly.
+
+---
+
+## 📈 Clinical & Operational Benefits
+
+| 💡 The Problem (Traditional Care) | 🛡️ The MaaSheba AI Solution | 🚀 Clinical Value |
+| :--- | :--- | :--- |
+| **High Maternal Mortality**: Critical symptoms like preeclampsia are often ignored until it is too late. | **Instant AI Triaging**: Instant calculations highlight severe warnings immediately. | **Early Detection**: Prevents critical delays in referrals, potentially saving maternal lives. |
+| **No Connectivity**: Rural clinics lose access to data due to unstable networks. | **Offline SQLite Cache**: The app functions fully offline, caching data safely. | **Uninterrupted Care**: Complete continuity of medical history in remote settings. |
+| **Medical Guidance Gaps**: Workers need immediate second opinions on complex symptoms. | **Groq + Gemini Assistant**: Workers get structured clinical guidance in their native language. | **Empowered Decisions**: Enhances the medical knowledge and confidence of front-line workers. |
+| **Scattered Admin Auditing**: Monitoring rural workers' efficiency is fragmented. | **Unified Relational Admin Dashboard**: Real-time auditing of patient distribution and risk categories. | **Efficient Resource Allocation**: Directs health assets to where high-risk mothers need them most. |
+
+---
+
+## 🎨 Premium Design System
+
+MaaSheba AI is crafted with extreme attention to visual harmony and premium user experiences:
+*   **Palette**: Tailored HSL color models blending soft medical pastel tints (warm peach, healing green, soft rose) with smooth, anti-glare dark cards.
+*   **Notch Spacing**: Safe area layouts custom-tailored to avoid status bars and notches on both iOS and Android.
+*   **Android Smooth Borders**: Circular status indicator dots to prevent border-line artifacts on Android’s drawing canvas.
+*   **Typography**: Clean Outfit/Inter sans-serif pairings alongside clear, beautiful Bengali font scaling to ensure accessibility.
+
+---
+*MaaSheba AI is changing the landscape of community-based maternal care, keeping mothers safe and empowering the workers who care for them.*
