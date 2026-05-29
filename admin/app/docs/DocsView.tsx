@@ -297,7 +297,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
 
               <div style={{ display: "flex", gap: 32, flexWrap: "wrap" as const, paddingTop: 28, borderTop: "1px solid var(--border)" }}>
                 <Stat value="<200ms" label="on-device risk scoring" />
-                <Stat value="3MB" label="ONNX model size" />
+                <Stat value="1MB" label="ONNX model size" />
                 <Stat value="100%" label="works offline" />
                 <Stat value="6-stage" label="AI safety filter" />
                 <Stat value="3M+" label="target users (BD)" />
@@ -432,7 +432,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* AI Layer */}
-            <Section sectionRef={registerRef("ai-layer")} id="ai-layer" num="09" label="AI Layer" title="On-Device Intelligence + Cascading LLM" sub="ONNX XGBoost runs on-device in 2–5MB and under 200ms. Safety rules always override. LLM cascade provides guarded Bangla clinical Q&A.">
+            <Section sectionRef={registerRef("ai-layer")} id="ai-layer" num="09" label="AI Layer" title="On-Device Intelligence + Cascading LLM" sub="ONNX XGBoost runs on-device in 1MB and under 200ms. Safety rules always override. LLM cascade provides guarded Bangla clinical Q&A.">
               <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 16 }}>LLM Cascade</h3>
               <CascadeFlow />
 
@@ -474,7 +474,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                   description="Bangla clinical Q&A. Returns answer text, is_emergency boolean, and source (groq | gemini | offline). All responses pass the 6-stage safety filter."
                   params={[
                     { name: "question", type: "string", desc: "User question in Bangla or English" },
-                    { name: "trimester", type: "number", desc: "Current trimester for context (1, 2, or 3)" },
+                    { name: "system_prompt", type: "string", desc: "Optional custom system instructions for tailoring context" },
                   ]}
                 />
               </div>
@@ -891,7 +891,7 @@ function ArchitectureDiagram() {
       </ArchLayer>
       <ArchConnector text="Groq API · Gemini API · edge function calls" />
       <ArchLayer dotColor="var(--amber)" label="AI Layer" sub="On-device ONNX + Cloud LLM cascade">
-        <ArchNode title="ONNX XGBoost" sub="2–5MB · <200ms · 8 vitals" />
+        <ArchNode title="ONNX XGBoost" sub="1MB · <200ms · 8 vitals" />
         <ArchNode title="Safety Rules" sub="WHO thresholds override ML" />
         <ArchNode title="Groq Llama 3.1 8B" sub="Primary LLM · free tier" />
         <ArchNode title="Gemini Flash" sub="Fallback LLM" />
