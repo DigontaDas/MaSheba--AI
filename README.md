@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="ICON.png" alt="MaaSheba AI Logo" width="180" />
+<img src="ICON.png" alt="Masheba AI Logo" width="180" />
 
 # 🤱 MaSheba AI — মাসেবা AI
 
@@ -53,15 +53,15 @@
 
 <div align="center">
 
-<img src="ICON.png" alt="MaaSheba AI" width="100" />
+<img src="ICON.png" alt="Masheba AI" width="100" />
 
 </div>
 
 **Bangladesh has one of the highest maternal mortality rates in South Asia.** In rural areas, critical symptoms like preeclampsia are often ignored until it is too late. Community Health Workers (CHWs) — the primary touchpoint for pregnant women — lack real-time clinical decision support, especially in areas with poor connectivity, low-end devices, and frequent power outages.
 
-**MaaSheba AI (মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা)** bridges the gap between rural pregnant mothers, Community Health Workers, and health administrators. Through highly refined user interfaces, dynamic AI risk triaging, and real-time medical query support, MaaSheba AI ensures that **no pregnancy goes unmonitored**.
+**Masheba AI (মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা)** bridges the gap between rural pregnant mothers, Community Health Workers, and health administrators. Through highly refined user interfaces, dynamic AI risk triaging, and real-time medical query support, Masheba AI ensures that **no pregnancy goes unmonitored**.
 
-### ⚡ What Makes MaaSheba Different
+### ⚡ What Makes MaSheba Different
 
 | Capability | Description |
 |:-----------|:------------|
@@ -76,11 +76,11 @@
 
 ## 🌟 Core Product Architecture
 
-MaaSheba AI features a **Dual-Portal Framework** with an **Administrative Control Panel** integrated seamlessly under the hood:
+Masheba AI features a **Dual-Portal Framework** with an **Administrative Control Panel** integrated seamlessly under the hood:
 
 ```mermaid
 graph TD
-    A["🤱 MaaSheba AI App"] --> B["🤰 Maternal Health Portal"]
+    A["🤱 Masheba AI App"] --> B["🤰 Maternal Health Portal"]
     A --> C["🩺 Community Health Worker Portal"]
     A --> D["👑 Admin Dashboard Control Suite"]
     
@@ -168,7 +168,7 @@ An administrative dashboard for **district health officers** to monitor communit
 
 <div align="center">
 
-| 💡 The Problem (Traditional Care) | 🛡️ The MaaSheba AI Solution | 🚀 Clinical Value |
+| 💡 The Problem (Traditional Care) | 🛡️ The Masheba AI Solution | 🚀 Clinical Value |
 | :--- | :--- | :--- |
 | **High Maternal Mortality**: Critical symptoms like preeclampsia are often ignored until it is too late. | **Instant AI Triaging**: Instant calculations highlight severe warnings immediately. | **Early Detection**: Prevents critical delays in referrals, potentially saving maternal lives. |
 | **No Connectivity**: Rural clinics lose access to data due to unstable networks. | **Offline SQLite Cache**: The app functions fully offline, caching data safely with WAL journaling. | **Uninterrupted Care**: Complete continuity of medical history in remote settings. |
@@ -185,7 +185,7 @@ An administrative dashboard for **district health officers** to monitor communit
 <img src="ICON.png" alt="Design System" width="80" />
 </div>
 
-MaaSheba AI is crafted with **extreme attention to visual harmony** and premium user experiences:
+Masheba AI is crafted with **extreme attention to visual harmony** and premium user experiences:
 
 | 🎨 Element | Implementation |
 |:-----------|:---------------|
@@ -222,7 +222,7 @@ MaaSheba AI is crafted with **extreme attention to visual harmony** and premium 
 ## 📁 Project Structure
 
 ```
-MaaSheba--AI/
+Masheba--AI/
 │
 ├── mobile/                          # 📱 React Native (Expo) mobile app
 │   ├── app/                         #    Expo Router screens
@@ -314,9 +314,9 @@ MaaSheba--AI/
 │   ├── SETUP.md                     #    Dev environment setup
 │   └── SYNC_RUNBOOK.md              #    Sync verification playbook
 │
-├── ICON.png                         #    MaaSheba AI logo
+├── ICON.png                         #    Masheba AI logo
 ├── ARCHITECTURE.md                  #    Detailed architecture document
-├── maasheba_comprehensive_handbook.md.resolved
+├── Masheba_comprehensive_handbook.md.resolved
 ├── .env.example                     #    Environment variable template
 └── .gitignore
 ```
@@ -441,19 +441,19 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 <div align="center">
 
-<img src="ICON.png" alt="MaaSheba AI" width="80" />
+<img src="ICON.png" alt="Masheba AI" width="80" />
 
 ### 🇧🇩 Built with ❤️ for Bangladesh's mothers
 
-*মাষেবা (MaaSheba) — "Service to Mother"*
+*মাষেবা (Masheba) — "Service to Mother"*
 
-**Every mother deserves a safety net. MaaSheba AI ensures no one falls through.**
+**Every mother deserves a safety net. Masheba AI ensures no one falls through.**
 
 <br />
 
 [![Stars](https://img.shields.io/github/stars/DigontaDas/MaSheba--AI?style=social)](https://github.com/DigontaDas/MaSheba--AI)
 [![Forks](https://img.shields.io/github/forks/DigontaDas/MaSheba--AI?style=social)](https://github.com/DigontaDas/MaSheba--AI/fork)
 
-*MaaSheba AI is changing the landscape of community-based maternal care, keeping mothers safe and empowering the workers who care for them.*
+*Masheba AI is changing the landscape of community-based maternal care, keeping mothers safe and empowering the workers who care for them.*
 
 </div>
