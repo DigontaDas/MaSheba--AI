@@ -297,21 +297,6 @@ export function AdminPanelClient({ initialConfig, initialIsAdmin, saveDocsConfig
           </div>
         </section>
       </div>
-
-      <style jsx global>{`
-        .input {
-          width: 100%;
-          border-radius: 0.375rem;
-          border: 1px solid rgb(51 65 85);
-          background: rgb(2 6 23);
-          padding: 0.625rem 0.75rem;
-          color: white;
-          outline: none;
-        }
-        .input:focus {
-          border-color: rgb(52 211 153);
-        }
-      `}</style>
     </main>
   );
 }

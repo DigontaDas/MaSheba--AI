@@ -239,8 +239,8 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
 
           {/* Nav links */}
           <nav style={{ padding: "0 10px", flex: 1, overflowY: "auto" }}>
-            {pitchNav.length > 0 && <NavGroup label="Pitch Deck" items={pitchNav} active={active} />}
-            {techNav.length > 0 && <NavGroup label="Technical" items={techNav} active={active} />}
+            {pitchNav.length > 0 && <NavGroup label="Pitch Deck" items={pitchNav} active={active} setActive={setActive} />}
+            {techNav.length > 0 && <NavGroup label="Technical" items={techNav} active={active} setActive={setActive} />}
             <span style={{ fontSize: 10, fontFamily: "var(--font-dm-mono), monospace", color: "var(--text3)", letterSpacing: ".1em", textTransform: "uppercase" as const, padding: "14px 10px 6px", display: "block" }}>
               Links
             </span>
@@ -326,7 +326,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
           <div style={{ padding: "0 60px 80px" }}>
 
             {/* Problem */}
-            <Section ref={registerRef("problem")} id="problem" num="01" label="The Problem" title="A Preventable Crisis in Rural Bangladesh" sub="Bangladesh has one of the highest maternal mortality rates in South Asia. In rural areas, the situation is critical — and the root cause is not medicine, it's infrastructure.">
+            <Section sectionRef={registerRef("problem")} id="problem" num="01" label="The Problem" title="A Preventable Crisis in Rural Bangladesh" sub="Bangladesh has one of the highest maternal mortality rates in South Asia. In rural areas, the situation is critical — and the root cause is not medicine, it's infrastructure.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <ProblemRow icon="🌐" title="No Reliable Network" text="Grameenphone 3G drops every 10–15 minutes; hours without any signal in remote unions" />
                 <ProblemRow icon="📱" title="Low-End Devices" text="৳6,000–12,000 Android phones (2GB RAM, 16GB storage) are the norm — not the exception" />
@@ -338,7 +338,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Solution */}
-            <Section ref={registerRef("solution")} id="solution" num="02" label="The Solution" title="Three Layers. One Safety Net." sub="MaSheba works even when the network doesn't. Every core feature has a fallback path — down to fully deterministic, offline rules.">
+            <Section sectionRef={registerRef("solution")} id="solution" num="02" label="The Solution" title="Three Layers. One Safety Net." sub="MaSheba works even when the network doesn't. Every core feature has a fallback path — down to fully deterministic, offline rules.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
                 <PitchCard num="01" title="On-Device Intelligence" highlight>
                   A 2–5MB ONNX-quantized XGBoost model scores maternal risk in under 200ms — entirely on-device. No server call. No API. No loading screen. Deterministic WHO safety rules (BP ≥ 140/90 → always HIGH) override the model whenever clinical thresholds are breached. Safety always wins.
@@ -370,7 +370,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Market */}
-            <Section ref={registerRef("market")} id="market" num="03" label="Market & Business Model" title="A 3M-Patient Opportunity" sub="The addressable market is the entire maternal health infrastructure of Bangladesh — and the problem exists in every low-LMIC country worldwide.">
+            <Section sectionRef={registerRef("market")} id="market" num="03" label="Market & Business Model" title="A 3M-Patient Opportunity" sub="The addressable market is the entire maternal health infrastructure of Bangladesh — and the problem exists in every low-LMIC country worldwide.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
                 <Card icon="🇧🇩" title="3M+ Pregnant Women" text="Active pregnancies in rural Bangladesh at any given time — the core beneficiary population." />
                 <Card icon="👩‍⚕️" title="60,000+ CHWs" text="Community Health Workers deployed by DGHS and NGOs nationwide. Primary distribution channel." />
@@ -387,7 +387,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Traction */}
-            <Section ref={registerRef("traction")} id="traction" num="04" label="Traction" title="Already Deployed. Not Just Designed." sub="As of the preliminary submission, MaSheba is a working system — not a mockup or prototype.">
+            <Section sectionRef={registerRef("traction")} id="traction" num="04" label="Traction" title="Already Deployed. Not Just Designed." sub="As of the preliminary submission, MaSheba is a working system — not a mockup or prototype.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
                 <TractionCard title="Backend Live" text="FastAPI deployed on Railway. GET /health, POST /sync, POST /chat all operational. Supabase Cloud schema deployed with RLS, edge functions, and pgvector." />
                 <TractionCard title="Mobile App Running" text="React Native (Expo 55) building on Android 8+. ONNX model integrated and benchmarked. Outbox sync tested end-to-end." />
@@ -399,7 +399,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Team */}
-            <Section ref={registerRef("team")} id="team" num="05" label="Team" title="Team DareDevil" sub="A multidisciplinary BuildFest team covering product, design, engineering, data science, and communications.">
+            <Section sectionRef={registerRef("team")} id="team" num="05" label="Team" title="Team DareDevil" sub="A multidisciplinary BuildFest team covering product, design, engineering, data science, and communications.">
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
                 {teamMembers.map((member) => (
                   <TeamCard key={`${member.name}-${member.role}`} member={member} />
@@ -408,7 +408,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Product Overview */}
-            <Section ref={registerRef("product-overview")} id="product-overview" num="06" label="Product Overview" title="What MaSheba Does" sub="An end-to-end maternal health workflow for community health workers, mothers, and health administrators.">
+            <Section sectionRef={registerRef("product-overview")} id="product-overview" num="06" label="Product Overview" title="What MaSheba Does" sub="An end-to-end maternal health workflow for community health workers, mothers, and health administrators.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <Card icon="📱" title="What It Does" text="Screens pregnancy risk offline, supports Bangla clinical Q&A, verifies medicine guidance, syncs care data, and gives admins operational visibility." />
                 <Card icon="👩‍⚕️" title="CHW Journey" text="Register mother → enter vitals → receive ONNX risk badge → ask Bangla questions → queue records → sync when mobile data returns." />
@@ -418,12 +418,12 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Feature Matrix */}
-            <Section ref={registerRef("features")} id="features" num="07" label="Feature Matrix" title="What's Live. What's Coming." sub="Every live feature has been integrated and tested on actual target hardware.">
+            <Section sectionRef={registerRef("features")} id="features" num="07" label="Feature Matrix" title="What's Live. What's Coming." sub="Every live feature has been integrated and tested on actual target hardware.">
               <FeatureTable rows={features} />
             </Section>
 
             {/* Architecture */}
-            <Section ref={registerRef("architecture")} id="architecture" num="08" label="Architecture" title="Three Independent Layers." sub="Each layer is independently deployable and fails gracefully without the others. The mobile app works fully offline. The backend enhances it. The AI layer enriches it.">
+            <Section sectionRef={registerRef("architecture")} id="architecture" num="08" label="Architecture" title="Three Independent Layers." sub="Each layer is independently deployable and fails gracefully without the others. The mobile app works fully offline. The backend enhances it. The AI layer enriches it.">
               <ArchitectureDiagram />
               <div style={{ marginTop: 24 }}>
                 <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 12, color: "var(--text2)" }}>Mermaid View</h3>
@@ -432,7 +432,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* AI Layer */}
-            <Section ref={registerRef("ai-layer")} id="ai-layer" num="09" label="AI Layer" title="On-Device Intelligence + Cascading LLM" sub="ONNX XGBoost runs on-device in 2–5MB and under 200ms. Safety rules always override. LLM cascade provides guarded Bangla clinical Q&A.">
+            <Section sectionRef={registerRef("ai-layer")} id="ai-layer" num="09" label="AI Layer" title="On-Device Intelligence + Cascading LLM" sub="ONNX XGBoost runs on-device in 2–5MB and under 200ms. Safety rules always override. LLM cascade provides guarded Bangla clinical Q&A.">
               <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 16 }}>LLM Cascade</h3>
               <CascadeFlow />
 
@@ -446,17 +446,17 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Data Layer */}
-            <Section ref={registerRef("data-layer")} id="data-layer" num="10" label="Data Layer" title="Datasets, Schema & Embeddings" sub="Kaggle maternal health datasets, WHO/DGHS PDFs, Supabase Postgres schema, and pgvector embeddings.">
+            <Section sectionRef={registerRef("data-layer")} id="data-layer" num="10" label="Data Layer" title="Datasets, Schema & Embeddings" sub="Kaggle maternal health datasets, WHO/DGHS PDFs, Supabase Postgres schema, and pgvector embeddings.">
               <DataFlowSteps />
             </Section>
 
             {/* Tech Stack */}
-            <Section ref={registerRef("stack")} id="stack" num="11" label="Tech Stack" title="Production-Grade Open Source" sub="Every layer chosen for offline resilience, low cost, and rural deployment constraints.">
+            <Section sectionRef={registerRef("stack")} id="stack" num="11" label="Tech Stack" title="Production-Grade Open Source" sub="Every layer chosen for offline resilience, low cost, and rural deployment constraints.">
               <StackGrid />
             </Section>
 
             {/* API Docs */}
-            <Section ref={registerRef("api")} id="api" num="12" label="API Documentation" title="Three Endpoints. That's It." sub="Auth model: Supabase JWT. RLS enforces chw_id = auth.uid().">
+            <Section sectionRef={registerRef("api")} id="api" num="12" label="API Documentation" title="Three Endpoints. That's It." sub="Auth model: Supabase JWT. RLS enforces chw_id = auth.uid().">
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <ApiEndpoint method="GET" path="/health" description="Liveness check. No auth required. Returns { status: 'ok' }." />
                 <ApiEndpoint
@@ -481,7 +481,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Security */}
-            <Section ref={registerRef("security")} id="security" num="13" label="Security" title="Defense in Depth" sub="Every layer has independent security controls. No single point of compromise exposes patient data.">
+            <Section sectionRef={registerRef("security")} id="security" num="13" label="Security" title="Defense in Depth" sub="Every layer has independent security controls. No single point of compromise exposes patient data.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                 <SecurityCard icon="🔐" title="Authentication" items={["Supabase JWT per CHW", "expo-secure-store for token storage", "Service role key never exposed to client", "Admin role verified server-side"]} />
                 <SecurityCard icon="🛡️" title="Data Isolation" items={["RLS: chw_id = auth.uid() on all tables", "CHW A cannot read CHW B's patients", "Admin service role bypasses RLS server-only", "No PII in application logs"]} />
@@ -490,7 +490,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Performance */}
-            <Section ref={registerRef("performance")} id="performance" num="14" label="Performance & Scalability" title="Built for the Worst Case" sub="Every metric is measured on the actual target: Android 8, 2GB RAM, intermittent 3G.">
+            <Section sectionRef={registerRef("performance")} id="performance" num="14" label="Performance & Scalability" title="Built for the Worst Case" sub="Every metric is measured on the actual target: Android 8, 2GB RAM, intermittent 3G.">
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
                 <PerfCard value="<200ms" label="ONNX inference on Android 8" />
                 <PerfCard value="~50MB" label="SQLite storage budget" />
@@ -501,7 +501,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Roadmap */}
-            <Section ref={registerRef("roadmap")} id="roadmap" num="15" label="Roadmap" title="What's Next" sub="Each release is scoped to a single quarter with clear deliverables.">
+            <Section sectionRef={registerRef("roadmap")} id="roadmap" num="15" label="Roadmap" title="What's Next" sub="Each release is scoped to a single quarter with clear deliverables.">
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
                 <RoadmapCard phase="v0.2" color="var(--teal)" title="RAG + Voice" items={["Full RAG pipeline (pgvector WHO/DGHS chunks)", "Whisper Tiny ONNX offline voice input", "Bangla speech-to-text for hands-free intake"]} />
                 <RoadmapCard phase="v0.3" color="var(--blue)" title="Audio + Maps" items={["Coqui TTS Bangla offline text-to-speech", "Geographic risk heat maps (union-level)", "SMS appointment reminders"]} />
@@ -510,7 +510,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Analytics */}
-            <Section ref={registerRef("analytics")} id="analytics" num="16" label="Analytics" title="Operational Visibility" sub="Admin analytics serve health officers with real-time views into CHW performance and risk distribution.">
+            <Section sectionRef={registerRef("analytics")} id="analytics" num="16" label="Analytics" title="Operational Visibility" sub="Admin analytics serve health officers with real-time views into CHW performance and risk distribution.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
                 <Card title="v_risk_summary" text="Aggregated risk distribution per upazila. HIGH / MEDIUM / LOW counts with trend indicators." />
                 <Card title="v_chw_list" text="Active CHW list with last sync timestamp, total visits, and compliance percentage." />
@@ -519,7 +519,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </Section>
 
             {/* Changelog */}
-            <Section ref={registerRef("changelog")} id="changelog" num="17" label="Changelog" title="Release History">
+            <Section sectionRef={registerRef("changelog")} id="changelog" num="17" label="Changelog" title="Release History">
               <ChangelogEntry
                 version="v1.0.0"
                 date="May 27, 2026"
@@ -614,14 +614,14 @@ function navLinkStyle(isActive: boolean): React.CSSProperties {
   };
 }
 
-function NavGroup({ label, items, active }: { label: string; items: NavItem[]; active: string }) {
+function NavGroup({ label, items, active, setActive }: { label: string; items: NavItem[]; active: string; setActive: (id: string) => void }) {
   return (
     <div style={{ marginBottom: 4 }}>
       <span style={{ fontSize: 10, fontFamily: "var(--font-dm-mono), monospace", color: "var(--text3)", letterSpacing: ".1em", textTransform: "uppercase" as const, padding: "14px 10px 6px", display: "block" }}>
         {label}
       </span>
       {items.map((item) => (
-        <a key={item.id} href={`#${item.id}`} style={navLinkStyle(active === item.id)}>
+        <a key={item.id} href={`#${item.id}`} onClick={() => setActive(item.id)} style={navLinkStyle(active === item.id)}>
           <span style={{ fontSize: 14, width: 16, textAlign: "center" as const }}>{item.icon}</span>
           {item.title}
         </a>
@@ -687,11 +687,12 @@ type SectionProps = {
   title: string;
   sub?: string;
   children: React.ReactNode;
+  sectionRef?: (el: HTMLElement | null) => void;
 };
 
-const Section = ({ id, num, label, title, sub, children, ref }: SectionProps & { ref?: (el: HTMLElement | null) => void }) => (
+const Section = ({ id, num, label, title, sub, children, sectionRef }: SectionProps) => (
   <section
-    ref={ref}
+    ref={sectionRef}
     id={id}
     className="docs-fade-in docs-content-pad"
     style={{ paddingTop: 64, borderTop: "1px solid var(--border)", scrollMarginTop: 20 }}
