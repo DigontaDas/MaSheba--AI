@@ -75,29 +75,117 @@ body {
 
 /* ─── DOCS PRINT ──────────────────────────────────────────── */
 @media print {
+  html, body {
+    background: white !important;
+    color: #111827 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   .docs-shell {
     background: white !important;
     color: #111827 !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  /* Force flex content wrapper to display block to allow natural page pagination flow */
+  .docs-shell > div {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .docs-shell main {
+    display: block !important;
+    flex: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   .docs-no-print {
     display: none !important;
   }
+  /* Proper page division breaks for documentation sections */
   .docs-shell section {
-    page-break-inside: avoid;
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    padding-top: 40px !important;
+    margin-top: 40px !important;
+    border-top: 2px solid #dac1ba !important;
+    overflow: visible !important;
+    height: auto !important;
   }
+  /* Prevent page-break on the initial hero section */
+  .docs-shell section:first-of-type {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+    border-top: none !important;
+  }
+  /* Refine first section (Hero) background & border to print elegantly */
+  .docs-shell section:first-of-type {
+    background: #fff8f7 !important;
+    border: 1px solid #dac1ba !important;
+    border-radius: 12px !important;
+    padding: 40px !important;
+    margin-bottom: 40px !important;
+  }
+  /* Text element contrasts */
   .docs-shell h1,
   .docs-shell h2,
   .docs-shell h3,
+  .docs-shell h4,
   .docs-shell p,
   .docs-shell li,
   .docs-shell td,
-  .docs-shell th {
+  .docs-shell th,
+  .docs-shell span {
     color: #111827 !important;
   }
+  /* Cards must never break in half across page boundaries */
   .docs-shell .docs-card,
-  .docs-shell .docs-bg-card {
-    background: #f9fafb !important;
-    border-color: #d1d5db !important;
+  .docs-shell .docs-bg-card,
+  .docs-shell table,
+  .docs-shell tr,
+  .docs-shell [style*="background: var(--card)"],
+  .docs-shell [style*="background:var(--card)"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    background: #ffffff !important;
+    border-color: #dac1ba !important;
+  }
+  /* Override inline grid columns for clean, readable two-column PDF grids */
+  .docs-shell div[style*="display: grid"],
+  .docs-shell div[style*="display:grid"] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  /* Ensure analytics and roadmap cards print well */
+  .docs-shell .docs-grid-4,
+  .docs-shell .docs-grid-3,
+  .docs-shell .docs-grid-2 {
+    display: block !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  /* Ensure diagrams do not clip */
+  .docs-shell svg,
+  .docs-shell .mermaid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    max-width: 100% !important;
+    height: auto !important;
   }
 }
 
