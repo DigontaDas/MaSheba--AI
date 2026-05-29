@@ -1,6 +1,7 @@
 import { DocsView, type FeatureRow, type TeamMember } from "./DocsView";
 import { promises as fs } from "fs";
 import path from "path";
+import { unstable_noStore as noStore } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,7 @@ async function getConfig(): Promise<{ config: DocsConfig; features: FeatureRow[]
 }
 
 export default async function DocsPage() {
+  noStore();
   const { config, features } = await getConfig();
   const now = new Date();
   const startAt = new Date(config.start_at);

@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { AdminPanelClient, type DocsAdminConfigPayload } from "./AdminPanelClient";
 import { promises as fs } from "fs";
 import path from "path";
@@ -59,6 +59,7 @@ function isAdminUser(user: any) {
 }
 
 export default async function DocsAdminPage() {
+  noStore();
   let hasSupabase = hasSupabaseConfig();
   let initialConfig = null;
   let initialIsAdmin = false;
@@ -163,6 +164,7 @@ export default async function DocsAdminPage() {
 
   return (
     <AdminPanelClient
+      key={initialConfig?.updated_at || "default"}
       initialConfig={initialConfig}
       initialIsAdmin={initialIsAdmin}
       saveDocsConfig={saveDocsConfig}
