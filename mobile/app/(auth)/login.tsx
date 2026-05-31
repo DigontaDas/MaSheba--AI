@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -16,7 +17,7 @@ import { Image } from "expo-image";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { loginAndBootstrap } from "@/auth/supabaseAuth";
+import { loginAndBootstrap, signUpAndBootstrap } from "@/auth/supabaseAuth";
 import { loginMother, saveUserRole, saveMotherId, type UserRole } from "@/auth/roleSession";
 import { saveSession } from "@/auth/secureSession";
 import { upsertPatients } from "@/db/patients";
@@ -135,7 +136,9 @@ const translations = {
     signupSubmitBtn: "নিবন্ধন করুন",
     demoAutoLoginBtn: "ডেমো অটো-লগইন ⚡",
     closeBtn: "বন্ধ করুন",
-    loadingText: "চালু হচ্ছে..."
+    loadingText: "চালু হচ্ছে...",
+    signupSuccess: "নিবন্ধন সফল! অনুগ্রহ করে আপনার ইমেইল চেক করুন এবং অ্যাকাউন্ট সক্রিয় করতে ইমেইলটি নিশ্চিত করুন।",
+    signupSuccessAuto: "নিবন্ধন সফল! ড্যাশবোর্ডে প্রবেশ করা হচ্ছে..."
   },
   en: {
     appName: "MaSheba AI",
@@ -158,7 +161,9 @@ const translations = {
     signupSubmitBtn: "Sign Up",
     demoAutoLoginBtn: "Demo Auto-Login ⚡",
     closeBtn: "Close",
-    loadingText: "Loading..."
+    loadingText: "Loading...",
+    signupSuccess: "Registration successful! Please check your email inbox and verify your email to activate your account.",
+    signupSuccessAuto: "Registration successful! Redirecting to dashboard..."
   }
 };
 
@@ -260,13 +265,81 @@ export default function LoginScreen() {
     }
   };
 
+  const submitSignup = async (role: UserRole) => {
+    if (!name.trim()) {
+      setError(lang === "bn" ? "অনুগ্রহ করে আপনার নাম দিন" : "Please enter your name");
+      return;
+    }
+
+    const extraMetadata: Record<string, any> = {};
+    if (role === "CHW") {
+      if (!clinicCode.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে ক্লিনিক কোড দিন" : "Please enter clinic code");
+        return;
+      }
+      extraMetadata.clinic_code = clinicCode.trim();
+    } else {
+      if (!gestationalAge.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে গর্ভকালীন বয়স দিন" : "Please enter gestational age");
+        return;
+      }
+      const weeks = parseInt(gestationalAge.trim(), 10);
+      if (isNaN(weeks) || weeks < 1 || weeks > 45) {
+        setError(lang === "bn" ? "গর্ভকালীন বয়স ১ থেকে ৪৫ সপ্তাহের মধ্যে হতে হবে" : "Gestational age must be between 1 and 45 weeks");
+        return;
+      }
+      extraMetadata.gestational_age_weeks = weeks;
+    }
+
+    setLoadingAction("login");
+    setError(null);
+
+    try {
+      const { sessionEstablished } = await signUpAndBootstrap(
+        email.trim(),
+        password,
+        role === "CHW" ? "chw" : "mother",
+        name.trim(),
+        extraMetadata
+      );
+
+      if (sessionEstablished) {
+        setError(null);
+        Alert.alert(
+          lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
+          lang === "bn" ? t.signupSuccessAuto : t.signupSuccessAuto,
+          [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
+        );
+        setModalVisible(false);
+        router.replace(role === "CHW" ? "/(tabs)/home" : "/(mother-tabs)/home");
+      } else {
+        setError(null);
+        Alert.alert(
+          lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
+          lang === "bn" ? t.signupSuccess : t.signupSuccess,
+          [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
+        );
+        setModalVisible(false);
+      }
+    } catch (signupError) {
+      const msg = signupError instanceof Error ? signupError.message : "নিবন্ধন ব্যর্থ হয়েছে";
+      setError(msg);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const handleModalSubmit = () => {
     if (!modalRole) return;
     if (!email || !password) {
       setError(lang === "bn" ? "সবগুলো ঘর পূরণ করুন" : "Please fill all fields");
       return;
     }
-    submitLogin(modalRole, email, password, "login");
+    if (modalMode === "signup") {
+      submitSignup(modalRole);
+    } else {
+      submitLogin(modalRole, email, password, "login");
+    }
   };
 
   const handleDemoAutoLogin = () => {

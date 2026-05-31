@@ -5,6 +5,7 @@ import LoginScreen from "../app/(auth)/login";
 
 const mockReplace = jest.fn();
 const mockLoginAndBootstrap = jest.fn();
+const mockSignUpAndBootstrap = jest.fn();
 const mockLoginMother = jest.fn();
 const mockSaveUserRole = jest.fn();
 
@@ -35,7 +36,8 @@ jest.mock("@/components/ui/Icon", () => {
 });
 
 jest.mock("@/auth/supabaseAuth", () => ({
-  loginAndBootstrap: (...args: unknown[]) => mockLoginAndBootstrap(...args)
+  loginAndBootstrap: (...args: unknown[]) => mockLoginAndBootstrap(...args),
+  signUpAndBootstrap: (...args: unknown[]) => mockSignUpAndBootstrap(...args)
 }));
 
 jest.mock("@/auth/roleSession", () => ({
@@ -50,6 +52,7 @@ jest.mock("@/components/OfflineBanner", () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockLoginAndBootstrap.mockResolvedValue({ chwId: "chw-1" });
+  mockSignUpAndBootstrap.mockResolvedValue({ sessionEstablished: true });
   mockLoginMother.mockResolvedValue({
     id: "mother-1",
     name: "রহিমা",
@@ -112,5 +115,46 @@ describe("LoginScreen routing", () => {
     });
 
     expect(mockLoginMother).toHaveBeenCalledWith("mother@example.com", "secret123");
+  });
+
+  it("routes CHW signups via signUpAndBootstrap", async () => {
+    const tree = await renderTree();
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: "স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান" }).props.onPress();
+    });
+
+    await act(async () => {
+      const textNode = tree.root.find((node) => node.type === Text && node.props.children === "নিবন্ধন");
+      let current = textNode;
+      while (current && !current.props.onPress) {
+        current = current.parent;
+      }
+      if (current) {
+        current.props.onPress();
+      }
+    });
+
+    await act(async () => {
+      tree.root.findByProps({ placeholder: "আপনার নাম" }).props.onChangeText("CHW Name");
+      tree.root.findByProps({ placeholder: "ক্লিনিক কোড / আইডি" }).props.onChangeText("Palash");
+      tree.root.findByProps({ accessibilityLabel: "ইমেইল" }).props.onChangeText("newchw@example.com");
+      tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
+    });
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: "লগইন করুন" }).props.onPress();
+      for (let index = 0; index < 5; index += 1) {
+        await Promise.resolve();
+      }
+    });
+
+    expect(mockSignUpAndBootstrap).toHaveBeenCalledWith(
+      "newchw@example.com",
+      "secret123",
+      "chw",
+      "CHW Name",
+      { clinic_code: "Palash" }
+    );
   });
 });

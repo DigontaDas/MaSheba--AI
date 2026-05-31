@@ -87,3 +87,50 @@ export async function loginAndBootstrap(email: string, password: string): Promis
 
   return { chwId: chw.id };
 }
+
+export async function signUpAndBootstrap(
+  email: string,
+  password: string,
+  role: "chw" | "mother",
+  name: string,
+  extraMetadata: Record<string, any>
+): Promise<{ sessionEstablished: boolean }> {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        role,
+        ...extraMetadata
+      }
+    }
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data.user) {
+    throw new Error("Registration failed: no user data returned.");
+  }
+
+  // If Supabase immediately returns a session (e.g. if email confirmation is disabled)
+  if (data.session) {
+    await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token
+    });
+
+    await saveSession({
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+      chwId: data.session.user.id
+    });
+
+    return { sessionEstablished: true };
+  }
+
+  return { sessionEstablished: false };
+}
+
