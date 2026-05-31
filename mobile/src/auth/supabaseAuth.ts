@@ -112,7 +112,7 @@ export async function signUpAndBootstrap(
   }
 
   if (!data.user) {
-    throw new Error("Registration failed: no user data returned.");
+    throw new Error("This email is already registered. Please log in or use a different email.");
   }
 
   // If Supabase immediately returns a session (e.g. if email confirmation is disabled)
