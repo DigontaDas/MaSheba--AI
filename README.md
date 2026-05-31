@@ -1,20 +1,31 @@
 <div align="center">
 
-# 🤰 Masheba AI
+<img src="ICON.png" alt="Masheba AI Logo" width="180" />
 
-### *মা-সেবা — Every Mother Deserves a Safety Net*
+# MaSheba AI — মাসেবা AI
 
-**An offline-first, AI-powered maternal health assistant built for the realities of rural Bangladesh**
+### *মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা*
 
-[![React Native](https://img.shields.io/badge/React_Native-Expo-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://expo.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![Next.js](https://img.shields.io/badge/Next.js_14-Admin-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
+**A state-of-the-art, offline-first, AI-driven maternal healthcare platform for rural Bangladesh**
+
+[![React Native](https://img.shields.io/badge/React_Native-Expo_SDK-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://expo.dev)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL_Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Python_3.11-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres_15-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Groq](https://img.shields.io/badge/Groq-Llama_3.1-F55036?style=for-the-badge&logo=meta&logoColor=white)](https://groq.com)
+[![Gemini](https://img.shields.io/badge/Gemini-Flash_2.5-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
+[![Offline First](https://img.shields.io/badge/Offline--First-Zero_Data_Loss-FF6B35?style=for-the-badge&logo=wifi&logoColor=white)](#)
+[![Next.js](https://img.shields.io/badge/Next.js_14-Admin_Panel-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 <br />
 
-> **🏆 Built for The Infinity AI BuildFest 2026 by Team DareDevil**
+> *"An AI-powered maternal health app that logs visits locally with zero internet, syncs seamlessly when online, and runs a clinical safety net right on-device — ensuring no mother falls through the cracks."*
+
+<br />
+
+**🏆 Built for The Infinity AI BuildFest 2026 by Team DareDevil**--
+**Check Out the Documentation Website for our App** = **https://masheba-docs.vercel.app/docs**
 
 </div>
 
@@ -22,782 +33,181 @@
 
 ## 📋 Table of Contents
 
-- [The Problem](#-the-problem)
-- [Our Solution](#-our-solution)
-- [System Architecture & Engineering Specifications](#-system-architecture--engineering-specifications)
-  - [1. Design Philosophy](#1-design-philosophy)
-  - [2. System Overview](#2-system-overview)
-  - [3. Client Layer — Mobile Application](#3-client-layer--mobile-application)
-  - [4. Backend Layer — API & Data Services](#4-backend-layer--api--data-services)
-  - [5. AI Layer — Intelligence Pipeline](#5-ai-layer--intelligence-pipeline)
-  - [6. Data Architecture](#6-data-architecture)
-  - [7. Sync Architecture — Offline-First Design](#7-sync-architecture--offline-first-design)
-  - [8. Security Architecture](#8-security-architecture)
-  - [9. Deployment Architecture](#9-deployment-architecture)
-  - [10. Observability & Monitoring](#10-observability--monitoring)
-  - [11. Scalability Considerations](#11-scalability-considerations)
-  - [12. Failure Modes & Recovery](#12-failure-modes--recovery)
-  - [13. Future Architecture — On-Device LLM](#13-future-architecture--on-device-llm)
-  - [Appendix A: Key Design Decisions Log](#appendix-a-key-design-decisions-log)
+- [Project Overview](#-project-overview)
+- [Core Architecture](#-core-product-architecture)
+- [Key Features by Portal](#-key-features-by-portal)
+  - [Maternal Health Portal](#-1-maternal-health-portal-গর্ভবতী-মা-পোর্টাল)
+  - [Clinical Health Worker Portal](#-2-clinical-health-worker-chw-portal-স্বাস্থ্যকর্মী-পোর্টাল)
+  - [Administrative Control Panel](#-3-administrative-control-panel-অ্যাডমিন-ড্যাশবোর্ড)
+- [Clinical & Operational Benefits](#-clinical--operational-benefits)
+- [Premium Design System](#-premium-design-system)
+- [Operational Guide](#-operational-guide-how-to-use-the-app)
 - [Project Structure](#-project-structure)
-- [Key Features](#-key-features)
 - [Getting Started](#-getting-started)
-- [API Reference](#-api-reference)
-- [Database Schema](#-database-schema)
-- [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Future Roadmap](#-future-roadmap)
+- [Tech Stack](#-tech-stack)
 - [Team](#-team)
 - [License](#-license)
 
 ---
 
-## 🩺 The Problem
-
-**Bangladesh has one of the highest maternal mortality rates in South Asia.** In rural areas, the situation is critical:
-
-| Challenge | Reality |
-|-----------|---------|
-| 🌐 **Network** | Grameenphone 3G drops every 10–15 min; hours with no signal |
-| 📱 **Devices** | ৳6,000–12,000 Android phones (2GB RAM, 16GB storage) |
-| ⚡ **Power** | Load shedding keeps batteries at ~30% |
-| 📝 **Literacy** | Semi-literate users — typing is hard, voice is natural |
-| 🏃 **Workload** | CHWs visit 15–20 patients daily on foot — need one-tap actions |
-| 🚨 **Emergencies** | Eclampsia and hemorrhage leave zero time for loading screens |
-
-Community Health Workers (CHWs) serve as the primary touchpoint for pregnant women, yet they lack real-time clinical decision support, especially in areas with poor connectivity.
-
----
-
-## 💡 Our Solution
-
-**Masheba AI** is an offline-first mobile application that puts a clinical safety net directly in the hands of Community Health Workers. It works when the network doesn't.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Elevator Pitch                            │
-│                                                             │
-│  "An AI-powered maternal health app that logs visits        │
-│   locally with zero internet, syncs seamlessly when        │
-│   online, and runs a clinical safety net right on-device    │
-│   to ensure no mother falls through."                       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### What Makes Masheba Different
-
-- **🔌 Works offline first** — Core database operations (SQLite) run locally, ensuring zero data loss during power or network cuts.
-- **🤖 Cloud-Based LLM Cascade** — When online, the app accesses advanced AI chat (Groq/Gemini cascade) hosted on Render.
-- **🌐 Online Fully Enabled** — If connected, the app provides clinical decision-making support and synchronization. For the social worker, internet connectivity is mandatory for Clinical AI support.
-- **🛡️ Safety-filtered responses** — No drug dosages or diagnoses; always refers to upazila hospitals.
-- **📊 Admin visibility** — Real-time dashboard for upazila health officers to check patient risk distributions.
-- **🗣️ Voice-ready** — Bangla speech input when online for semi-literate users.
-- **🔒 Privacy by design** — Row Level Security ensures CHWs see only their patients.
-
----
-
-## 🏗️ System Architecture & Engineering Specifications
-
-This section details the production-grade engineering design of Masheba AI.
-
-### 1. Design Philosophy
-
-Masheba's architecture is built around **six non-negotiable constraints** derived from the realities of rural Bangladesh:
-
-| Constraint | Design Response |
-|------------|----------------|
-| Network drops every 10-15 min on 3G | **Offline-first** — all core database features work without internet |
-| ৳6,000-12,000 Android phones (2GB RAM) | **Rule-based offline safety checks** — fallback logic runs on-device |
-| Load shedding keeps battery at ~30% | **WAL journaling** — survives power cuts mid-write |
-| Semi-literate users | **Voice input** — Bangla speech-to-text (when online) |
-| CHWs visit 15-20 patients on foot | **One-tap actions** — no multi-step forms or loading screens |
-| Emergencies need instant response | **Deterministic offline safety rules** — <200ms, zero network latency |
-
-#### Architectural Principles
-
-1. **Offline-first, online-enhanced** — The app must never be blocked by network availability for core data entry.
-2. **Graceful degradation** — Every feature has a fallback path, down to fully offline deterministic safety rules.
-3. **Safety over accuracy** — Deterministic safety rules always override ML predictions when they detect danger.
-4. **Privacy by default** — Row Level Security (RLS) enforces data isolation at the database level.
-5. **Idempotent everything** — Sync operations use idempotency keys to prevent duplicates on retry.
-6. **Medical responsibility** — No drug dosages, no diagnoses, always refer to human healthcare providers.
-
----
-
-### 2. System Overview
+## 🌍 Project Overview
 
 <div align="center">
 
-#### Overall System Architecture
-<img src="maasheba_system_architecture.jpg" alt="Masheba System Architecture" width="750"/>
-
-<br />
-
-#### Offline-First Data Flow (Outbox Pattern)
-<img src="maasheba_offline_data_flow.jpg" alt="Offline Data Flow — Outbox Pattern" width="750"/>
+<img src="ICON.png" alt="Masheba AI" width="100" />
 
 </div>
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         SYSTEM BOUNDARY                                │
-│                                                                        │
-│  ┌─────────────────────────────────────────────┐                       │
-│  │          CLIENT LAYER                       │                       │
-│  │    React Native (Expo) · Android 8+         │                       │
-│  │                                             │                       │
-│  │  ┌────────┐ ┌───────┐ ┌──────┐ ┌────────┐  │                       │
-│  │  │SQLite  │ │Rule-  │ │Voice │ │ Sync   │  │                       │
-│  │  │+ WAL   │ │based  │ │STT/  │ │Worker  │  │                       │
-│  │  │outbox  │ │safety │ │TTS   │ │2min bg │  │                       │
-│  │  └────────┘ └───────┘ └──────┘ └───┬────┘  │                       │
-│  └────────────────────────────────────┬┘───────┘                       │
-│                                       │                                │
-│                          outbox sync (HTTPS batch)                     │
-│                                       │                                │
-│  ┌────────────────────────────────────▼────────────────────────┐       │
-│  │          BACKEND LAYER                                     │       │
-│  │    FastAPI (Python 3.11+) + Supabase (Postgres 15)         │       │
-│  │                                                            │       │
-│  │  ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌────────────┐  │       │
-│  │  │API       │ │AI          │ │Notif     │ │Analytics   │  │       │
-│  │  │Gateway   │ │Orchestrator│ │Service   │ │Service     │  │       │
-│  │  │auth+rate │ │LangChain   │ │FCM/SMS   │ │compliance  │  │       │
-│  │  └──────────┘ └─────┬──────┘ └──────────┘ └────────────┘  │       │
-│  │                     │                                      │       │
-│  │  ┌──────────────────▼──────────────────────────────────┐   │       │
-│  │  │  Supabase Postgres                                  │   │       │
-│  │  │  patients · visits · outbox_events · chws           │   │       │
-│  │  │  pgvector embeddings · RLS per CHW                  │   │       │
-│  │  └──────────────────┬──────────────────────────────────┘   │       │
-│  └─────────────────────┼──────────────────────────────────────┘       │
-│                        │                                              │
-│                   RAG query + LLM cascade                             │
-│                        │                                              │
-│  ┌─────────────────────▼──────────────────────────────────────┐       │
-│  │          AI LAYER                                         │       │
-│  │                                                           │       │
-│  │  ┌──────────┐ ┌──────────┐ ┌────────────────────────────┐ │       │
-│  │  │RAG       │ │Safety    │ │LLM Cascade                 │ │       │
-│  │  │Retrieval │ │Filter    │ │Groq → Gemini → Rules       │ │       │
-│  │  │pgvector  │ │medical   │ │                            │ │       │
-│  │  │WHO/DGHS  │ │guardrail │ │Future: On-device Llama 3.1 │ │       │
-│  │  └──────────┘ └──────────┘ └────────────────────────────┘ │       │
-│  └───────────────────────────────────────────────────────────┘       │
-│                                                                       │
-│  ┌───────────────────────────────────────────────────────────┐       │
-│  │  ADMIN LAYER — Next.js 14 (Vercel)                       │       │
-│  │  Dashboard · CHW list · Risk summary chart · Heat maps    │       │
-│  └───────────────────────────────────────────────────────────┘       │
-│                                                                       │
-└─────────────────────────────────────────────────────────────────────────┘
+**Bangladesh has one of the highest maternal mortality rates in South Asia.** In rural areas, critical symptoms like preeclampsia are often ignored until it is too late. Community Health Workers (CHWs) — the primary touchpoint for pregnant women — lack real-time clinical decision support, especially in areas with poor connectivity, low-end devices, and frequent power outages.
+
+**Masheba AI (মাতৃস্বাস্থ্য ও পুষ্টি সেবায় কৃত্রিম বুদ্ধিমত্তা)** bridges the gap between rural pregnant mothers, Community Health Workers, and health administrators. Through highly refined user interfaces, dynamic AI risk triaging, and real-time medical query support, Masheba AI ensures that **no pregnancy goes unmonitored**.
+
+### ⚡ What Makes MaSheba Different
+
+| Capability | Description |
+|:-----------|:------------|
+| 🔌 **Offline-First Architecture** | Core database operations (SQLite + WAL) run locally with zero data loss during power or network cuts |
+| 🤖 **Dual LLM Cascade** | Groq (Llama 3.1) → Gemini (Flash 2.5) → Offline fallback — always responds, never blocks |
+| 🛡️ **Safety-Filtered AI** | No drug dosages, no diagnoses — always refers to upazila hospitals with emergency protocols |
+| 📊 **Real-Time Admin Visibility** | Unified relational dashboard for upazila health officers to audit patient risk distributions |
+| 🗣️ **Voice-Ready (Bangla)** | Speech input for semi-literate users when online |
+| 🔒 **Privacy by Design** | Row Level Security (RLS) ensures CHWs see only their own patients |
+
+---
+
+## 🌟 Core Product Architecture
+
+Masheba AI features a **Dual-Portal Framework** with an **Administrative Control Panel** integrated seamlessly under the hood:
+
+```mermaid
+graph TD
+    A["🤱 Masheba AI App"] --> B["🤰 Maternal Health Portal"]
+    A --> C["🩺 Community Health Worker Portal"]
+    A --> D["👑 Admin Dashboard Control Suite"]
+    
+    B --> B1["📊 Fetal Growth Tracker"]
+    B --> B2["🥗 Nutritional Image Guide"]
+    B --> B3["⚠️ Urgent Warning System"]
+    
+    C --> C1["🎯 Intelligent AI Triage"]
+    C --> C2["💬 Groq + Gemini Clinical Chat"]
+    C --> C3["🔄 Offline SQLite Sync"]
+    
+    D --> D1["📈 Admin Analytics Cards"]
+    D --> D2["📉 Dynamic Risk Charts"]
+    D --> D3["🔗 Relational Mother Filter"]
+
+    style A fill:#E8D5B7,stroke:#8B6914,stroke-width:3px,color:#333
+    style B fill:#FADADD,stroke:#C4737A,stroke-width:2px,color:#333
+    style C fill:#D4EDDA,stroke:#6DAE81,stroke-width:2px,color:#333
+    style D fill:#D6E9FF,stroke:#5B8DBE,stroke-width:2px,color:#333
 ```
 
 ---
 
-### 3. Client Layer — Mobile Application
+## 🛠️ Key Features by Portal
 
-#### 3.1 Technology Stack
+### 🤰 1. Maternal Health Portal (গর্ভবতী মা পোর্টাল)
 
-| Component | Technology | Rationale |
-|-----------|-----------|-----------|
-| Framework | React Native (Expo) | JS ecosystem alignment with backend; Expo Go for testing on cheap devices |
-| Navigation | Expo Router + React Navigation | File-based routing, bottom tabs |
-| Local DB | `expo-sqlite` with WAL mode | Atomic writes survive power cuts; WAL allows concurrent read/write |
-| Safety Rules | Client-side logic | Deterministic offline safety rule checks in <200ms |
-| Sync | `expo-background-task` | 2-minute background polling for outbox flush |
-| Auth | `expo-secure-store` | JWT storage in device keychain |
-| Notifications | `expo-notifications` | Push notification support |
-| Animations | `react-native-reanimated` | Smooth UI transitions on low-end devices |
 
-#### 3.2 Screen Architecture
+Designed with highly readable, **pastel-toned**, and encouraging visual guides for pregnant mothers:
 
-```
-app/
-├── (auth)/
-│   └── login                         # Supabase auth login
-├── (chw)/                            # CHW-scoped screens
-│   ├── dashboard                     # Patient list + risk overview
-│   ├── visit/[patientId]            # Record visit vitals
-│   ├── chat                         # Clinical AI chat (Requires Internet)
-│   ├── medicine-verify              # Drug safety checker
-│   └── profile                      # CHW profile + sync status
-├── (mother)/                         # Mother-facing screens
-│   ├── dashboard                     # Pregnancy tracker
-│   └── qa                           # Q&A chat interface (Offline predefined fallback)
-└── _layout                          # Root layout with tab navigation
-```
-
-#### 3.3 On-Device Database Schema (SQLite)
-
-```sql
-PRAGMA journal_mode = WAL;    -- Crash-safe writes
-PRAGMA foreign_keys = ON;     -- Referential integrity
-
-patients (
-  id TEXT PRIMARY KEY,
-  chw_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  age INTEGER CHECK (10-60),
-  gestational_age_weeks INTEGER CHECK (1-45),
-  last_risk_level TEXT CHECK ('LOW','MODERATE','HIGH'),
-  created_at TEXT, updated_at TEXT
-);
-
-visits (
-  id TEXT PRIMARY KEY,
-  patient_id TEXT REFERENCES patients(id),
-  chw_id TEXT, bp_systolic INTEGER CHECK (60-260),
-  bp_diastolic INTEGER CHECK (30-180),
-  weight_kg REAL CHECK (25-200),
-  hemoglobin REAL CHECK (3-20),
-  swelling_present INTEGER, symptom_flags TEXT,
-  risk_level TEXT, visited_at TEXT, device_id TEXT
-);
-
-outbox_events (
-  idempotency_key TEXT PRIMARY KEY,
-  chw_id TEXT, device_id TEXT,
-  event_type TEXT CHECK ('patient_upsert','visit_create'),
-  payload TEXT, status TEXT DEFAULT 'PENDING',
-  error_message TEXT, created_at TEXT, synced_at TEXT
-);
-
-offline_qa (
-  id TEXT PRIMARY KEY,
-  trimester TEXT CHECK ('T1','T2','T3','POSTPARTUM','ALL'),
-  topic TEXT, question_bn TEXT, answer_bn TEXT,
-  severity TEXT, see_doctor INTEGER, emergency INTEGER
-);
-```
-
-#### 3.4 Client-Side Safety Rules & Offline Scoring
-
-Due to mobile device resource constraints and the requirement for offline-first stability, advanced ML models (like the LLM cascade) run in the cloud (hosted on Render) and are queried when online. The mobile application relies on a deterministic rule-based safety path for instant offline risk assessment.
-
-1. **Deterministic Safety Rules:** Checks for critical conditions:
-   - Systolic BP ≥ 140 or Diastolic BP ≥ 90 mmHg → HIGH RISK
-   - Hemoglobin < 8 g/dL → HIGH RISK (Severe Anemia)
-   - Danger signs reported (blurred vision, severe headache) → HIGH RISK
-   - Edema/Swelling present along with elevated BP (Systolic ≥ 130 or Diastolic ≥ 85) → HIGH RISK
-
-2. **Moderate Risk Indicators:**
-   - Borderline vitals (Systolic BP ≥ 130, Diastolic BP ≥ 85, Hemoglobin < 10)
-   - Severe swelling present
-   - Late gestational age (> 36 weeks)
-
-3. **Offline Fallback Scoring:**
-   - Vitals are scored instantly (<200ms) on-device without internet.
-   - If `onnxruntime-react-native` fails or is not supported natively, the client gracefully falls back to deterministic rule scoring and mock risk functions, ensuring a consistent safety net.
+| Feature | Description |
+|:--------|:------------|
+| 🎡 **Pregnancy Progress Wheel & Fetal Growth Tracker** | A custom circular countdown matching the gestational age in weeks (1–40). Features **dynamic size comparisons** — comparing the baby's size to fruits and vegetables like pomegranate or lentils — making tracking engaging and intuitive for semi-literate users. |
+| 🥗 **Nutritional Intake Guide (পুষ্টি নির্দেশিকা)** | Rich, categorized **food galleries with visual guides** showing key food categories — proteins, vitamins, dairy, and water intake — to guide daily diet through imagery rather than text. |
+| ⚠️ **Urgent Warnings (শতর্কতা)** | Direct, highlight-alert panels warning mothers about **danger signs** requiring immediate clinical visits: severe swelling, high blood pressure, preeclampsia indicators, and other critical symptoms. |
+| 📖 **Offline Medical Q&A** | Locally compiled questions and answers providing trusted advice **even without internet connectivity**. When online, mothers can chat with the live AI assistant using natural language in Bangla. |
 
 ---
 
-### 4. Backend Layer — API & Data Services
+### 🩺 2. Clinical Health Worker (CHW) Portal (স্বাস্থ্যকর্মী পোর্টাল)
 
-#### 4.1 FastAPI Service Architecture
 
-```
-app/
-├── main.py                    # FastAPI app + router registration
-├── core/
-│   └── config.py              # Pydantic Settings (env vars)
-├── routers/
-│   ├── health.py              # GET /health — liveness + Supabase check
-│   ├── sync.py                # POST /sync — outbox batch processing
-│   └── chat.py                # POST /chat — AI Q&A endpoint
-├── services/
-│   ├── supabase_client.py     # Supabase admin + user clients
-│   └── chat_service.py        # LLM cascade + safety filters
-└── models/                    # Pydantic request/response schemas
-```
 
-#### 4.2 API Endpoints
+An **offline-first clinical workspace** for active workers in rural communities:
 
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| `GET` | `/health` | None | Service liveness + Supabase reachability |
-| `POST` | `/sync` | Bearer JWT | Process 1-100 outbox events |
-| `POST` | `/chat` | None | Bangla maternal health Q&A |
-
-#### 4.3 Sync Gateway Flow
-
-```
-Mobile App                    FastAPI                    Supabase
-    │                           │                          │
-    │  POST /sync               │                          │
-    │  {events: [...]}          │                          │
-    │  Bearer: <CHW JWT>        │                          │
-    │─────────────────────────►│                          │
-    │                           │  Validate JWT            │
-    │                           │  Check chw_id match      │
-    │                           │                          │
-    │                           │  RPC: process_outbox_    │
-    │                           │  batch(events)           │
-    │                           │─────────────────────────►│
-    │                           │                          │
-    │                           │  For each event:         │
-    │                           │  - Check idempotency     │
-    │                           │  - Upsert patient/visit  │
-    │                           │  - Write outbox_events   │
-    │                           │  - RLS enforcement       │
-    │                           │◄─────────────────────────│
-    │                           │                          │
-    │  {results: [...],         │                          │
-    │   synced_at: "..."}       │                          │
-    │◄─────────────────────────│                          │
-```
+| Feature | Description |
+|:--------|:------------|
+| 🎯 **Intelligent AI Triage System** | As health workers log clinical data (blood pressure, maternal age, gestational age, weight, symptoms), an automated triage system **evaluates the mother's risk profile instantly** using deterministic safety rules (<200ms, zero network latency). |
+| 🚦 **Pastel Glowing Risk Indicators** | Classifies mothers into three tiers using clear, pastel-colored status indicators: |
+| | 🔴 **উচ্চ ঝুঁকি (High Risk)** — Prompts immediate critical action or clinical referral |
+| | 🟡 **মাঝারি ঝুঁকি (Moderate Risk)** — Alerts the worker to schedule frequent checkups |
+| | 🟢 **কম ঝুঁকি (Low Risk)** — Normal pregnancy metrics confirmed |
+| 💬 **Groq + Gemini Clinical AI Assistant** | A **hybrid offline/online LLM chat service**. Workers can type medical questions in Bengali or English to receive instant diagnostic guidance. The cascade ensures: Groq (Llama 3.1 8B) → Gemini (Flash 2.5) → structured offline fallback. |
+| 🔄 **Offline SQLite Storage & Hot Sync** | Allows health workers to **log visits deep in rural areas without internet**. The application caches data locally using SQLite with WAL journaling (crash-safe) and synchronizes automatically with the cloud database the moment a network connection is detected. |
+| 💊 **Medicine Verification** | Drug safety checker specifically tailored for pregnant women — flags contraindicated medications. |
+| 🚨 **Emergency Alerts** | Auto-detects critical symptoms and provides immediate referral details with hospital directions. |
 
 ---
 
-### 5. AI Layer — Intelligence Pipeline
+### 👑 3. Administrative Control Panel (অ্যাডমিন ড্যাশবোর্ড)
 
-#### 5.1 Chat Service Architecture
 
-The chat service implements a **cascading LLM fallback** pattern deployed on the Render web server:
 
-```
-Request ──────────────────────────────────────────────────────►
-    │
-    ├─► [1] Groq API (Llama 3.1 8B Instant)
-    │       ├─ Timeout: 30s
-    │       ├─ Max tokens: 300
-    │       ├─ Temperature: 0.3
-    │       └─ ✅ Success → validate → return
-    │       └─ ❌ Fail → cascade
-    │
-    ├─► [2] Gemini API (Flash 1.5 → 2.5)
-    │       ├─ Model iteration: tries 1.5 first, 2.5 on 404
-    │       ├─ Thinking disabled for 2.5 (thinkingBudget: 0)
-    │       └─ ✅ Success → validate → return
-    │       └─ ❌ Fail → cascade
-    │
-    └─► [3] Offline Fallback
-            "এই মুহূর্তে সংযোগ সমস্যা হচ্ছে।
-             অফলাইন তথ্য ব্যবহার করুন।"
-```
+An administrative dashboard for **district health officers** to monitor community operations:
 
-#### 5.2 Role-Based Internet Dependencies
-
-Connectivity dictates how the app acts for different user classes:
-
-- **Mothers:** Designed to degrade gracefully.
-  - **Online:** Mothers can chat with the live AI assistant using natural language.
-  - **Offline:** Live LLM chat is replaced by a structured offline Q&A module. Mothers choose from categorized health questions, and the app retrieves pre-seeded, trusted answers from the local SQLite `offline_qa` table.
-- **Social Workers (CHWs):** Internet is **mandatory** for Clinical AI chat support.
-  - Since CHWs operate in city, municipal, or upazila areas where internet networks are accessible, they require a stable internet connection for the clinical AI assistant.
-  - If a CHW goes offline, a banner warns: *"Clinical AI requires internet connection."* (ক্লিনিক্যাল AI-এর জন্য ইন্টারনেট সংযোগ প্রয়োজন). The input fields are disabled to prevent inaccurate guidance. However, their offline patient records and visit forms are saved locally and synced once connection is restored.
-
-#### 5.3 System Prompt (Bangla)
-
-The system prompt enforces strict behavioral constraints on the LLMs:
-
-- **Language:** Bangla only
-- **Scope:** Pregnancy, childbirth, maternal health, newborn care only
-- **Prohibited:** Drug dosages, specific diagnoses
-- **Emergency protocol:** Severe symptoms → "এখনই হাসপাতালে যান" (Go to hospital now)
-- **Tone:** Warm, empathetic, 2-3 sentences max
-
-#### 5.4 Safety Filter Pipeline
-
-```
-LLM Response
-    │
-    ├─► [1] Bangla Character Check ([\u0980-\u09FF] regex)
-    │       Reject if no Bangla characters present
-    │
-    ├─► [2] Sentence Normalization
-    │       Cap at 3 sentences for readability
-    │
-    ├─► [3] Hallucination Detection
-    │       Reject: "আমি বুঝতে পারলাম না", "IUD", "json requested"
-    │
-    ├─► [4] Emergency Keyword Scan
-    │       রক্তপাত, খিঁচুনি, মাথাব্যথা, ঝাপসা, নড়াচড়া বন্ধ...
-    │       If detected + response lacks "হাসপাতাল" → append referral
-    │
-    ├─► [5] Emergency Consistency
-    │       If emergency but response mentions "চা" or "কফি" → reject
-    │
-    └─► [6] Safety Disclaimer
-            Always append: "⚠️ এটি শুধু তথ্য। গুরুতর সমস্যায়
-            সবসময় স্বাস্থ্যকর্মী বা হাসপাতালে যান।"
-```
-
-#### 5.5 RAG Pipeline (Future)
-
-```
-Query: "32 weeks pregnant, BP 150/100, severe headache"
-    │
-    ├─► Embed query (text-embedding-3-small)
-    │
-    ├─► pgvector similarity search
-    │   └─ Top 3 chunks from WHO/DGHS guidelines
-    │
-    ├─► Assemble structured prompt
-    │   └─ System prompt + retrieved context + query
-    │
-    └─► LLM generates response
-        └─ Structured: risk_level, action, referral_flag
-```
+| Feature | Description |
+|:--------|:------------|
+| 🔐 **Invisible Credentials Gateway** | Access is **fully integrated into the standard health worker login form**. By entering the secret credentials (**Username: `admin` / Password: `admin123`**), the app intercepts and redirects instantly to the Admin Dashboard. There are **no visible admin buttons** to clutter the user experience. |
+| 📈 **Real-Time Analytics Cards** | Instantly inspect active metrics: **total active workers**, **registered mothers**, and **critical high-risk ratios** displayed in prominent dashboard cards at the top. |
+| 📉 **Dynamic Risk Charts** | Recharts-powered stacked bar charts showing **LOW / MODERATE / HIGH** risk patient distribution broken down by individual CHW. |
+| 🔍 **Unified Search & Directory Grid** | Interactive tables showing all registered Health Workers and Pregnant Mothers with **real-time filters** for name, union, or upazila — supporting instant search across the entire registry. |
+| 📊 **Decluttered High-Flex Tables** | Optimized table column spacing with **zero-line wrapping** on text, specifically tuned for Bengali scripts and multi-word administrative areas like *Narsingdi Sadar*. |
+| 🔗 **Relational Patient Filtering** | Officers can **tap any Health Worker's row** to view their detailed metrics and immediately filter the maternal registry to inspect that specific worker's active patients — creating a hierarchical drill-down workflow. |
 
 ---
 
-### 6. Data Architecture
+## 📈 Clinical & Operational Benefits
 
-#### 6.1 Data Sources
+<div align="center">
 
-| Source | Type | Purpose |
-|--------|------|---------|
-| `csafrit2/maternal-health-risk-data` | Kaggle | BP-centered XGBoost training data |
-| `ankurray00/maternal-health-and-high-risk-pregnancy-dataset` | Kaggle | Weight, gestational age, anemia features |
-| WHO Antenatal Care Guidelines | Document | RAG embedding context |
-| Bangladesh DGHS Maternal Health Protocols | Document | RAG embedding context |
-| Offline Q&A Seed Data | Internal | Pre-built Bangla Q&A pairs by trimester |
+| 💡 The Problem (Traditional Care) | 🛡️ The Masheba AI Solution | 🚀 Clinical Value |
+| :--- | :--- | :--- |
+| **High Maternal Mortality**: Critical symptoms like preeclampsia are often ignored until it is too late. | **Instant AI Triaging**: Instant calculations highlight severe warnings immediately. | **Early Detection**: Prevents critical delays in referrals, potentially saving maternal lives. |
+| **No Connectivity**: Rural clinics lose access to data due to unstable networks. | **Offline SQLite Cache**: The app functions fully offline, caching data safely with WAL journaling. | **Uninterrupted Care**: Complete continuity of medical history in remote settings. |
+| **Medical Guidance Gaps**: Workers need immediate second opinions on complex symptoms. | **Groq + Gemini Assistant**: Workers get structured clinical guidance in their native language. | **Empowered Decisions**: Enhances the medical knowledge and confidence of front-line workers. |
+| **Scattered Admin Auditing**: Monitoring rural workers' efficiency is fragmented. | **Unified Relational Admin Dashboard**: Real-time auditing of patient distribution and risk categories. | **Efficient Resource Allocation**: Directs health assets to where high-risk mothers need them most. |
 
-#### 6.2 Data Flow
-
-```
-                           ┌───────────────┐
-                           │  Data Sources  │
-                           │  Kaggle, WHO,  │
-                           │  DGHS, Offline │
-                           └───────┬───────┘
-                                   │
-                    ┌──────────────┼──────────────┐
-                    │              │              │
-                    ▼              ▼              ▼
-            ┌──────────┐  ┌──────────┐  ┌──────────────┐
-            │ XGBoost  │  │ pgvector │  │ SQLite Seed  │
-            │ Training │  │ Embed    │  │ (Offline QA) │
-            │ Pipeline │  │ Pipeline │  │              │
-            └────┬─────┘  └────┬─────┘  └──────┬───────┘
-                 │              │               │
-                 ▼              ▼               ▼
-            ┌──────────┐  ┌──────────┐  ┌──────────────────┐
-            │  Safety  │  │ Supabase │  │ Mobile App       │
-            │  Rules   │  │ Postgres │  │ offline_qa table │
-            │(Offline) │  │ vectors  │  │ seeded at init   │
-            └──────────┘  └──────────┘  └──────────────────┘
-```
-
-#### 6.3 Storage Architecture
-
-| Store | Engine | Contents | Scope |
-|-------|--------|----------|-------|
-| **Device SQLite** | expo-sqlite + WAL | patients, visits, outbox, offline_qa, sync_state | Per-device |
-| **Supabase Postgres** | PostgreSQL 15 | chws, patients, visits, outbox_events, mothers, chat | Cloud (RLS-scoped) |
-| **pgvector** | Supabase extension | WHO/DGHS guideline embeddings | Cloud (shared) |
-| **Safety Rules** | Client-side JavaScript | Deterministic safety rule logic | Bundled in App code |
+</div>
 
 ---
 
-### 7. Sync Architecture — Offline-First Design
+## 🎨 Premium Design System
 
-#### 7.1 The Outbox Pattern
 
-The outbox pattern is the **cornerstone** of Masheba's offline capability. Every write operation on the mobile device follows this sequence:
 
-```
-1. CHW records patient visit
-2. Atomic SQLite transaction (WAL mode):
-   a. INSERT/UPDATE patients table
-   b. INSERT visits table
-   c. INSERT outbox_events (status: PENDING)
-3. Rule-based risk scoring runs on-device
-4. Risk level written back to patients.last_risk_level
-5. UI shows risk badge immediately (no network needed)
-```
+Masheba AI is crafted with **extreme attention to visual harmony** and premium user experiences:
 
-#### 7.2 Background Sync Worker
-
-```typescript
-// Runs every 2 minutes via expo-background-task
-async function runOutboxSync() {
-  // 1. Check network connectivity
-  if (!network.isConnected) return { skipped: true };
-
-  // 2. Check auth session
-  if (!session) return { skipped: true };
-
-  // 3. Read PENDING outbox events (max 100)
-  const pending = await getPendingOutbox(100);
-  if (pending.length === 0) return { processed: 0 };
-
-  // 4. POST to /sync endpoint
-  const response = await postSync(pending, session.accessToken);
-
-  // 5. Apply results (SYNCED/DUPLICATE/FAILED)
-  await applySyncResults(response.results, response.synced_at);
-
-  // 6. Update last_synced_at
-  await setLastSyncedAt(response.synced_at);
-}
-```
-
-#### 7.3 Conflict Resolution Strategy
-
-| Scenario | Resolution |
-|----------|-----------|
-| Same patient updated by same CHW | Last-Write-Wins (device timestamp) |
-| Duplicate sync attempt | Idempotency key returns DUPLICATE — no duplicate data |
-| Connection drops mid-sync | Row stays PENDING — re-sent on next poll |
-| Storage pressure (<200MB free) | Purge SYNCED outbox rows + alert user |
-| LLM API timeout (>5s) | Cascade to next LLM → safety rules fallback |
-
-#### 7.4 Idempotency
-
-Every outbox event has a unique `idempotency_key` generated on the device:
-
-```
-Format: {device_id}-{event_type}-{uuid_v4}
-Example: device-a-visit-001
-```
-
-The Supabase `process_outbox_batch` RPC:
-- Checks if `idempotency_key` already exists in `outbox_events`
-- If exists → returns `DUPLICATE` (no data written)
-- If new → writes patient/visit + outbox row → returns `SYNCED`
+| 🎨 Element | Implementation |
+|:-----------|:---------------|
+| **HSL Pastel Palette** | Tailored HSL color models blending soft medical pastel tints — **warm peach**, **healing green**, **soft rose** — with smooth, anti-glare dark cards for extended use without eye strain. |
+| **Custom Notch Spacing** | Safe area layouts **custom-tailored to avoid status bars and notches** on both iOS and Android. Pixel-perfect alignment across device generations. |
+| **Android Canvas Optimization** | **Circular status indicator dots** instead of bordered shapes to prevent border-line rendering artifacts on Android's hardware-accelerated drawing canvas. |
+| **Bengali-First Typography** | Clean **Outfit/Inter** sans-serif pairings alongside carefully scaled Bengali fonts — ensuring accessibility and readability for semi-literate users across all screen sizes. |
+| **Pastel Risk Indicators** | Glowing, high-contrast risk dots using three-tier soft colors — immediately recognizable without reading text labels. |
 
 ---
 
-### 8. Security Architecture
+## 📖 Operational Guide: How to Use the App
 
-#### 8.1 Authentication Flow
+### 🤰 For Pregnant Mothers
+1. **Welcome & Setup**: Tap **"গর্ভবতী মা হিসেবে চালিয়ে যান"** (Continue as Pregnant Mother) on the landing page.
+2. **Home Feed**: Check the center pregnancy wheel showing your current week, days remaining, and an animation of your baby's current size.
+3. **Explore Nutrition**: Navigate using the bottom tabs to the **"পুষ্টি"** (Nutrition) section. Browse food categories and adjust your daily diet.
+4. **View Warnings**: Visit the **"শতর্কতা"** (Warnings) page to learn about critical preeclampsia symptoms and high-risk indicators.
 
-```
-Mobile App                    Supabase Auth                   Postgres
-    │                              │                              │
-    │  Email/Password Login        │                              │
-    │─────────────────────────────►│                              │
-    │                              │                              │
-    │  JWT (access_token)          │                              │
-    │◄─────────────────────────────│                              │
-    │                              │                              │
-    │  Store in expo-secure-store  │                              │
-    │  (device keychain)           │                              │
-    │                              │                              │
-    │  POST /sync                  │                              │
-    │  Bearer: <JWT>               │                              │
-    │─────────────────────────────►│                              │
-    │                              │  JWT → current_chw_id()      │
-    │                              │─────────────────────────────►│
-    │                              │                              │
-    │                              │  RLS enforces:               │
-    │                              │  chw_id = current_chw_id()   │
-    │                              │◄─────────────────────────────│
-```
+### 🩺 For Community Health Workers (CHWs)
+1. **Clinical Login**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker) and log in with your worker ID.
+2. **Mother Directory**: View your registered patient lists, risk categories, and schedule pending visits.
+3. **Triage Assessment**: Conduct a checkup, enter vital signs (systolic/diastolic pressure, gestational age, symptoms), and let the system calculate the maternal risk status.
+4. **Consult AI**: Access the **"ক্লিনিক্যাল চ্যাট"** (Clinical Chat) to consult the AI assistant on complex symptoms.
 
-#### 8.2 Row Level Security (RLS)
-
-| Table | SELECT | INSERT | UPDATE | DELETE |
-|-------|--------|--------|--------|--------|
-| `chws` | Own row only | ✗ | Own row only | ✗ |
-| `patients` | Own patients | Own patients | Own patients | ✗ |
-| `visits` | Own visits | Own visits | ✗ | ✗ |
-| `outbox_events` | ✗ | Own events | ✗ | ✗ |
-
-#### 8.3 Medical Safety Controls
-
-| Control | Implementation |
-|---------|---------------|
-| No drug dosage recommendations | System prompt + response filter |
-| No definitive diagnoses | System prompt + response filter |
-| Emergency referral injection | Auto-append "Go to hospital" for critical keywords |
-| Bangla-only responses | Regex validation: `[\u0980-\u09FF]` must be present |
-| Response length limit | Max 3 sentences to prevent information overload |
-| Safety disclaimer | Always appended to non-emergency responses |
-
----
-
-### 9. Deployment Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                  PRODUCTION                          │
-│                                                     │
-│  ┌──────────┐    ┌──────────┐    ┌──────────────┐  │
-│  │ Vercel   │    │ Railway/ │    │ Supabase     │  │
-│  │          │    │ Render   │    │ Cloud        │  │
-│  │ Admin    │    │          │    │              │  │
-│  │ Next.js  │    │ FastAPI  │    │ Postgres 15  │  │
-│  │ SSR      │    │ Backend  │    │ pgvector     │  │
-│  │          │    │          │    │ Edge Fns     │  │
-│  │ Free     │    │ Free/$5  │    │ Auth         │  │
-│  └──────────┘    └──────────┘    │ RLS          │  │
-│                                  └──────────────┘  │
-│                                                     │
-│  ┌──────────────────────────────────────────────┐  │
-│  │        Mobile Clients (Expo)                 │  │
-│  │  Expo Go (dev) → EAS Build → APK (prod)     │  │
-│  │  Target: Android 8+ (API 26)                 │  │
-│  └──────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-```
-
-#### 9.1 Environment Variables
-
-| Variable | Service | Purpose |
-|----------|---------|---------|
-| `SUPABASE_URL` | Backend, Admin | Supabase project URL |
-| `SUPABASE_ANON_KEY` | Backend, Mobile | Public API key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Backend, Admin (server-only) | Admin operations (bypasses RLS) |
-| `GROQ_API_KEY` | Backend | Primary LLM provider |
-| `GEMINI_API_KEY` | Backend | Fallback LLM provider |
-| `NEXT_PUBLIC_SUPABASE_URL` | Admin | Client-side Supabase URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Admin | Client-side API key |
-| `EXPO_PUBLIC_API_BASE_URL` | Mobile | Backend API endpoint |
-| `EXPO_PUBLIC_SUPABASE_URL` | Mobile | Supabase endpoint |
-
----
-
-### 10. Observability & Monitoring
-
-#### 10.1 Current Monitoring
-
-| Component | Monitoring | Mechanism |
-|-----------|-----------|-----------|
-| Backend health | `/health` endpoint | Returns Supabase reachability status |
-| Sync integrity | Outbox summary | `getOutboxSummary()` → pending/failed counts |
-| Edge function | Supabase dashboard | Function logs, invocation counts |
-| RLS verification | SQL tests | `rls_verify.sql` script |
-| Sync stress | Automated test | `stress_sync.py` — 50 SYNCED / 50 DUPLICATE |
-
-#### 10.2 Admin Dashboard Metrics
-
-| Metric | Source | Visualization |
-|--------|--------|---------------|
-| Patients by risk level | `v_risk_summary` view | Recharts stacked bar chart |
-| CHW patient counts | `v_chw_list` view | Table with union/upazila info |
-| CHW compliance rates | Visit frequency analysis | Dashboard card |
-
----
-
-### 11. Scalability Considerations
-
-#### 11.1 Current Capacity (Hackathon)
-
-| Dimension | Capacity |
-|-----------|----------|
-| Concurrent CHWs | ~200 (single Supabase project) |
-| Patients per CHW | ~500 (SQLite budget ~50MB) |
-| Visits per patient | ~20 (auto-pruning of SYNCED outbox rows) |
-| LLM requests/min | ~60 (Groq free tier) |
-
-#### 11.2 Scale-Up Path
-
-| Stage | Users | Changes Needed |
-|-------|-------|---------------|
-| Hackathon | 2-5 CHWs | Current setup |
-| Pilot (1 upazila) | ~50 CHWs | Dedicated backend, monitoring |
-| District (3 upazilas) | ~200 CHWs | Load balancer, read replicas |
-| National | 5,000+ CHWs | Horizontal scaling, CDN, dedicated ML serving |
-
----
-
-### 12. Failure Modes & Recovery
-
-| Failure | Impact | Recovery |
-|---------|--------|----------|
-| **No network** | Sync paused | Outbox accumulates PENDING; auto-retries on reconnect |
-| **Power cut mid-write** | Data could corrupt | WAL journal replays on next open — zero data loss |
-| **No internet connection** | Live advanced chat unavailable | Offline fallback message + local Q&A library |
-| **Supabase outage** | Sync blocked | Backend returns 500; mobile continues offline |
-| **Device storage full** | App crash risk | Purge SYNCED outbox rows; storage pressure alert |
-| **JWT expired** | Auth fails | Re-authenticate; outbox preserved for post-auth sync |
-
----
-
-### 13. Future Architecture — On-Device LLM
-
-#### 13.1 Custom Model Training Path
-
-```
-Phase 1 (Month 6-12): Data Collection
-├── Anonymize real CHW visit data
-├── Doctor labels outcomes (risk level accuracy)
-└── Target: 10,000+ labeled visits
-
-Phase 2 (Month 12): Fine-Tuning
-├── Base model: Llama 3.1 8B
-├── Method: LoRA (Low-Rank Adaptation)
-├── Hardware: 1× A100 GPU (~$50 on RunPod)
-└── Duration: 1 weekend
-
-Phase 3 (Month 13): Quantization & Deployment
-├── Quantize to GGUF 4-bit (~4GB) via llama.cpp
-├── Package as app asset
-└── Replace LLM cascade with on-device inference
-
-Result: 100% offline AI — zero external dependencies
-```
-
-#### 13.2 Target On-Device Architecture
-
-```
-┌──────────────────────────────────────────────┐
-│  Mobile App (Future v1.0)                    │
-│                                              │
-│  ┌──────────┐  ┌──────────┐  ┌───────────┐  │
-│  │ SQLite   │  │ ONNX     │  │ GGUF LLM  │  │
-│  │ + WAL    │  │ XGBoost  │  │ Llama 3.1 │  │
-│  │ outbox   │  │ risk     │  │ 4-bit     │  │
-│  │          │  │ <200ms   │  │ ~4GB      │  │
-│  └──────────┘  └──────────┘  └───────────┘  │
-│                                              │
-│  ┌──────────────────────────────────────┐    │
-│  │  Whisper Tiny (ONNX) — Bangla STT   │    │
-│  │  Coqui TTS — Bangla text-to-speech  │    │
-│  └──────────────────────────────────────┘    │
-│                                              │
-│  ALL FEATURES WORK WITH ZERO INTERNET        │
-│  Sync is optional — for cloud backup only    │
-└──────────────────────────────────────────────┘
-```
-
----
-
-## ✨ Key Features
-
-### 👩‍⚕️ For Community Health Workers (CHWs)
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 📋 **Patient Visit Recording** | ✅ | One-tap vitals entry (BP, weight, hemoglobin, symptoms) |
-| 🎯 **Instant Risk Assessment** | ✅ | Deterministic rule-based offline scoring + safety checks |
-| 💬 **Clinical AI Chat** | ✅ | Live cloud-based Bangla maternal chat (Requires Internet) |
-| 🔄 **Offline Sync** | ✅ | Outbox pattern with background polling and auto-retry |
-| 💊 **Medicine Verification** | ✅ | Drug safety checker for pregnant women |
-| 🚨 **Emergency Alerts** | ✅ | Auto-detect critical symptoms → immediate referral details |
-
-### 👩 For Mothers
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 🏠 **Mother Dashboard** | ✅ | Personal pregnancy tracker and gestational age milestones |
-| ❓ **Q&A Chat** | ✅ | Live AI chat when online; falls back to categorized local offline Q&A |
-| 📊 **Progress Tracking** | ✅ | Track daily water intake (out of 8 glasses) and visit counts |
-
-### 👨‍💼 For Health Officers (Admin)
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| 📈 **Risk Summary Dashboard** | ✅ | Bar charts of LOW/MODERATE/HIGH risk patients by CHW |
-| 👥 **CHW Management** | ✅ | View assigned health workers and active case counts |
-| 🗺️ **Geographic Coverage** | ✅ | compliance monitoring for union and upazila health complexes |
-
----
-### Appendix A: Key Design Decisions Log
-
-| Decision | Options Considered | Choice | Rationale |
-|----------|-------------------|--------|-----------|
-| Mobile framework | Flutter vs React Native | React Native (Expo) | Team knows JS; Expo Go for cheap Android testing |
-| Local DB | AsyncStorage vs SQLite | SQLite + WAL | Structured queries, crash safety, outbox pattern |
-| ML runtime | Cloud API vs On-device ONNX | Cloud API (Render) | Expo compatibility, reliability, Llama/Gemini power |
-| Cloud DB | Firebase vs Supabase | Supabase | Postgres for SQL analytics + pgvector in same DB |
-| Sync pattern | Firebase RTDB vs Outbox | Outbox | Idempotent, works offline, conflict-safe |
-| LLM strategy | Single provider vs cascade | Cascade | Reliability; free tier alignment across providers |
-| Safety approach | Post-filter vs system prompt | Both | Defense in depth — system prompt + code filters |
-| Conflict resolution | CRDT vs LWW | LWW (device timestamp) | Single-owner domain; CRDTs are over-engineering |
+### 👑 For Administrators
+1. **Secret Access**: Tap **"স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান"** (Continue as Health Worker).
+2. **Enter Credentials**: Enter `admin` in the email input and `admin123` in the password input.
+3. **Command Dashboard**: Instantly inspect the real-time active metrics cards at the top showing total active workers, registered mothers, and critical high-risk ratios.
+4. **Directory Auditing**: Use the search bar to locate workers in specific unions, tap their profile to view performance, and audit patients directly.
 
 ---
 
@@ -826,7 +236,7 @@ Masheba--AI/
 │   │   ├── features/
 │   │   │   ├── mother/              #      Mother dashboard
 │   │   │   └── qa/                  #      Offline Q&A chat
-│   │   ├── model/                   #    Local risk scoring safety rules & mock inference
+│   │   ├── model/                   #    Local risk scoring & mock inference
 │   │   ├── notifications/           #    Push notification handlers
 │   │   ├── screens/chw/             #    CHW-facing screens
 │   │   ├── sync/                    #    Background sync worker
@@ -853,13 +263,19 @@ Masheba--AI/
 │   ├── tests/                       #    pytest test suites
 │   └── requirements.txt
 │
-├── admin/                           # 📊 Next.js admin dashboard
+├── admin/                           # 📊 Next.js 14 admin dashboard
 │   ├── app/
 │   │   ├── dashboard/               #    Dashboard page (SSR)
+│   │   ├── docs/                    #    Embedded documentation portal
+│   │   │   ├── page.tsx             #      Product handbook viewer
+│   │   │   ├── DocsView.tsx         #      Rendered docs content
+│   │   │   └── admin/               #      Admin-specific docs
 │   │   ├── layout.tsx               #    Root layout
+│   │   ├── page.tsx                 #    Root page
 │   │   └── globals.css
 │   ├── components/
-│   │   └── RiskSummaryChart.tsx      #    Recharts bar chart
+│   │   ├── RiskSummaryChart.tsx      #    Recharts bar chart
+│   │   └── Mermaid.tsx              #    Mermaid diagram renderer
 │   ├── utils/                       #    Supabase server client
 │   └── package.json
 │
@@ -879,11 +295,6 @@ Masheba--AI/
 │
 ├── supabase/                        # 🗄️ Supabase infrastructure
 │   ├── migrations/                  #    Postgres migration SQL files
-│   │   ├── ..._create_core_schema.sql
-│   │   ├── ..._rls_policies_and_views.sql
-│   │   ├── ..._process_outbox_batch.sql
-│   │   ├── ..._create_mothers_table.sql
-│   │   └── ..._create_chat_tables.sql
 │   ├── functions/
 │   │   └── sync-outbox/             #    Deno edge function
 │   ├── seed/                        #    Demo data for testing
@@ -895,24 +306,21 @@ Masheba--AI/
 │   ├── SETUP.md                     #    Dev environment setup
 │   └── SYNC_RUNBOOK.md              #    Sync verification playbook
 │
-├── maasheba_system_architecture.jpg #    Architecture diagram
-├── maasheba_offline_data_flow.jpg   #    Offline data flow diagram
+├── ICON.png                         #    Masheba AI logo
 ├── ARCHITECTURE.md                  #    Detailed architecture document
+├── Masheba_comprehensive_handbook.md.resolved
 ├── .env.example                     #    Environment variable template
 └── .gitignore
 ```
 
 ---
 
-
-
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 | Tool | Version | Purpose |
-|------|---------|---------|
+|:-----|:--------|:--------|
 | Node.js | ≥ 18 | Mobile + Admin |
 | Python | ≥ 3.11 | Backend + ML pipeline |
 | Expo CLI | Latest | Mobile development |
@@ -930,7 +338,7 @@ cd MaSheba--AI
 
 ```bash
 cp .env.example .env
-# Fill in your Supabase and API keys
+# Fill in your Supabase, Groq, and Gemini API keys
 ```
 
 ### 3. Backend Setup
@@ -942,7 +350,7 @@ python -m venv .venv
 # Windows
 .\.venv\Scripts\Activate.ps1
 
-# macOS/Linux
+# macOS / Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
@@ -957,6 +365,7 @@ cd mobile
 npm install
 npx expo start                            # Start Expo dev server
 # Press 'a' for Android emulator
+# Scan QR code with Expo Go on physical device
 ```
 
 ### 5. Admin Dashboard Setup
@@ -976,110 +385,27 @@ supabase functions deploy sync-outbox     # Deploy edge function
 
 ---
 
-## 📡 API Reference
+## ⚙️ Tech Stack
 
-### `GET /health`
+<div align="center">
 
-Health check endpoint. No auth required.
+| Layer | Technology | Purpose |
+|:------|:-----------|:--------|
+| **📱 Mobile** | React Native (Expo) | Cross-platform mobile app |
+| **💾 Local DB** | SQLite + WAL Mode | Crash-safe offline storage |
+| **🔄 Sync** | Outbox Pattern + Background Worker | Idempotent 2-min polling sync |
+| **⚙️ Backend** | FastAPI (Python 3.11+) | REST API + AI orchestration |
+| **☁️ Cloud DB** | Supabase (PostgreSQL 15) | RLS-scoped cloud storage |
+| **🤖 Primary LLM** | Groq (Llama 3.1 8B Instant) | Fast Bangla clinical chat |
+| **🤖 Fallback LLM** | Google Gemini (Flash 2.5) | Secondary AI cascade |
+| **🛡️ Safety** | Deterministic Rules | <200ms on-device risk scoring |
+| **📊 Admin** | Next.js 14 (Vercel) | SSR admin dashboard |
+| **📈 Charts** | Recharts | Risk distribution visualization |
+| **🔐 Auth** | Supabase Auth + expo-secure-store | JWT-based session management |
 
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-05-20T03:30:00.000000Z",
-  "supabase_reachable": true
-}
-```
-
-### `POST /sync`
-
-Accepts 1–100 outbox events. Requires `Authorization: Bearer <CHW JWT>`.
-
-```json
-// Request
-{
-  "events": [{
-    "idempotency_key": "device-a-visit-001",
-    "event_type": "visit_create",
-    "device_id": "device-a",
-    "payload": {
-      "chw_id": "...",
-      "patient_id": "...",
-      "bp_systolic": 112,
-      "bp_diastolic": 74,
-      "risk_level": "LOW"
-    }
-  }]
-}
-
-// Response
-{
-  "results": [{ "idempotency_key": "device-a-visit-001", "status": "SYNCED" }],
-  "synced_at": "2026-05-20T03:30:05.000Z"
-}
-```
-
-Status values: `SYNCED` | `DUPLICATE` | `FAILED`
-
-### `POST /chat`
-
-AI-powered maternal health Q&A in Bangla.
-
-```json
-// Request
-{ "question": "গর্ভাবস্থায় মাথাব্যথা হলে কী করব?" }
-
-// Response
-{
-  "answer": "গর্ভাবস্থায় মাথাব্যথা হলে...",
-  "is_emergency": false,
-  "source": "groq",
-  "emergency_text": null
-}
-```
-
-> 📄 Full API documentation: [`docs/API.md`](docs/API.md)
+</div>
 
 ---
-
-## 🗃️ Database Schema
-
-### Core Tables
-
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────────┐
-│    chws      │     │   patients   │     │     visits       │
-│──────────────│     │──────────────│     │──────────────────│
-│ id (PK)      │◄────│ chw_id (FK)  │     │ patient_id (FK)  │
-│ auth_user_id │     │ name         │     │ chw_id (FK)      │
-│ name         │     │ age          │     │ bp_systolic       │
-│ union_name   │     │ gest_age_wks │     │ bp_diastolic      │
-│ upazila      │     │ risk_level   │     │ weight_kg         │
-│ is_active    │     │ created_at   │     │ hemoglobin        │
-└──────────────┘     └──────────────┘     │ swelling_present  │
-                                          │ symptom_flags     │
-┌──────────────────┐                      │ risk_level        │
-│  outbox_events   │                      │ visited_at        │
-│──────────────────│                      └──────────────────┘
-│ idempotency_key  │
-│ chw_id           │
-│ event_type       │
-│ payload (JSONB)  │
-│ status           │
-└──────────────────┘
-```
-
-### Row Level Security (RLS)
-
-- **CHWs** can only read/update their own row.
-- **Patients** are scoped to the owning CHW (`chw_id = current_chw_id()`).
-- **Visits** are insert-only for the owning CHW — no delete, no cross-CHW reads.
-- **Outbox events** are insert-only — no CHW select (audit trail integrity).
-- **Service role** bypasses RLS for backend/edge/admin operations.
-
-> 📄 Full schema documentation: [`docs/SCHEMA.md`](docs/SCHEMA.md)
-
----
-
 
 ## 👥 Team
 
@@ -1088,7 +414,7 @@ AI-powered maternal health Q&A in Bangla.
 ### Team DareDevil
 
 | Role | Name |
-|------|------|
+|:-----|:-----|
 | 🎨 **UI/UX Design** | Mihir Das |
 | ⚙️ **Backend Engineering** | Mehedi Hasan Nafis |
 | 📊 **Business Analytics / Data Science** | Fayaz Bin Faruk |
@@ -1107,15 +433,19 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 <div align="center">
 
+<img src="ICON.png" alt="Masheba AI" width="80" />
+
 ### 🇧🇩 Built with ❤️ for Bangladesh's mothers
 
-*Masheba (মাসেবা) — "Service to Mother"*
+*মাসেবা (Masheba) — "Service to Mother"*
 
-**Every mother deserves a safety net. Masheba ensures no one falls through.**
+**Every mother deserves a safety net. Masheba AI ensures no one falls through.**
 
 <br />
 
 [![Stars](https://img.shields.io/github/stars/DigontaDas/MaSheba--AI?style=social)](https://github.com/DigontaDas/MaSheba--AI)
 [![Forks](https://img.shields.io/github/forks/DigontaDas/MaSheba--AI?style=social)](https://github.com/DigontaDas/MaSheba--AI/fork)
+
+*Masheba AI is changing the landscape of community-based maternal care, keeping mothers safe and empowering the workers who care for them.*
 
 </div>
