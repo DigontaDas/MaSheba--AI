@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Platform,
@@ -11,6 +12,9 @@ import {
   View,
   Animated
 } from "react-native";
+import { Audio } from "expo-av";
+import * as Speech from "expo-speech";
+import { askVoiceClinicalOnline } from "@/api/voiceChat";
 import * as Network from "expo-network";
 import { router, useFocusEffect } from "expo-router";
 import Svg, { Pattern, Circle, Rect } from "react-native-svg";
@@ -268,6 +272,155 @@ export default function ClinicalChatScreen() {
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
+
+  // Voice recording and speech states
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    let anim: Animated.CompositeAnimation | null = null;
+    if (isRecording) {
+      anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.25,
+            duration: 600,
+            useNativeDriver: true
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true
+          })
+        ])
+      );
+      anim.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+    return () => {
+      if (anim) anim.stop();
+    };
+  }, [isRecording, pulseAnim]);
+
+  // Cleanup speech on mode change or unmount
+  useEffect(() => {
+    return () => {
+      Speech.stop().catch(() => undefined);
+    };
+  }, [mode]);
+
+  const startRecording = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          language === "en" ? "Permission Denied" : "অনুমতি দেওয়া হয়নি",
+          language === "en" 
+            ? "MaaSheba needs access to your microphone to record audio symptoms." 
+            : "ভয়েসের মাধ্যমে লক্ষণ জানাতে মাসেবা অ্যাপটির মাইক্রোফোন ব্যবহারের অনুমতি প্রয়োজন।"
+        );
+        return;
+      }
+
+      await Speech.stop();
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(newRecording);
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    setIsRecording(false);
+    setRecording(null);
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (uri) {
+        await submitVoiceQuestion(uri);
+      }
+    } catch (err) {
+      console.error("Failed to stop recording:", err);
+    }
+  };
+
+  const submitVoiceQuestion = async (uri: string) => {
+    const network = await Network.getNetworkStateAsync();
+    const isOnline = Boolean(network.isConnected && network.isInternetReachable !== false);
+    setOnline(isOnline);
+    if (!isOnline) {
+      Alert.alert(
+        language === "en" ? "Offline Mode" : "অফলাইন মোড",
+        language === "en" 
+          ? "Voice parsing requires active internet connection." 
+          : "ভয়েস বিশ্লেষণ ফিচারটির জন্য ইন্টারনেট সংযোগ প্রয়োজন।"
+      );
+      return;
+    }
+
+    setIsTranscribing(true);
+    setIsAiLoading(true);
+
+    const msgId = `msg-${Date.now()}`;
+    const userMsg: AiMessage = {
+      id: msgId,
+      role: "user",
+      text: language === "en" ? "🎤 Analyzing voice recording..." : "🎤 ভয়েস রেকর্ড বিশ্লেষণ হচ্ছে...",
+      status: "sending"
+    };
+    setAiMessages((current) => [...current, userMsg]);
+
+    try {
+      const response = await askVoiceClinicalOnline(uri);
+      
+      setAiMessages((current) =>
+        current.map((m) => (m.id === msgId ? { ...m, text: `🎤 ${response.transcription}`, status: "success" } : m))
+      );
+
+      const aiMsgId = `ans-${Date.now()}`;
+      setAiMessages((current) => [
+        ...current,
+        {
+          id: aiMsgId,
+          role: "ai",
+          text: response.answer,
+          emergency: response.is_emergency
+        }
+      ]);
+
+      notifyNow("MaaSheba AI", response.answer.substring(0, 80), "maasheba-default");
+
+      // Read reply aloud to the user in Bengali
+      Speech.speak(response.answer, {
+        language: "bn-BD",
+        rate: 0.9,
+        pitch: 1.0
+      });
+
+    } catch (err) {
+      console.error("Voice chat analysis failed:", err);
+      setAiMessages((current) =>
+        current.map((m) => (m.id === msgId ? { ...m, text: "🎤 ভয়েস পাঠানো ব্যর্থ হয়েছে", status: "error" } : m))
+      );
+    } finally {
+      setIsTranscribing(false);
+      setIsAiLoading(false);
+    }
+  };
 
   const categoryLabel = useCallback(
     (item: ChatCategory) => {
@@ -676,18 +829,65 @@ export default function ClinicalChatScreen() {
           {renderQuickReplies()}
 
           <View style={styles.inputRow}>
-            <TextInput
-              editable={online}
-              onChangeText={setAiInput}
-              onSubmitEditing={() => void submitAiQuestion()}
-              placeholder={copy.clinicalChat.clinicalInputPlaceholder}
-              placeholderTextColor="#A08E88"
-              style={[styles.input, !online && styles.inputDisabled]}
-              value={aiInput}
-            />
-            <Pressable disabled={!online} onPress={() => void submitAiQuestion()} style={[styles.sendButton, !online && styles.sendDisabled]}>
-              <Icon name="send" color="#FFFFFF" size={20} />
-            </Pressable>
+            {isRecording ? (
+              <View style={styles.recordingIndicatorRow}>
+                <Animated.View
+                  style={[
+                    styles.recordingDot,
+                    {
+                      opacity: pulseAnim.interpolate({
+                        inputRange: [1, 1.25],
+                        outputRange: [1, 0.3]
+                      }),
+                      transform: [{ scale: pulseAnim }]
+                    }
+                  ]}
+                />
+                <Text style={styles.recordingText}>
+                  {language === "en" ? "Recording audio..." : "ভয়েস রেকর্ড হচ্ছে..."}
+                </Text>
+              </View>
+            ) : (
+              <TextInput
+                editable={online && !isTranscribing}
+                onChangeText={setAiInput}
+                onSubmitEditing={() => void submitAiQuestion()}
+                placeholder={isTranscribing ? (language === "en" ? "Analyzing voice..." : "ভয়েস বিশ্লেষণ হচ্ছে...") : copy.clinicalChat.clinicalInputPlaceholder}
+                placeholderTextColor="#A08E88"
+                style={[styles.input, (!online || isTranscribing) && styles.inputDisabled]}
+                value={aiInput}
+              />
+            )}
+            {online && (
+              <Animated.View style={isRecording ? { transform: [{ scale: pulseAnim }] } : {}}>
+                <Pressable
+                  onPressIn={startRecording}
+                  onPressOut={stopRecording}
+                  style={[
+                    styles.micButton,
+                    isRecording && styles.micButtonActive
+                  ]}
+                >
+                  <Icon
+                    name={isRecording ? "stop" : "mic"}
+                    color="#FFFFFF"
+                    size={20}
+                  />
+                </Pressable>
+              </Animated.View>
+            )}
+            {!isRecording && (
+              <Pressable
+                disabled={!online || isTranscribing || !aiInput.trim()}
+                onPress={() => void submitAiQuestion()}
+                style={[
+                  styles.sendButton,
+                  (!online || isTranscribing || !aiInput.trim()) && styles.sendDisabled
+                ]}
+              >
+                <Icon name="send" color="#FFFFFF" size={20} />
+              </Pressable>
+            )}
           </View>
         </View>
       )}
@@ -1154,5 +1354,43 @@ const styles = StyleSheet.create({
     color: "#ba1a1a",
     fontFamily: typography.h2.fontFamily,
     textAlign: "center"
+  },
+  micButton: {
+    alignItems: "center",
+    backgroundColor: "#70605A",
+    borderRadius: 24,
+    height: 48,
+    justifyContent: "center",
+    width: 48
+  },
+  micButtonActive: {
+    backgroundColor: "#ba1a1a",
+    shadowColor: "#ba1a1a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  recordingIndicatorRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FCEBE5",
+    borderRadius: 24,
+    height: 48,
+    paddingHorizontal: 16,
+    gap: 10
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ba1a1a"
+  },
+  recordingText: {
+    color: "#ba1a1a",
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Hind Siliguri"
   }
 });

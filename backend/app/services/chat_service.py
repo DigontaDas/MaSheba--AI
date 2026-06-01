@@ -192,3 +192,110 @@ def _is_provider_answer_acceptable(answer: str, question: str, is_emergency: boo
             return False
 
     return True
+
+
+async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str, Any]:
+    import json
+    settings = get_settings()
+    
+    if not settings.gemini_api_key:
+        return {
+            "transcription": "",
+            "symptoms": [],
+            "answer": "এই মুহূর্তে এআই সার্ভিসটি কনফিগার করা নেই। অনুগ্রহ করে অ্যাডমিন কি সেট আপ করুন।",
+            "is_emergency": False,
+            "source": "fallback"
+        }
+
+    system_prompt = """তুমি মাশেবা — বাংলাদেশের গ্রামীণ মায়েদের জন্য একটি মাতৃস্বাস্থ্য সহায়তাকারী।
+
+নিয়মাবলী:
+১. শুধুমাত্র বাংলায় উত্তর দাও।
+২. শুধুমাত্র গর্ভাবস্থা, প্রসব, মাতৃস্বাস্থ্য, নবজাতক যত্ন বিষয়ে প্রশ্নের উত্তর দাও।
+৩. ওষুধের ডোজ বা নির্দিষ্ট রোগ নির্ণয় করবে না।
+৪. গুরুতর লক্ষণ যেমন অতিরিক্ত রক্তপাত, খিঁচুনি, তীব্র মাথাব্যথা, চোখে ঝাপসা দেখা, শিশুর নড়াচড়া বন্ধ হলে — হাসপাতালে যাওয়ার পরামর্শ দাও এবং is_emergency কে true করো।
+৫. সর্বদা উষ্ণ ও সহানুভূতিশীল ভাষা ব্যবহার করো।
+
+আউটপুট অবশ্যই একটি JSON অবজেক্ট হতে হবে যার কীগুলি নিম্নরূপ:
+- "transcription": অডিওতে বলা কথার হুবহু বাংলা প্রতিলিপি।
+- "symptoms": অডিওতে উল্লেখিত গর্ভাবস্থার ঝুঁকির লক্ষণগুলির তালিকা (ইংরেজি enum এ: "headache", "blurred_vision", "convulsions", "severe_bleeding", "severe_abdominal_pain", "decreased_fetal_movement", "swelling", "fever")।
+- "answer": মায়েদের জন্য একটি উষ্ণ, সহানুভূতিশীল ও স্পষ্ট ২-৩ বাক্যের বাংলা উত্তর।
+- "is_emergency": গুরুতর লক্ষণ থাকলে true, অন্যথায় false।
+"""
+
+    generation_config = {
+        "temperature": 0.3,
+        "responseMimeType": "application/json",
+    }
+
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": base64_audio
+                        }
+                    },
+                    {
+                        "text": "অনুগ্রহ করে এই অডিও ফাইলটি বিশ্লেষণ করে উপরে উল্লেখিত JSON ফরম্যাটে উত্তর দিন।"
+                    }
+                ]
+            }
+        ],
+        "generationConfig": generation_config,
+    }
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
+            response.raise_for_status()
+            body = response.json()
+            
+            candidates = body.get("candidates")
+            if not isinstance(candidates, list) or not candidates:
+                raise ValueError("No candidates returned from Gemini")
+
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if not isinstance(parts, list) or not parts:
+                raise ValueError("No parts returned from Gemini")
+
+            text_output = parts[0].get("text")
+            if not text_output:
+                raise ValueError("Empty text returned from Gemini")
+
+            parsed = json.loads(text_output.strip())
+            
+            # Defensive check & safety suffix if not present
+            answer = parsed.get("answer", "")
+            is_emergency = bool(parsed.get("is_emergency", False))
+            
+            if is_emergency:
+                if "হাসপাতালে" not in answer:
+                    answer = f"{answer}\n\n⚠️ এখনই হাসপাতালে যান।"
+            elif SAFETY_SUFFIX.strip() not in answer:
+                answer = f"{answer}{SAFETY_SUFFIX}"
+
+            return {
+                "transcription": parsed.get("transcription", ""),
+                "symptoms": parsed.get("symptoms", []),
+                "answer": answer,
+                "is_emergency": is_emergency,
+                "source": "gemini-voice"
+            }
+    except Exception as exc:
+        logger.error("Gemini voice parsing failed: %s", exc)
+        return {
+            "transcription": "অডিও ফাইলটি বিশ্লেষণ করা সম্ভব হয়নি।",
+            "symptoms": [],
+            "answer": "দুঃখিত, এই মুহূর্তে ভয়েস এআই এর মাধ্যমে অডিওটি বিশ্লেষণ করতে সমস্যা হচ্ছে। অনুগ্রহ করে লিখে প্রশ্ন করুন।",
+            "is_emergency": False,
+            "source": "fallback-voice"
+        }
+
