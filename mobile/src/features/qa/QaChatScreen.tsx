@@ -4,7 +4,7 @@ import { Audio } from "expo-av";
 import * as Speech from "expo-speech";
 import { router, useSegments } from "expo-router";
 import { askOnline } from "@/api/chatClient";
-import { askVoiceClinicalOnline } from "@/api/voiceChat";
+import { askVoiceClinicalOnline, VOICE_RECORDING_OPTIONS } from "@/api/voiceChat";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
@@ -105,7 +105,7 @@ export function QaChatScreen() {
       });
 
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        VOICE_RECORDING_OPTIONS
       );
       setRecording(newRecording);
       setIsRecording(true);

@@ -241,7 +241,7 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
 ৫. সর্বদা উষ্ণ ও সহানুভূতিশীল ভাষা ব্যবহার করো।
 
 আউটপুট অবশ্যই একটি JSON অবজেক্ট হতে হবে যার কীগুলি নিম্নরূপ:
-- "transcription": অডিওতে বলা কথার হুবহু বাংলা প্রতিলিপি।
+- "transcription": অডিওতে বলা কথার হুবহু প্রতিলিপি (যে ভাষায় কথা বলা হয়েছে - বাংলা বা ইংরেজি)।
 - "symptoms": অডিওতে উল্লেখিত গর্ভাবস্থার ঝুঁকির লক্ষণগুলির তালিকা (ইংরেজি enum এ: "headache", "blurred_vision", "convulsions", "severe_bleeding", "severe_abdominal_pain", "decreased_fetal_movement", "swelling", "fever")।
 - "answer": মায়েদের জন্য একটি উষ্ণ, সহানুভূতিশীল ও স্পষ্ট ২-৩ বাক্যের বাংলা উত্তর।
 - "is_emergency": গুরুতর লক্ষণ থাকলে true, অন্যথায় false।

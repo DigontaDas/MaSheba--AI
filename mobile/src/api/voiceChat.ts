@@ -1,4 +1,34 @@
 import * as FileSystem from "expo-file-system/legacy";
+import { Audio } from "expo-av";
+
+// Universally compatible voice recording settings for both iOS & Android.
+// Enforces AAC audio compression inside an MPEG-4 container (.m4a), which
+// is native and optimal for Gemini Multimodal Audio API ingestion (audio/mp4).
+export const VOICE_RECORDING_OPTIONS = {
+  android: {
+    extension: ".m4a",
+    outputFormat: Audio.AndroidOutputFormat?.MPEG_4 ?? 2,
+    audioEncoder: Audio.AndroidAudioEncoder?.AAC ?? 3,
+    sampleRate: 16000, // 16kHz is ideal and highly efficient for speech recognition
+    numberOfChannels: 1, // Mono channel reduces payload file size
+    bitRate: 64000,
+  },
+  ios: {
+    extension: ".m4a",
+    outputFormat: Audio.IOSOutputFormat?.MPEG4AAC ?? "m4af",
+    audioQuality: Audio.IOSAudioQuality?.HIGH ?? 127,
+    sampleRate: 16000,
+    numberOfChannels: 1,
+    bitRate: 64000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: "audio/webm",
+    bitsPerSecond: 128000,
+  },
+} as any;
 
 export interface VoiceChatResponse {
   transcription: string;

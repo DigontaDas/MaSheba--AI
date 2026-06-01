@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Audio } from "expo-av";
 import * as Speech from "expo-speech";
-import { askVoiceClinicalOnline } from "@/api/voiceChat";
+import { askVoiceClinicalOnline, VOICE_RECORDING_OPTIONS } from "@/api/voiceChat";
 import * as Network from "expo-network";
 import { router, useFocusEffect } from "expo-router";
 import Svg, { Pattern, Circle, Rect } from "react-native-svg";
@@ -333,7 +333,7 @@ export default function ClinicalChatScreen() {
       });
 
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        VOICE_RECORDING_OPTIONS
       );
       setRecording(newRecording);
       setIsRecording(true);
