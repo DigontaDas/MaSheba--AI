@@ -50,6 +50,7 @@ jest.mock("expo-av", () => ({
     Recording: {
       createAsync: jest.fn().mockResolvedValue({
         recording: {
+          getStatusAsync: jest.fn().mockResolvedValue({ durationMillis: 1200 }),
           stopAndUnloadAsync: jest.fn().mockResolvedValue(undefined),
           getURI: jest.fn().mockReturnValue("file://test-audio.m4a")
         }

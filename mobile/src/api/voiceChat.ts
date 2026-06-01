@@ -36,6 +36,10 @@ export interface VoiceChatResponse {
   answer: string;
   is_emergency: boolean;
   source: string;
+  risk_level?: "emergency_now" | "urgent_today" | "self_care_with_warning" | "out_of_scope" | null;
+  matched_risk?: string | null;
+  red_flags?: string[];
+  recommended_action?: string | null;
 }
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";

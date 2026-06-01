@@ -48,6 +48,8 @@ type AiMessage = {
   status?: "sending" | "success" | "error";
 };
 
+const minVoiceDurationMs = 700;
+
 type ClinicalChatResponse = {
   answer: string;
   is_emergency: boolean;
@@ -313,6 +315,7 @@ export default function ClinicalChatScreen() {
   }, [mode]);
 
   const startRecording = async () => {
+    if (recording || isTranscribing) return;
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
@@ -344,18 +347,44 @@ export default function ClinicalChatScreen() {
 
   const stopRecording = async () => {
     if (!recording) return;
+    const activeRecording = recording;
     setIsRecording(false);
     setRecording(null);
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      const status = typeof activeRecording.getStatusAsync === "function" ? await activeRecording.getStatusAsync() : null;
+      await activeRecording.stopAndUnloadAsync();
+      const uri = activeRecording.getURI();
+      if (status && "durationMillis" in status && typeof status.durationMillis === "number" && status.durationMillis < minVoiceDurationMs) {
+        Alert.alert(
+          language === "en" ? "Recording too short" : "রেকর্ডিং খুব ছোট",
+          language === "en"
+            ? "Tap the microphone again and speak for at least one second."
+            : "আবার মাইক্রোফোনে ট্যাপ করে অন্তত এক সেকেন্ড বলুন।"
+        );
+        return;
+      }
       if (uri) {
         await submitVoiceQuestion(uri);
+      } else {
+        Alert.alert(
+          language === "en" ? "Recording failed" : "রেকর্ডিং ব্যর্থ হয়েছে",
+          language === "en"
+            ? "No audio file was created. Please try again."
+            : "অডিও ফাইল তৈরি হয়নি। আবার চেষ্টা করুন।"
+        );
       }
     } catch (err) {
       console.error("Failed to stop recording:", err);
     }
+  };
+
+  const toggleRecording = async () => {
+    if (recording) {
+      await stopRecording();
+      return;
+    }
+    await startRecording();
   };
 
   const submitVoiceQuestion = async (uri: string) => {
@@ -861,11 +890,14 @@ export default function ClinicalChatScreen() {
             {online && (
               <Animated.View style={isRecording ? { transform: [{ scale: pulseAnim }] } : {}}>
                 <Pressable
-                  onPressIn={startRecording}
-                  onPressOut={stopRecording}
+                  accessibilityLabel={isRecording ? (language === "en" ? "Stop and send voice question" : "ভয়েস প্রশ্ন পাঠান") : (language === "en" ? "Start voice question" : "ভয়েস প্রশ্ন শুরু করুন")}
+                  accessibilityRole="button"
+                  disabled={isTranscribing}
+                  onPress={() => void toggleRecording()}
                   style={[
                     styles.micButton,
-                    isRecording && styles.micButtonActive
+                    isRecording && styles.micButtonActive,
+                    isTranscribing && { opacity: 0.55 }
                   ]}
                 >
                   <Icon

@@ -19,6 +19,10 @@ class ChatResponse(BaseModel):
     is_emergency: bool
     source: str
     emergency_text: str | None = None
+    risk_level: str | None = None
+    matched_risk: str | None = None
+    red_flags: list[str] = Field(default_factory=list)
+    recommended_action: str | None = None
 
 
 class VoiceChatResponse(BaseModel):
@@ -27,6 +31,10 @@ class VoiceChatResponse(BaseModel):
     answer: str
     is_emergency: bool
     source: str
+    risk_level: str | None = None
+    matched_risk: str | None = None
+    red_flags: list[str] = Field(default_factory=list)
+    recommended_action: str | None = None
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -55,6 +63,7 @@ async def chat_voice(file: UploadFile = File(...)) -> VoiceChatResponse:
             
         result = await get_voice_chat_response(base64_audio, mime_type)
         return VoiceChatResponse(**result)
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
-

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Audio } from "expo-av";
+import * as Network from "expo-network";
 import * as Speech from "expo-speech";
 import { router, useSegments } from "expo-router";
 import { askOnline } from "@/api/chatClient";
@@ -24,7 +25,13 @@ type Message = {
 };
 
 const trim: OfflineQaTrimester = "T3";
+const postpartumCategoryIds = new Set(["postpartum_care", "breastfeeding"]);
 const emergencyTopic = "জরুরি_লক্ষণ";
+const minVoiceDurationMs = 700;
+
+function getCategoryTrimester(nextCategory: Pick<QaCategory, "id"> | null): OfflineQaTrimester {
+  return nextCategory && postpartumCategoryIds.has(nextCategory.id) ? "POSTPARTUM" : trim;
+}
 
 export function QaChatScreen() {
   const segments = useSegments();
@@ -85,7 +92,20 @@ export function QaChatScreen() {
   }, []);
 
   const startRecording = async () => {
+    if (recording || isTranscribing) return;
     try {
+      const network = await Network.getNetworkStateAsync();
+      const isOnline = Boolean(network.isConnected && network.isInternetReachable !== false);
+      if (!isOnline) {
+        Alert.alert(
+          language === "en" ? "Offline Mode" : "অফলাইন মোড",
+          language === "en"
+            ? "Voice questions need an active internet connection."
+            : "ভয়েস প্রশ্নের জন্য ইন্টারনেট সংযোগ প্রয়োজন।"
+        );
+        return;
+      }
+
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
         Alert.alert(
@@ -116,18 +136,44 @@ export function QaChatScreen() {
 
   const stopRecording = async () => {
     if (!recording) return;
+    const activeRecording = recording;
     setIsRecording(false);
     setRecording(null);
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      const status = typeof activeRecording.getStatusAsync === "function" ? await activeRecording.getStatusAsync() : null;
+      await activeRecording.stopAndUnloadAsync();
+      const uri = activeRecording.getURI();
+      if (status && "durationMillis" in status && typeof status.durationMillis === "number" && status.durationMillis < minVoiceDurationMs) {
+        Alert.alert(
+          language === "en" ? "Recording too short" : "রেকর্ডিং খুব ছোট",
+          language === "en"
+            ? "Tap the microphone again and speak for at least one second."
+            : "আবার মাইক্রোফোনে ট্যাপ করে অন্তত এক সেকেন্ড বলুন।"
+        );
+        return;
+      }
       if (uri) {
         await submitVoiceQuestion(uri);
+      } else {
+        Alert.alert(
+          language === "en" ? "Recording failed" : "রেকর্ডিং ব্যর্থ হয়েছে",
+          language === "en"
+            ? "No audio file was created. Please try again."
+            : "অডিও ফাইল তৈরি হয়নি। আবার চেষ্টা করুন।"
+        );
       }
     } catch (err) {
       console.error("Failed to stop recording:", err);
     }
+  };
+
+  const toggleRecording = async () => {
+    if (recording) {
+      await stopRecording();
+      return;
+    }
+    await startRecording();
   };
 
   const submitVoiceQuestion = async (uri: string) => {
@@ -182,7 +228,7 @@ export function QaChatScreen() {
     setLoadingQuestions(true);
     try {
       setLoadError(null);
-      const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: trim, language });
+      const nextItems = await getQaByTopic({ topic: nextCategory.topic, trimester: getCategoryTrimester(nextCategory), language });
       setItems(options?.emergencyOnly ? nextItems.filter((item) => item.emergency) : nextItems);
     } catch (loadError) {
       setItems([]);
@@ -245,7 +291,7 @@ export function QaChatScreen() {
         return;
       }
 
-      const offlineResults = await searchQa(question, trim, language);
+      const offlineResults = await searchQa(question, getCategoryTrimester(category), language);
       if (!offlineResults.length) {
         setMessages((current) => [
           ...current,
@@ -404,11 +450,14 @@ export function QaChatScreen() {
 
         <Animated.View style={isRecording ? { transform: [{ scale: pulseAnim }] } : {}}>
           <Pressable
-            onPressIn={startRecording}
-            onPressOut={stopRecording}
+            accessibilityLabel={isRecording ? (language === "en" ? "Stop and send voice question" : "ভয়েস প্রশ্ন পাঠান") : (language === "en" ? "Start voice question" : "ভয়েস প্রশ্ন শুরু করুন")}
+            accessibilityRole="button"
+            disabled={isTranscribing}
+            onPress={() => void toggleRecording()}
             style={[
               styles.micButton,
-              isRecording && styles.micButtonActive
+              isRecording && styles.micButtonActive,
+              isTranscribing && { opacity: 0.55 }
             ]}
           >
             <Icon

@@ -12,6 +12,19 @@ const mockMarkMessagesRead = jest.fn();
 const mockSendMessage = jest.fn();
 const mockSubscribeToMessages = jest.fn();
 const mockSearchQa = jest.fn();
+const mockAskVoiceClinicalOnline = jest.fn<Promise<{
+  transcription: string;
+  symptoms: string[];
+  answer: string;
+  is_emergency: boolean;
+  source: string;
+}>, [string]>(async () => ({
+  transcription: "BP 150 over 95",
+  symptoms: ["headache"],
+  answer: "Emergency referral is needed.",
+  is_emergency: true,
+  source: "gemini-voice"
+}));
 
 jest.mock("expo-network", () => ({
   getNetworkStateAsync: () => mockGetNetworkStateAsync()
@@ -76,9 +89,18 @@ jest.mock("@/features/qa/offlineQaStore", () => ({
   searchQa: (...args: unknown[]) => mockSearchQa(...args)
 }));
 
+jest.mock("@/api/voiceChat", () => ({
+  VOICE_RECORDING_OPTIONS: {},
+  askVoiceClinicalOnline: (...args: [string]) => mockAskVoiceClinicalOnline(...args)
+}));
+
 jest.mock("@/notifications/notificationService", () => ({
   notificationTitleForMessage: () => "বার্তা",
   scheduleLocalNotification: jest.fn()
+}));
+
+jest.mock("@/notifications/notify", () => ({
+  notifyNow: jest.fn()
 }));
 
 const patient = {
@@ -125,6 +147,7 @@ describe("ClinicalChatScreen CHW AI mode", () => {
     });
     mockSubscribeToMessages.mockReturnValue({ unsubscribe: jest.fn() });
     mockSearchQa.mockResolvedValue([]);
+    mockAskVoiceClinicalOnline.mockClear();
     globalThis.fetch = jest.fn(async () => ({
       ok: true,
       json: async () => ({
@@ -191,5 +214,25 @@ describe("ClinicalChatScreen CHW AI mode", () => {
     pressByText(tree.root, "স্বাভাবিক");
 
     expect(aiInput(tree)?.props.value).toBe(copy.clinicalChat.clinicalChipTemplates.normal);
+  });
+
+  it("records CHW AI voice with tap start and tap stop before sending audio", async () => {
+    const tree = await renderTree();
+    pressByText(tree.root, "CHW AI");
+
+    const startButton = tree.root.findByProps({ accessibilityLabel: "ভয়েস প্রশ্ন শুরু করুন" });
+    await act(async () => {
+      await startButton.props.onPress();
+    });
+
+    const stopButton = tree.root.findByProps({ accessibilityLabel: "ভয়েস প্রশ্ন পাঠান" });
+    await act(async () => {
+      await stopButton.props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(mockAskVoiceClinicalOnline).toHaveBeenCalledWith("file://test-audio.m4a");
+    expect(JSON.stringify(tree.toJSON())).toContain("BP 150 over 95");
+    expect(JSON.stringify(tree.toJSON())).toContain("Emergency referral is needed.");
   });
 });

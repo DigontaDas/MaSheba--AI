@@ -7,6 +7,10 @@ export interface ChatResponse {
   is_emergency: boolean;
   source: string;
   emergency_text: string | null;
+  risk_level?: "emergency_now" | "urgent_today" | "self_care_with_warning" | "out_of_scope" | null;
+  matched_risk?: string | null;
+  red_flags?: string[];
+  recommended_action?: string | null;
 }
 
 export async function askOnline(question: string): Promise<ChatResponse | null> {

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -38,10 +39,173 @@ BANGLA_CHAR_PATTERN = re.compile(r"[\u0980-\u09FF]")
 SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[।!?])\s+")
 GEMINI_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash"]
 
+RiskLevel = str
+
+
+@dataclass(frozen=True)
+class MaternalTriage:
+    risk_level: RiskLevel
+    matched_risk: str
+    red_flags: list[str]
+    recommended_action: str
+    answer: str
+
+
+POSTPARTUM_BLEEDING_RED_FLAGS = [
+    "১ ঘন্টায় ১টি বা তার বেশি প্যাড পুরো ভিজে যাওয়া",
+    "ডিমের চেয়ে বড় রক্তের দলা বা টিস্যু বের হওয়া",
+    "মাথা ঘোরা, অজ্ঞান হওয়া, বা খুব দুর্বল লাগা",
+    "জ্বর, দুর্গন্ধযুক্ত স্রাব, বা তীব্র পেট ব্যথা",
+    "রক্তপাত কমার বদলে বাড়তে থাকা",
+]
+
+POSTPARTUM_BLEEDING_ANSWER = (
+    "আপা, প্রসবের পর হালকা রক্তপাত কিছুদিন স্বাভাবিক হতে পারে, কিন্তু বেশি রক্তপাত বিপদের লক্ষণ হতে পারে। "
+    "যদি ১ ঘন্টায় ১টি বা তার বেশি প্যাড পুরো ভিজে যায়, বড় রক্তের দলা বা টিস্যু বের হয়, মাথা ঘোরে/অজ্ঞান লাগে, খুব দুর্বল লাগে, জ্বর বা দুর্গন্ধযুক্ত স্রাব থাকে, পেট খুব ব্যথা করে, অথবা রক্তপাত কমার বদলে বাড়ে, তাহলে এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান। "
+    "এগুলোর কোনোটি না থাকলেও পরিষ্কার প্যাড ব্যবহার করুন, কিছু যোনিপথে ঢোকাবেন না, বিশ্রাম নিন, পানি পান করুন, এবং আজই স্বাস্থ্যকর্মীকে জানান।"
+)
+
+PREGNANCY_BLEEDING_ANSWER = (
+    "গর্ভাবস্থায় যোনিপথে রক্ত যাওয়া বিপদের লক্ষণ হতে পারে। "
+    "পরিষ্কার প্যাড ব্যবহার করুন, যোনিপথে কিছু ঢোকাবেন না, এবং এখনই নিকটস্থ হাসপাতাল বা স্বাস্থ্যকেন্দ্রে যান।"
+)
+
+SEVERE_HEADACHE_ANSWER = (
+    "তীব্র মাথাব্যথা, চোখে ঝাপসা দেখা, খিঁচুনি, বা মুখ-হাত ফুলে যাওয়া গর্ভাবস্থা বা প্রসবের পরে বিপদের লক্ষণ হতে পারে। "
+    "এগুলোর কোনোটি থাকলে দেরি না করে এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।"
+)
+
+INFECTION_AFTER_BIRTH_ANSWER = (
+    "প্রসবের পরে জ্বরের সঙ্গে দুর্গন্ধযুক্ত স্রাব, তীব্র পেট ব্যথা, বা শরীর কাঁপা সংক্রমণের লক্ষণ হতে পারে। "
+    "আজই স্বাস্থ্যকর্মী বা চিকিৎসকের সাথে যোগাযোগ করুন; জ্বর বেশি, দুর্বলতা বেশি, বা ব্যথা বাড়লে এখনই হাসপাতালে যান।"
+)
+
+
+def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
+    return any(term in text for term in terms)
+
+
+def _normalize_question_for_triage(question: str) -> str:
+    normalized = question.casefold()
+    normalized = re.sub(r"[\u09E6-\u09EF]", lambda match: str(ord(match.group(0)) - ord("০")), normalized)
+    normalized = re.sub(r"[^a-z0-9\u0980-\u09FF]+", " ", normalized)
+    return f" {' '.join(normalized.split())} "
+
+
+def _detect_maternal_triage(question: str) -> MaternalTriage | None:
+    text = _normalize_question_for_triage(question)
+
+    postpartum_terms = (
+        " প্রসব ", " প্রসবের ", " প্রসব পর ", " প্রসবের পর ", " ডেলিভারি ", " বাচ্চা হয়েছে ",
+        " proshob ", " proshob er ", " prosob ", " prosab ", " delivery ", " birth ", " after birth ",
+        " baccha hoyeche ", " baby hoyeche ", " postpartum ",
+    )
+    bleeding_terms = (
+        " রক্ত ", " রক্তপাত ", " রক্ত যাচ্ছে ", " ব্লিডিং ", " bleeding ", " blood ", " rokto ",
+        " rakto ", " rokt ", " bleed ", " jacche ", " jaitese ", " ber hocche ", " ber hochhe ",
+    )
+    heavy_bleeding_terms = (
+        " অনেক রক্ত ", " বেশি রক্ত ", " অতিরিক্ত রক্তপাত ", " heavy bleeding ", " beshi rokto ",
+        " onek rokto ", " 2 pad ", " দুই প্যাড ", " প্যাড ভিজে ", " pad vije ", " pad bhije ",
+        " clot ", " clots ", " দলা ", " dola ", " tissue ", " টিস্যু ",
+    )
+    dizziness_terms = (
+        " মাথা ঘোরা ", " মাথা ঘুরছে ", " অজ্ঞান ", " দুর্বল ", " dizziness ", " dizzy ",
+        " matha ghura ", " matha ghurche ", " ojan ", " durbol ",
+    )
+    fever_terms = (" জ্বর ", " fever ", " jor ", " jhor ")
+    bad_discharge_terms = (
+        " দুর্গন্ধ ", " গন্ধ ", " bad smell ", " foul ", " gondho ", " durgondho ", " discharge ",
+        " স্রাব ", " srab ",
+    )
+    headache_terms = (" মাথাব্যথা ", " মাথা ব্যথা ", " headache ", " matha betha ", " mathabetha ")
+    vision_terms = (" ঝাপসা ", " চোখে ", " blurred ", " vision ", " chokh ", " jhapsha ")
+    seizure_terms = (" খিঁচুনি ", " seizure ", " convulsion ", " khichuni ")
+    breathing_terms = (" শ্বাস ", " বুক ব্যথা ", " chest pain ", " breathing ", " shash ", " buk betha ")
+    fetal_movement_terms = (" নড়াচড়া বন্ধ ", " নড়াচড়া বন্ধ ", " movement stopped ", " baby moving less ", " baccha norche na ")
+    belly_pain_terms = (" তীব্র পেট ব্যথা ", " severe belly pain ", " pet betha ", " pete betha ")
+
+    has_postpartum = _contains_any(text, postpartum_terms)
+    has_bleeding = _contains_any(text, bleeding_terms)
+    has_heavy_bleeding = _contains_any(text, heavy_bleeding_terms)
+    has_dizziness = _contains_any(text, dizziness_terms)
+    has_fever_bad_discharge = _contains_any(text, fever_terms) and _contains_any(text, bad_discharge_terms)
+
+    if has_postpartum and has_bleeding:
+        risk_level = "emergency_now" if has_heavy_bleeding or has_dizziness or has_fever_bad_discharge else "urgent_today"
+        action = "এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।" if risk_level == "emergency_now" else "আজই স্বাস্থ্যকর্মীকে জানান; কোনো বিপদচিহ্ন থাকলে এখনই হাসপাতালে যান।"
+        return MaternalTriage(
+            risk_level=risk_level,
+            matched_risk="postpartum_bleeding",
+            red_flags=POSTPARTUM_BLEEDING_RED_FLAGS,
+            recommended_action=action,
+            answer=POSTPARTUM_BLEEDING_ANSWER,
+        )
+
+    if has_bleeding and has_heavy_bleeding:
+        return MaternalTriage(
+            risk_level="emergency_now",
+            matched_risk="heavy_maternal_bleeding",
+            red_flags=POSTPARTUM_BLEEDING_RED_FLAGS,
+            recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
+            answer=POSTPARTUM_BLEEDING_ANSWER,
+        )
+
+    if has_bleeding and has_dizziness:
+        return MaternalTriage(
+            risk_level="emergency_now",
+            matched_risk="bleeding_with_dizziness",
+            red_flags=POSTPARTUM_BLEEDING_RED_FLAGS,
+            recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
+            answer=POSTPARTUM_BLEEDING_ANSWER,
+        )
+
+    if has_bleeding and _contains_any(text, (" গর্ভ ", " pregnant ", " pregnancy ", " gorv ", " gorbh ", " garv ")):
+        return MaternalTriage(
+            risk_level="emergency_now",
+            matched_risk="pregnancy_bleeding",
+            red_flags=["গর্ভাবস্থায় যোনিপথে রক্তপাত", "ব্যথা, মাথা ঘোরা, বা দুর্বলতা", "পানি ভাঙা বা দুর্গন্ধযুক্ত স্রাব"],
+            recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
+            answer=PREGNANCY_BLEEDING_ANSWER,
+        )
+
+    if _contains_any(text, seizure_terms) or _contains_any(text, breathing_terms) or _contains_any(text, fetal_movement_terms):
+        return MaternalTriage(
+            risk_level="emergency_now",
+            matched_risk="maternal_danger_sign",
+            red_flags=["খিঁচুনি", "শ্বাসকষ্ট বা বুক ব্যথা", "শিশুর নড়াচড়া কমে যাওয়া বা বন্ধ হওয়া"],
+            recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
+            answer="এই লক্ষণটি বিপদের হতে পারে। দেরি না করে এখনই নিকটস্থ হাসপাতাল বা স্বাস্থ্যকেন্দ্রে যান।",
+        )
+
+    if _contains_any(text, headache_terms) and (_contains_any(text, vision_terms) or has_dizziness):
+        return MaternalTriage(
+            risk_level="emergency_now",
+            matched_risk="severe_headache_or_vision",
+            red_flags=["তীব্র মাথাব্যথা", "চোখে ঝাপসা দেখা", "মাথা ঘোরা বা অজ্ঞান লাগা"],
+            recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
+            answer=SEVERE_HEADACHE_ANSWER,
+        )
+
+    if has_fever_bad_discharge or (_contains_any(text, fever_terms) and _contains_any(text, belly_pain_terms)):
+        return MaternalTriage(
+            risk_level="urgent_today",
+            matched_risk="postpartum_or_maternal_infection",
+            red_flags=["জ্বর", "দুর্গন্ধযুক্ত স্রাব", "তীব্র পেট ব্যথা বা কাঁপুনি"],
+            recommended_action="আজই স্বাস্থ্যকর্মী বা চিকিৎসকের সাথে যোগাযোগ করুন।",
+            answer=INFECTION_AFTER_BIRTH_ANSWER,
+        )
+
+    return None
+
 
 async def get_chat_response(question: str, system_prompt: str | None = None) -> dict[str, Any]:
     settings = get_settings()
     normalized_question = question.strip()
+    triage = _detect_maternal_triage(normalized_question)
+    if triage:
+        return _build_triage_response(triage)
+
     is_emergency = any(keyword in normalized_question for keyword in EMERGENCY_KEYWORDS)
 
     # 1. Fetch RAG Context from Supabase pgvector using HuggingFace sentence-transformers
@@ -84,6 +248,10 @@ async def get_chat_response(question: str, system_prompt: str | None = None) -> 
         "is_emergency": is_emergency,
         "source": "fallback",
         "emergency_text": "এখনই হাসপাতালে যান।" if is_emergency else None,
+        "risk_level": "emergency_now" if is_emergency else "self_care_with_warning",
+        "matched_risk": "keyword_emergency" if is_emergency else None,
+        "red_flags": [],
+        "recommended_action": "এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।" if is_emergency else None,
     }
 
 
@@ -177,6 +345,23 @@ def _build_response(answer: str, is_emergency: bool, source: str) -> dict[str, A
         "is_emergency": is_emergency,
         "source": source,
         "emergency_text": "এখনই হাসপাতালে যান।" if is_emergency else None,
+        "risk_level": "emergency_now" if is_emergency else "self_care_with_warning",
+        "matched_risk": "keyword_emergency" if is_emergency else None,
+        "red_flags": [],
+        "recommended_action": "এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।" if is_emergency else None,
+    }
+
+
+def _build_triage_response(triage: MaternalTriage) -> dict[str, Any]:
+    return {
+        "answer": triage.answer,
+        "is_emergency": triage.risk_level in ("emergency_now", "urgent_today"),
+        "source": "safety-rules",
+        "emergency_text": "এখনই হাসপাতালে যান।" if triage.risk_level == "emergency_now" else None,
+        "risk_level": triage.risk_level,
+        "matched_risk": triage.matched_risk,
+        "red_flags": triage.red_flags,
+        "recommended_action": triage.recommended_action,
     }
 
 
@@ -198,7 +383,8 @@ def _is_provider_answer_acceptable(answer: str, question: str, is_emergency: boo
         return False
 
     lowered = normalized.casefold()
-    if "iud" in lowered or "json requested" in lowered:
+    unsafe_terms = ("iud", "json requested", "রক্ত সংগ্রহ", "blood collect", "collect blood")
+    if any(term in lowered for term in unsafe_terms):
         return False
     if "আমি বুঝতে পারলাম না" in normalized or "আপনার প্রশ্ন আমাকে" in normalized:
         return False
@@ -302,8 +488,23 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
             parsed = json.loads(cleaned_json)
             
             # Defensive check & safety suffix if not present
+            transcription = parsed.get("transcription", "")
             answer = parsed.get("answer", "")
             is_emergency = bool(parsed.get("is_emergency", False))
+            triage = _detect_maternal_triage(transcription)
+            if triage:
+                triage_response = _build_triage_response(triage)
+                return {
+                    "transcription": transcription,
+                    "symptoms": parsed.get("symptoms", []),
+                    "answer": triage_response["answer"],
+                    "is_emergency": triage_response["is_emergency"],
+                    "source": "gemini-voice+safety-rules",
+                    "risk_level": triage_response["risk_level"],
+                    "matched_risk": triage_response["matched_risk"],
+                    "red_flags": triage_response["red_flags"],
+                    "recommended_action": triage_response["recommended_action"],
+                }
             
             if is_emergency:
                 if "হাসপাতালে" not in answer:
@@ -312,11 +513,15 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
                 answer = f"{answer}{SAFETY_SUFFIX}"
 
             return {
-                "transcription": parsed.get("transcription", ""),
+                "transcription": transcription,
                 "symptoms": parsed.get("symptoms", []),
                 "answer": answer,
                 "is_emergency": is_emergency,
-                "source": "gemini-voice"
+                "source": "gemini-voice",
+                "risk_level": "emergency_now" if is_emergency else "self_care_with_warning",
+                "matched_risk": "voice_model_emergency" if is_emergency else None,
+                "red_flags": [],
+                "recommended_action": "এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।" if is_emergency else None,
             }
     except Exception as exc:
         logger.error("Gemini voice parsing failed: %s", exc)
@@ -382,5 +587,3 @@ async def _fetch_rag_guidelines(embedding: list[float], supabase_url: str, supab
     except Exception as exc:
         logger.warning("Failed to fetch pgvector matching guidelines: %s", exc)
     return []
-
-
