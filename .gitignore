@@ -5,6 +5,7 @@ admin/.env.local
 backend/.venv/
 __pycache__/
 *.py[cod]
+scratch_*.py
 backend/__pycache__/
 backend/.pytest_cache/
 backend/htmlcov/

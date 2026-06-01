@@ -1,8 +1,9 @@
 import json
+import os
 import httpx
 
-supabase_url = "https://ibklmeyygujjddntbjsy.supabase.co"
-service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlia2xtZXl5Z3VqamRkbnRianN5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTIyNDc4OSwiZXhwIjoyMDk0ODAwNzg5fQ.G5CdRfLi4ci22hl08uGyqpQ3DuEWEB6DybmUAmqRXOo"
+supabase_url = os.getenv("SUPABASE_URL")
+service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 def determine_trimester(q, a):
     text = (q + " " + a).lower()
@@ -35,6 +36,9 @@ def determine_topic(q, a):
     return "General Maternal Health"
 
 def seed():
+    if not supabase_url or not service_role_key:
+        raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment")
+
     with open("H:/Projects/MaaSheba/Extra_docs_Useful/mother_question_and_answer_pairs_data.json", "r", encoding="utf-8") as f:
         data = json.load(f)
         

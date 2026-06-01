@@ -19,10 +19,5 @@ config.transformer.minifierConfig = {
   }
 };
 
-// Strip design-tool file types that Metro should never bundle
-config.resolver.assetExts = config.resolver.assetExts.filter(
-  (ext) => !["psd", "sketch", "ai", "eps", "pdf"].includes(ext)
-);
-
 module.exports = config;
 
