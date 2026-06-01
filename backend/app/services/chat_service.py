@@ -37,7 +37,7 @@ EMERGENCY_KEYWORDS = [
 SAFETY_SUFFIX = "\n\n⚠️ মনে রাখবেন: এটি শুধু তথ্য। গুরুতর সমস্যায় সবসময় স্বাস্থ্যকর্মী বা হাসপাতালে যান।"
 BANGLA_CHAR_PATTERN = re.compile(r"[\u0980-\u09FF]")
 SENTENCE_SPLIT_PATTERN = re.compile(r"(?<=[।!?])\s+")
-GEMINI_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash"]
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
 RiskLevel = str
 
@@ -461,7 +461,7 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
         "generationConfig": generation_config,
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
             response = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
