@@ -368,7 +368,7 @@ export default function LoginScreen() {
                   accessibilityLabel="login-hero-image"
                   contentFit="cover"
                   onError={() => setHeroFailed(true)}
-                  source={require("../../assets/images/Login_page_pic.png")}
+                  source={require("../../assets/images/Login_page_pic.webp")}
                   style={styles.heroImage}
                   transition={300}
                 />
