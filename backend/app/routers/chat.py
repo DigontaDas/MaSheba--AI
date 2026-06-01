@@ -49,7 +49,9 @@ async def chat_voice(file: UploadFile = File(...)) -> VoiceChatResponse:
         # Ensure fallback mime type if not provided or set to generic octet-stream
         mime_type = file.content_type
         if not mime_type or mime_type == "application/octet-stream":
-            mime_type = "audio/m4a"
+            mime_type = "audio/mp4"
+        elif mime_type.lower() in ("audio/m4a", "audio/x-m4a"):
+            mime_type = "audio/mp4"
             
         result = await get_voice_chat_response(base64_audio, mime_type)
         return VoiceChatResponse(**result)

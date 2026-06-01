@@ -216,6 +216,12 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
     import json
     settings = get_settings()
     
+    # Gemini API does not natively support audio/m4a or audio/x-m4a.
+    # Normalize these to audio/mp4 for API compatibility.
+    normalized_mime = mime_type.lower() if mime_type else "audio/mp4"
+    if normalized_mime in ("audio/m4a", "audio/x-m4a"):
+        normalized_mime = "audio/mp4"
+    
     if not settings.gemini_api_key:
         return {
             "transcription": "",
@@ -256,7 +262,7 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
                 "parts": [
                     {
                         "inlineData": {
-                            "mimeType": mime_type,
+                            "mimeType": normalized_mime,
                             "data": base64_audio
                         }
                     },

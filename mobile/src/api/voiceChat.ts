@@ -25,6 +25,7 @@ export async function askVoiceClinicalOnline(audioUri: string): Promise<VoiceCha
         fieldName: "file",
         httpMethod: "POST",
         uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        mimeType: "audio/mp4",
         headers: {
           "Accept": "application/json"
         }
