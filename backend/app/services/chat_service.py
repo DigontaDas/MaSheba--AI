@@ -294,7 +294,12 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
             if not text_output:
                 raise ValueError("Empty text returned from Gemini")
 
-            parsed = json.loads(text_output.strip())
+            # Strip markdown formatting wrappers defensively (e.g., ```json ... ```)
+            cleaned_json = text_output.strip()
+            if cleaned_json.startswith("```"):
+                cleaned_json = re.sub(r"^```(?:json)?\n|```$", "", cleaned_json, flags=re.MULTILINE).strip()
+
+            parsed = json.loads(cleaned_json)
             
             # Defensive check & safety suffix if not present
             answer = parsed.get("answer", "")

@@ -79,6 +79,15 @@ export async function initDB(): Promise<void> {
     CREATE INDEX IF NOT EXISTS offline_qa_severity_idx ON offline_qa(severity);
   `);
 
+  // Prevent database write wear by only inserting guidelines if the table is empty
+  const countResult = await db.getFirstAsync<{ count: number }>(
+    "SELECT COUNT(*) as count FROM offline_qa"
+  );
+
+  if (countResult && countResult.count > 0) {
+    return;
+  }
+
   await db.withExclusiveTransactionAsync(async (tx) => {
     for (const item of OFFLINE_QA_SEED) {
       await tx.runAsync(

@@ -4,7 +4,7 @@ import * as TaskManager from "expo-task-manager";
 import { postSync } from "@/api/syncClient";
 import { ensureLocalDbReady } from "@/db/localDbAccess";
 import { applySyncResults, getPendingOutbox, setLastSyncedAt } from "@/db/outbox";
-import { getSession } from "@/auth/secureSession";
+import { getSession, isTokenExpired, refreshAndSaveSession } from "@/auth/secureSession";
 
 export const OUTBOX_SYNC_TASK = "MAASHEBA_OUTBOX_SYNC";
 
@@ -15,9 +15,18 @@ export async function runOutboxSync(): Promise<{ processed: number; skipped: boo
     return { processed: 0, skipped: true };
   }
 
-  const session = await getSession();
+  let session = await getSession();
   if (!session) {
     return { processed: 0, skipped: true };
+  }
+
+  // Defensively check if the accessToken is expired or close to expiry, and refresh it
+  if (isTokenExpired(session.accessToken)) {
+    const refreshed = await refreshAndSaveSession(session.refreshToken);
+    if (!refreshed) {
+      return { processed: 0, skipped: true }; // Require manual app launch to establish session
+    }
+    session = refreshed;
   }
 
   const pending = await getPendingOutbox(100);

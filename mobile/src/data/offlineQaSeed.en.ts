@@ -362,6 +362,106 @@ const rows: Row[] = [
     severity: "MODERATE",
     see_doctor: true,
     emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "I am still bleeding after delivery. Is this normal?",
+    answer_bn: "Sister, some bleeding is normal for a few weeks after delivery. However, if you soak more than one pad in an hour, pass large blood clots, or feel dizzy, go to the hospital immediately.",
+    severity: "HIGH",
+    see_doctor: false,
+    emergency: true
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "I cannot sleep at night because of the baby.",
+    answer_bn: "Sister, it is common to get less sleep when caring for a newborn. Try to rest when the baby sleeps, take help from family members, and eat and drink well. Your health is also very important.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "I have a fever today.",
+    answer_bn: "Sister, a fever after delivery can be a sign of infection. If the pain at the stitches increases, there is foul-smelling discharge, or your body shakes, contact a health worker or doctor immediately.",
+    severity: "MODERATE",
+    see_doctor: true,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "I feel dizzy whenever I stand up.",
+    answer_bn: "Sister, this can happen due to anemia or weakness after childbirth. Eat protein-rich foods, leafy vegetables, eggs, and take iron tablets. If the symptoms persist, make sure to get checked by a doctor.",
+    severity: "MODERATE",
+    see_doctor: true,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "When can I start exercising after childbirth?",
+    answer_bn: "Sister, light walking can usually be started within a few days after a normal delivery. Do not start heavy exercises, and if you had a C-section, consult your doctor first. Gradually return to your normal activities.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "My baby falls asleep while breastfeeding.",
+    answer_bn: "Sister, it is common for newborns to fall asleep while feeding. Make sure the baby feeds for at least 10–15 minutes, switch sides after finishing one breast, and keep them awake by gently touching their cheek. If they seem very weak, inform a health worker.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "My breast milk looks a bit yellow. Is it a problem?",
+    answer_bn: "No sister, this is completely normal. The yellowish milk that comes in the first few days after delivery is called Colostrum. It boosts immunity and protects the baby from illnesses, so make sure to feed this milk to your baby.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "Should I give extra water to the baby during hot weather?",
+    answer_bn: "No sister. Exclusive breastfeeding is sufficient for the baby until six months of age. Breast milk contains enough water, nutrients, and immunity. There is no need to give water or other food before six months.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "I have to do household work and don't find time to breastfeed.",
+    answer_bn: "Sister, we know it can be hard to take care of the baby along with household work. Try to breastfeed in between chores, take help from family members, and do not keep the baby without feeding for a long time. Remember, your breast milk is the baby's most important food now.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "My baby gets hiccups after feeding.",
+    answer_bn: "Sister, many babies get hiccups after feeding and it is usually not harmful. Burp the baby on your shoulder after feeds, avoid feeding too fast, and keep them upright. Inform a health worker if they have breathing trouble.",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
   }
 ];
 

@@ -26,8 +26,10 @@ async def _dispatch_to_telecom_gateway(phone: str, text: str) -> None:
     # A mock local telecom REST gateway URL or ssl wireless gateway.
     # If a real gateway token isn't configured, we print and simulate successful broadcast
     # or raise an exception to test the retry pipeline.
+    import os
     gateway_url = "https://api.greenweb.com.bd/api.php"
-    token = "MOCK_SMS_TOKEN_FOR_TESTING" # Or os.getenv("LOCAL_SMS_API_TOKEN")
+    # Load the real telecom gateway token from environment variables, defaulting to mock mode for testing
+    token = os.getenv("LOCAL_SMS_API_TOKEN") or "MOCK_SMS_TOKEN_FOR_TESTING"
     
     # In clinical production tests, if token is default or missing, we mock the sending
     if token == "MOCK_SMS_TOKEN_FOR_TESTING":

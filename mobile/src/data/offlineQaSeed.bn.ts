@@ -1802,6 +1802,106 @@ const QA_ROWS: OfflineQaSeedRow[] = [
     severity: "LOW",
     see_doctor: false,
     emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "প্রসবের পর এখনও কিছু রক্ত যাচ্ছে। এটা কি স্বাভাবিক?",
+    answer_bn: "আপা, প্রসবের পর কয়েক সপ্তাহ পর্যন্ত কিছু রক্তপাত হওয়া স্বাভাবিক। তবে এক ঘণ্টায় একাধিক প্যাড ভিজলে, বড় বড় রক্তের দলা বের হলে বা মাথা ঘুরলে দ্রুত হাসপাতালে যান।",
+    severity: "HIGH",
+    see_doctor: false,
+    emergency: true
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "শিশুর জন্য রাতে ঘুমাতে পারছি না।",
+    answer_bn: "আপা, নবজাতকের যত্ন নিতে গিয়ে অনেক মায়ের ঘুম কম হয়। শিশু ঘুমালে আপনিও বিশ্রাম নিন, পরিবারের সদস্যদের সাহায্য নিন এবং নিজের খাওয়া-দাওয়া ঠিক রাখুন। আপনার সুস্থতাও খুব গুরুত্বপূর্ণ।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "আজ আমার জ্বর এসেছে।",
+    answer_bn: "আপা, প্রসবের পর জ্বর হলে তা সংক্রমণের লক্ষণ হতে পারে। সেলাইয়ের জায়গায় ব্যথা বাড়লে, দুর্গন্ধযুক্ত স্রাব হলে বা শরীর কাঁপলে দ্রুত স্বাস্থ্যকর্মী বা চিকিৎসকের সাথে যোগাযোগ করুন।",
+    severity: "MODERATE",
+    see_doctor: true,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "উঠলেই মাথা ঘোরে।",
+    answer_bn: "আপা, প্রসবের পর রক্তস্বল্পতা বা দুর্বলতার কারণে এমন হতে পারে। প্রোটিনসমৃদ্ধ খাবার, শাকসবজি, ডিম ও আয়রন ট্যাবলেট গ্রহণ করুন। লক্ষণ বেশি হলে অবশ্যই পরীক্ষা করান।",
+    severity: "MODERATE",
+    see_doctor: true,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "প্রসব_পরবর্তী_যত্ন",
+    question_bn: "প্রসবের পরে ব্যায়াম কখন থেকে করতে পারব?",
+    answer_bn: "আপা, সাধারণত স্বাভাবিক প্রসবের পরে হালকা হাঁটা কয়েক দিনের মধ্যেই শুরু করা যায়। ভারী ব্যায়াম শুরু করবেন না এবং সিজারিয়ান হলে চিকিৎসকের অনুমতি নিন। ধীরে ধীরে স্বাভাবিক কার্যক্রমে ফিরে আসুন।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "দুধ খেতে খেতে আমার শিশু ঘুমিয়ে যায়।",
+    answer_bn: "আপা, নবজাতক শিশুদের অনেক সময় দুধ খেতে খেতে ঘুমিয়ে পড়া স্বাভাবিক। শিশু অন্তত ১০–১৫ মিনিট দুধ খায় তা নিশ্চিত করুন, এক পাশ শেষ করে অন্য পাশ দিন এবং গালে আলতো স্পর্শ করে জাগিয়ে রাখুন। খুব দুর্বল লাগলে স্বাস্থ্যকর্মীকে জানান।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "আমার বুকের দুধের রং একটু হলুদ। এটা কি সমস্যা?",
+    answer_bn: "না আপা, এটি একদম স্বাভাবিক। প্রসবের পর প্রথম কয়েকদিন যে হলুদাভ দুধ আসে তাকে শালদুধ (Colostrum) বলা হয়। এটি রোগ প্রতিরোধ ক্ষমতা বাড়ায় ও রোগ থেকে সুরক্ষা দেয়, তাই এই দুধ অবশ্যই শিশুকে খাওয়াবেন।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "গরমে কি শিশুকে আলাদা করে পানি দিতে হবে?",
+    answer_bn: "না আপা। ছয় মাস বয়স পর্যন্ত শিশুর জন্য শুধু বুকের দুধই যথেষ্ট। বুকের দুধেই পর্যাপ্ত পানি, পুষ্টি ও রোগ প্রতিরোধ ক্ষমতা থাকে। ছয় মাস পর্যন্ত পানি বা অন্য খাবার দেওয়ার প্রয়োজন নেই।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "ঘরের কাজ করতে হয়। দুধ খাওয়ানোর সময় পাচ্ছি না।",
+    answer_bn: "আপা, ঘরের কাজের পাশাপাশি শিশুর যত্ন নেওয়া কঠিন হতে পারে। তবে কাজের ফাঁকে ফাঁকে শিশুকে বুক দিন, পরিবারের সাহায্য নিন এবং দীর্ঘ সময় শিশুকে না খাইয়ে রাখবেন না। বুকের দুধই এখন শিশুর সবচেয়ে গুরুত্বপূর্ণ খাবার।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
+  },
+  {
+    trimester: "POSTPARTUM",
+    week_range: "postpartum",
+    topic: "বুকের_দুধ",
+    question_bn: "দুধ খাওয়ার পরে শিশুর হেঁচকি উঠছে।",
+    answer_bn: "আপা, দুধ খাওয়ার পরে অনেক শিশুরই হেঁচকি ওঠে এবং এটি সাধারণত ক্ষতিকর নয়। দুধ খাওয়ানোর পর শিশুকে কাঁধে নিয়ে ঢেকুর তুলান, খুব দ্রুত খাওয়ানো এড়ান এবং সোজা অবস্থায় রাখুন। শ্বাসকষ্ট হলে স্বাস্থ্যকর্মীকে জানান।",
+    severity: "LOW",
+    see_doctor: false,
+    emergency: false
   }
 ];
 
