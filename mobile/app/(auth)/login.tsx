@@ -43,7 +43,8 @@ const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_de
 
 const demoCredentials: Record<UserRole, DemoCredential> = {
   CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
-  MOTHER: { email: DEMO_MOTHER_EMAIL, password: DEMO_MOTHER_PASSWORD }
+  MOTHER: { email: DEMO_MOTHER_EMAIL, password: DEMO_MOTHER_PASSWORD },
+  ADMIN: { email: "admin", password: "admin123" }
 };
 
 async function seedLocalChwDemoData() {

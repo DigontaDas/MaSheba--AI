@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = Field(alias="SUPABASE_SERVICE_ROLE_KEY", min_length=1)
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+    hf_api_key: str = Field(default="", alias="HF_API_KEY")
 
     model_config = SettingsConfigDict(
         env_file=ROOT_ENV_FILE,

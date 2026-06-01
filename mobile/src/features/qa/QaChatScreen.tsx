@@ -1,7 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { Alert, Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Audio } from "expo-av";
+import * as Speech from "expo-speech";
 import { router, useSegments } from "expo-router";
 import { askOnline } from "@/api/chatClient";
+import { askVoiceClinicalOnline } from "@/api/voiceChat";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { EmergencyBanner } from "@/components/emergency/EmergencyBanner";
 import { Icon } from "@/components/ui/Icon";
@@ -41,6 +44,137 @@ export function QaChatScreen() {
   const [messages, setMessages] = useState<Message[]>([
     { id: "hello", role: "ai", text: copy.qa.greeting }
   ]);
+
+  // Voice recording and speech states
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    let anim: Animated.CompositeAnimation | null = null;
+    if (isRecording) {
+      anim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.25,
+            duration: 600,
+            useNativeDriver: true
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true
+          })
+        ])
+      );
+      anim.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+    return () => {
+      if (anim) anim.stop();
+    };
+  }, [isRecording, pulseAnim]);
+
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      Speech.stop().catch(() => undefined);
+    };
+  }, []);
+
+  const startRecording = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          language === "en" ? "Permission Denied" : "অনুমতি দেওয়া হয়নি",
+          language === "en" 
+            ? "MaaSheba needs access to your microphone to record audio symptoms." 
+            : "ভয়েসের মাধ্যমে লক্ষণ জানাতে মাসেবা অ্যাপটির মাইক্রোফোন ব্যবহারের অনুমতি প্রয়োজন।"
+        );
+        return;
+      }
+
+      await Speech.stop();
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(newRecording);
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    setIsRecording(false);
+    setRecording(null);
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (uri) {
+        await submitVoiceQuestion(uri);
+      }
+    } catch (err) {
+      console.error("Failed to stop recording:", err);
+    }
+  };
+
+  const submitVoiceQuestion = async (uri: string) => {
+    setIsTranscribing(true);
+    setIsLoading(true);
+
+    const msgId = `custom-q-${Date.now()}`;
+    setMessages((current) => [...current, { 
+      id: msgId, 
+      role: "user", 
+      text: language === "en" ? "🎤 Analyzing voice recording..." : "🎤 ভয়েস রেকর্ড বিশ্লেষণ হচ্ছে..." 
+    }]);
+
+    try {
+      const response = await askVoiceClinicalOnline(uri);
+      
+      setMessages((current) =>
+        current.map((m) => (m.id === msgId ? { ...m, text: `🎤 ${response.transcription}` } : m))
+      );
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `online-a-${Date.now()}`,
+          role: "ai",
+          text: response.answer,
+          emergency: response.is_emergency
+        }
+      ]);
+
+      // Read reply aloud to the user in Bengali
+      Speech.speak(response.answer, {
+        language: "bn-BD",
+        rate: 0.9,
+        pitch: 1.0
+      });
+
+    } catch (err) {
+      console.error("Voice chat analysis failed:", err);
+      setMessages((current) =>
+        current.map((m) => (m.id === msgId ? { ...m, text: "🎤 ভয়েস পাঠানো ব্যর্থ হয়েছে" } : m))
+      );
+    } finally {
+      setIsTranscribing(false);
+      setIsLoading(false);
+    }
+  };
 
   const selectCategory = useCallback(async (nextCategory: QaCategory, options?: { emergencyOnly?: boolean }) => {
     setCategory(nextCategory);
@@ -237,18 +371,65 @@ export function QaChatScreen() {
       </View>
 
       <View style={styles.inputRow}>
-        <TextInput
-          accessibilityLabel={copy.qa.askPlaceholder}
-          onChangeText={setInput}
-          onSubmitEditing={submitInput}
-          placeholder={copy.qa.askPlaceholder}
-          placeholderTextColor={colors.outline}
-          style={styles.input}
-          value={input}
-        />
-        <Pressable accessibilityLabel={copy.qa.sendQuestion} accessibilityRole="button" onPress={submitInput} style={styles.send}>
-          <Icon name="send" color={colors.onPrimary} />
-        </Pressable>
+        {isRecording ? (
+          <View style={styles.recordingIndicatorRow}>
+            <Animated.View
+              style={[
+                styles.recordingDot,
+                {
+                  opacity: pulseAnim.interpolate({
+                    inputRange: [1, 1.25],
+                    outputRange: [1, 0.3]
+                  }),
+                  transform: [{ scale: pulseAnim }]
+                }
+              ]}
+            />
+            <Text style={styles.recordingText}>
+              {language === "en" ? "Recording audio..." : "ভয়েস রেকর্ড হচ্ছে..."}
+            </Text>
+          </View>
+        ) : (
+          <TextInput
+            accessibilityLabel={copy.qa.askPlaceholder}
+            editable={!isTranscribing}
+            onChangeText={setInput}
+            onSubmitEditing={submitInput}
+            placeholder={isTranscribing ? (language === "en" ? "Analyzing voice..." : "ভয়েস বিশ্লেষণ হচ্ছে...") : copy.qa.askPlaceholder}
+            placeholderTextColor={colors.outline}
+            style={[styles.input, isTranscribing && { opacity: 0.6 }]}
+            value={input}
+          />
+        )}
+
+        <Animated.View style={isRecording ? { transform: [{ scale: pulseAnim }] } : {}}>
+          <Pressable
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+            style={[
+              styles.micButton,
+              isRecording && styles.micButtonActive
+            ]}
+          >
+            <Icon
+              name={isRecording ? "stop" : "mic"}
+              color="#FFFFFF"
+              size={20}
+            />
+          </Pressable>
+        </Animated.View>
+
+        {!isRecording && (
+          <Pressable 
+            accessibilityLabel={copy.qa.sendQuestion} 
+            accessibilityRole="button" 
+            disabled={isTranscribing || !input.trim()}
+            onPress={submitInput} 
+            style={[styles.send, (isTranscribing || !input.trim()) && { opacity: 0.55 }]}
+          >
+            <Icon name="send" color={colors.onPrimary} />
+          </Pressable>
+        )}
       </View>
       <View style={styles.secure}>
         <Icon name="lock" color={colors.secondary} size={16} />
@@ -395,5 +576,43 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     paddingHorizontal: spacing.marginMobile,
     paddingVertical: spacing.sm
+  },
+  micButton: {
+    alignItems: "center",
+    backgroundColor: "#70605A",
+    borderRadius: 26,
+    height: 52,
+    justifyContent: "center",
+    width: 52
+  },
+  micButtonActive: {
+    backgroundColor: "#ba1a1a",
+    shadowColor: "#ba1a1a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  recordingIndicatorRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FCEBE5",
+    borderRadius: 26,
+    height: 52,
+    paddingHorizontal: 16,
+    gap: 10
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ba1a1a"
+  },
+  recordingText: {
+    color: "#ba1a1a",
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Hind Siliguri"
   }
 });

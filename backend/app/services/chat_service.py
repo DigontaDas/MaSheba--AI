@@ -42,8 +42,26 @@ GEMINI_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash"]
 async def get_chat_response(question: str, system_prompt: str | None = None) -> dict[str, Any]:
     settings = get_settings()
     normalized_question = question.strip()
-    prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else SYSTEM_PROMPT
     is_emergency = any(keyword in normalized_question for keyword in EMERGENCY_KEYWORDS)
+
+    # 1. Fetch RAG Context from Supabase pgvector using HuggingFace sentence-transformers
+    rag_context = ""
+    try:
+        embedding = await _get_hf_embedding(normalized_question, settings.hf_api_key)
+        if embedding:
+            chunks = await _fetch_rag_guidelines(
+                embedding, 
+                str(settings.supabase_url), 
+                settings.supabase_service_role_key
+            )
+            if chunks:
+                rag_context = "\n\nমাতৃস্বাস্থ্য নির্দেশিকা রেফারেন্স (WHO & DGHS Guidelines):\n" + "\n".join(f"- {chunk}" for chunk in chunks)
+    except Exception as e:
+        logger.warning("RAG pipeline error: %s", e)
+
+    prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else SYSTEM_PROMPT
+    if rag_context:
+        prompt = f"{prompt}{rag_context}"
 
     if settings.groq_api_key:
         try:
@@ -298,4 +316,60 @@ async def get_voice_chat_response(base64_audio: str, mime_type: str) -> dict[str
             "is_emergency": False,
             "source": "fallback-voice"
         }
+
+
+async def _get_hf_embedding(text: str, api_key: str | None = None) -> list[float] | None:
+    url = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    
+    payload = {"inputs": text}
+    
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            res = response.json()
+            if isinstance(res, list) and len(res) > 0 and isinstance(res[0], float):
+                return res
+            elif isinstance(res, list) and len(res) > 0 and isinstance(res[0], list):
+                return res[0]
+        elif response.status_code == 503 or "loading" in response.text.lower():
+            logger.warning("HuggingFace model is loading. Skipping RAG context.")
+            return None
+        else:
+            logger.warning("HuggingFace embedding failed: %s", response.text)
+            return None
+    except Exception as exc:
+        logger.warning("Failed to call HuggingFace embedding API: %s", exc)
+        return None
+
+
+async def _fetch_rag_guidelines(embedding: list[float], supabase_url: str, supabase_key: str) -> list[str]:
+    url = f"{supabase_url.rstrip('/')}/rest/v1/rpc/match_guidelines"
+    headers = {
+        "apikey": supabase_key,
+        "Authorization": f"Bearer {supabase_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "query_embedding": embedding,
+        "match_threshold": 0.4,
+        "match_count": 3
+    }
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            results = response.json()
+            if isinstance(results, list):
+                return [r.get("content") for r in results if isinstance(r, dict) and r.get("content")]
+        else:
+            logger.warning("Supabase RAG matching failed (HTTP %s): %s", response.status_code, response.text)
+    except Exception as exc:
+        logger.warning("Failed to fetch pgvector matching guidelines: %s", exc)
+    return []
+
 

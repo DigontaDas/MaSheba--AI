@@ -125,7 +125,7 @@ describe("LoginScreen routing", () => {
     });
 
     await act(async () => {
-      const textNode = tree.root.find((node) => node.type === Text && node.props.children === "নিবন্ধন");
+      const textNode = (tree.root as any).find((node: any) => node.type === Text && node.props.children === "নিবন্ধন");
       let current = textNode;
       while (current && !current.props.onPress) {
         current = current.parent;

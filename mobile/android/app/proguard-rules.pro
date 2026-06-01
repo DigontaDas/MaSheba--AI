@@ -20,3 +20,7 @@
 -keep class kotlin.Metadata { *; }
 
 # Add any project specific keep options here:
+
+# Avoid treatment of missing optional references as fatal by R8
+-dontwarn expo.modules.core.interfaces.services.KeepAwakeManager
+-dontwarn expo.modules.kotlin.**
