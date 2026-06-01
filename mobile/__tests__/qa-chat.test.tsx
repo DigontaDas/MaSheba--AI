@@ -116,14 +116,14 @@ const mockAskOnline = jest.fn<Promise<{
   matched_risk?: string | null;
   red_flags?: string[];
   recommended_action?: string | null;
-} | null>, [string]>(async () => null);
+} | null>, [string, string?]>(async () => null);
 const mockAskVoiceClinicalOnline = jest.fn<Promise<{
   transcription: string;
   symptoms: string[];
   answer: string;
   is_emergency: boolean;
   source: string;
-}>, [string]>(async () => ({
+}>, [string, string?]>(async () => ({
   transcription: "I have a headache",
   symptoms: ["headache"],
   answer: "Please rest and contact a health worker if it becomes severe.",
@@ -169,12 +169,12 @@ jest.mock("@/features/qa/offlineQaStore", () => ({
 }));
 
 jest.mock("@/api/chatClient", () => ({
-  askOnline: (...args: [string]) => mockAskOnline(...args)
+  askOnline: (...args: any[]) => mockAskOnline(...args)
 }));
 
 jest.mock("@/api/voiceChat", () => ({
   VOICE_RECORDING_OPTIONS: {},
-  askVoiceClinicalOnline: (...args: [string]) => mockAskVoiceClinicalOnline(...args)
+  askVoiceClinicalOnline: (...args: any[]) => mockAskVoiceClinicalOnline(...args)
 }));
 
 jest.mock("expo-network", () => ({
@@ -273,7 +273,7 @@ describe("QaChatScreen", () => {
     });
 
     const snapshot = JSON.stringify(tree.toJSON());
-    expect(mockAskOnline).toHaveBeenCalledWith(onlineQuestion);
+    expect(mockAskOnline).toHaveBeenCalledWith(onlineQuestion, "bn");
     expect(snapshot).toContain(onlineAnswer);
   });
 
@@ -302,7 +302,7 @@ describe("QaChatScreen", () => {
     });
 
     const snapshot = JSON.stringify(tree.toJSON());
-    expect(mockAskOnline).toHaveBeenCalledWith(romanizedDangerQuestion);
+    expect(mockAskOnline).toHaveBeenCalledWith(romanizedDangerQuestion, "bn");
     expect(snapshot).toContain("১ ঘন্টায়");
     expect(snapshot).toContain("এখনই হাসপাতালে");
   });
@@ -358,7 +358,7 @@ describe("QaChatScreen", () => {
       await Promise.resolve();
     });
 
-    expect(mockAskVoiceClinicalOnline).toHaveBeenCalledWith("file://test-audio.m4a");
+    expect(mockAskVoiceClinicalOnline).toHaveBeenCalledWith("file://test-audio.m4a", "bn");
     expect(JSON.stringify(tree.toJSON())).toContain("I have a headache");
   });
 

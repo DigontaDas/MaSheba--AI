@@ -13,7 +13,7 @@ export interface ChatResponse {
   recommended_action?: string | null;
 }
 
-export async function askOnline(question: string): Promise<ChatResponse | null> {
+export async function askOnline(question: string, language?: string): Promise<ChatResponse | null> {
   try {
     const network = await Network.getNetworkStateAsync();
     if (!network.isConnected || network.isInternetReachable === false) {
@@ -27,7 +27,7 @@ export async function askOnline(question: string): Promise<ChatResponse | null> 
       const response = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, language }),
         signal: controller.signal,
       });
 

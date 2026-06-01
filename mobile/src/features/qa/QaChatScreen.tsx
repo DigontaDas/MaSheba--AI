@@ -188,7 +188,7 @@ export function QaChatScreen() {
     }]);
 
     try {
-      const response = await askVoiceClinicalOnline(uri);
+      const response = await askVoiceClinicalOnline(uri, language);
       
       setMessages((current) =>
         current.map((m) => (m.id === msgId ? { ...m, text: `🎤 ${response.transcription}` } : m))
@@ -204,9 +204,9 @@ export function QaChatScreen() {
         }
       ]);
 
-      // Read reply aloud to the user in Bengali
+      // Read reply aloud to the user in appropriate language
       Speech.speak(response.answer, {
-        language: "bn-BD",
+        language: language === "en" ? "en-US" : "bn-BD",
         rate: 0.9,
         pitch: 1.0
       });
@@ -277,7 +277,7 @@ export function QaChatScreen() {
     setIsLoading(true);
 
     try {
-      const onlineResponse = await askOnline(question);
+      const onlineResponse = await askOnline(question, language);
       if (onlineResponse) {
         setMessages((current) => [
           ...current,

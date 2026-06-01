@@ -302,3 +302,76 @@ def test_voice_chat_empty_upload_returns_validation_error() -> None:
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Empty audio file uploaded"
+
+
+def test_chat_returns_english_response(monkeypatch: Any) -> None:
+    async def fake_groq(question: str, api_key: str, system_prompt: str) -> str:
+        assert "Respond ONLY in English" in system_prompt
+        return "During pregnancy, eat nutritious food and stay hydrated."
+
+    monkeypatch.setattr("app.services.chat_service.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("app.services.chat_service._call_groq", fake_groq)
+
+    client = TestClient(app)
+    response = client.post("/chat", json={"question": "What should I eat during pregnancy?", "language": "en"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "groq"
+    assert body["is_emergency"] is False
+    assert "pregnancy" in body["answer"]
+    assert "Remember: This is for information only" in body["answer"]
+
+
+def test_chat_detects_postpartum_bleeding_english() -> None:
+    client = TestClient(app)
+    response = client.post("/chat", json={"question": "I had a delivery but now I am bleeding", "language": "en"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "safety-rules"
+    assert body["matched_risk"] == "postpartum_bleeding"
+    assert body["risk_level"] == "urgent_today"
+    assert "Sister, mild bleeding after delivery" in body["answer"]
+    assert "soak 1 or more pads" in body["answer"]
+
+
+def test_voice_chat_english_success(monkeypatch: Any) -> None:
+    class MockResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": '{"transcription": "I have severe headache", "symptoms": ["headache"], "answer": "Severe headache during pregnancy is dangerous.", "is_emergency": true}'
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+
+    async def fake_post(*args: Any, **kwargs: Any) -> MockResponse:
+        return MockResponse()
+
+    monkeypatch.setattr("app.services.chat_service.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("httpx.AsyncClient.post", fake_post)
+
+    client = TestClient(app)
+    response = client.post(
+        "/chat/voice?language=en",
+        files={"file": ("test.m4a", b"dummy_audio_bytes", "audio/m4a")}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["transcription"] == "I have severe headache"
+    assert "headache" in body["symptoms"]
+    assert "Severe headache" in body["answer"]
+    assert body["is_emergency"] is True
+    assert body["source"] == "gemini-voice"

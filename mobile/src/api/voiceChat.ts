@@ -50,10 +50,11 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backe
  * 
  * @param audioUri The local file URI of the recorded audio (e.g. from expo-av)
  */
-export async function askVoiceClinicalOnline(audioUri: string): Promise<VoiceChatResponse> {
+export async function askVoiceClinicalOnline(audioUri: string, language?: string): Promise<VoiceChatResponse> {
   try {
+    const queryParam = language ? `?language=${encodeURIComponent(language)}` : "";
     const uploadResult = await FileSystem.uploadAsync(
-      `${API_BASE.replace(/\/+$/, "")}/chat/voice`,
+      `${API_BASE.replace(/\/+$/, "")}/chat/voice${queryParam}`,
       audioUri,
       {
         fieldName: "file",

@@ -12,6 +12,7 @@ router = APIRouter(tags=["chat"])
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2, max_length=500)
     system_prompt: str | None = None
+    language: str | None = "bn"
 
 
 class ChatResponse(BaseModel):
@@ -42,12 +43,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="Question cannot be empty")
 
-    result = await get_chat_response(request.question, system_prompt=request.system_prompt)
+    result = await get_chat_response(
+        request.question,
+        system_prompt=request.system_prompt,
+        language=request.language or "bn"
+    )
     return ChatResponse(**result)
 
 
 @router.post("/chat/voice", response_model=VoiceChatResponse)
-async def chat_voice(file: UploadFile = File(...)) -> VoiceChatResponse:
+async def chat_voice(file: UploadFile = File(...), language: str = "bn") -> VoiceChatResponse:
     try:
         content = await file.read()
         if not content:
@@ -61,7 +66,7 @@ async def chat_voice(file: UploadFile = File(...)) -> VoiceChatResponse:
         elif mime_type.lower() in ("audio/m4a", "audio/x-m4a"):
             mime_type = "audio/mp4"
             
-        result = await get_voice_chat_response(base64_audio, mime_type)
+        result = await get_voice_chat_response(base64_audio, mime_type, language=language)
         return VoiceChatResponse(**result)
     except HTTPException:
         raise
