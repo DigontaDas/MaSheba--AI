@@ -1,0 +1,28 @@
+# .graphifyignore
+SKILLS_Main_Added/
+APK_MAIN_Masheba/
+Extra_docs_Useful/
+.idea/
+.vscode/
+.qodo/
+.pytest_cache/
+.benchmarks/
+.venv/
+node_modules/
+dist/
+build/
+*.pyc
+__pycache__/
+graphify-out/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
