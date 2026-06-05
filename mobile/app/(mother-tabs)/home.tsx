@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   detailsBox: {
     backgroundColor: colors.background,
     width: "100%",
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     padding: spacing.base,
     gap: spacing.sm
   },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorContainer + "15",
     borderColor: colors.error + "40",
     borderWidth: 1,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     padding: spacing.base,
     width: "100%",
     gap: spacing.xs,

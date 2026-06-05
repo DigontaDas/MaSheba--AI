@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.surfaceContainerLowest,
     borderColor: colors.outlineVariant,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     borderWidth: 1,
     marginHorizontal: spacing.base,
     marginTop: spacing.base,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: radius.base
+    borderRadius: radius.default
   },
   retryText: {
     ...typography.body,
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   btn: {
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.xs,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     minHeight: 36,
     justifyContent: "center",
     alignItems: "center"
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 300,
     backgroundColor: colors.background,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center"
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.base,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     borderWidth: 1,
     borderColor: colors.outlineVariant
   },
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   formInput: {
     backgroundColor: colors.background,
     borderColor: colors.outlineVariant,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     borderWidth: 1,
     color: colors.onSurface,
     fontSize: 16,

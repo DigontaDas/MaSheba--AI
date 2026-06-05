@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearSession } from "@/auth/secureSession";
 import { clearRoleSession, getCurrentMotherProfile, type MotherProfile } from "@/auth/roleSession";
@@ -108,8 +108,8 @@ export default function ProfileScreen() {
 
   // Determine verification status label and color
   let statusLabel = "";
-  let statusColor = colors.secondary;
-  let statusIcon = "verified";
+  let statusColor: string = colors.secondary;
+  let statusIcon: IconName = "verified";
 
   if (profile?.verificationStatus === "PENDING") {
     statusLabel = language === "en" ? "Pending Verification" : "যাচাইকরণ পেন্ডিং";

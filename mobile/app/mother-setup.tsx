@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   rejectionCard: {
     backgroundColor: colors.errorContainer + "20",
     borderColor: colors.error,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     borderWidth: 1,
     padding: spacing.base,
     gap: spacing.xs
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.background,
     borderColor: colors.outlineVariant,
-    borderRadius: radius.base,
+    borderRadius: radius.default,
     borderWidth: 1,
     color: colors.onSurface,
     fontSize: 16,
