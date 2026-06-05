@@ -12,6 +12,7 @@ backend/htmlcov/
 admin/.next/
 admin/node_modules/
 admin/out/
+admin/tsconfig.tsbuildinfo
 mobile/.expo/
 mobile/.expo-shared/
 mobile/.metro-cache/
@@ -55,3 +56,5 @@ Extra_docs_Useful/
 MaaSheba Mobile Feature Plan.md
 APK_MAIN_Masheba/
 admin_panel_audit_and_design.md
+admin_panel_full_implementation_plan
+MaaSheba Admin Console Web Implementation Plan

@@ -22,6 +22,8 @@ class MasterQaItem(BaseModel):
     topic: str
     question_bn: str
     answer_bn: str
+    question_en: str
+    answer_en: str
     severity: str
     created_at: str
     updated_at: str
@@ -89,7 +91,7 @@ async def sync_master_qa(
         )
 
     # 3. Construct Supabase REST API URL
-    url = f"{str(settings.supabase_url).rstrip('/')}/rest/v1/master_qa?select=id,trimester,topic,question_bn,answer_bn,severity,created_at,updated_at&order=updated_at.asc"
+    url = f"{str(settings.supabase_url).rstrip('/')}/rest/v1/master_qa?select=id,trimester,topic,question_bn,answer_bn,question_en,answer_en,severity,created_at,updated_at&order=updated_at.asc"
     
     if last_synced_at:
         # Check if last_synced_at is a valid ISO timestamp format

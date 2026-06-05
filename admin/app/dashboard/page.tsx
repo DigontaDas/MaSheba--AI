@@ -1,83 +1,186 @@
 import { RiskSummaryChart } from "@/components/RiskSummaryChart";
-import { createAdminClient } from "@/utils/supabase/server";
+import { UpazilaRiskMap } from "@/components/UpazilaRiskMap";
+import { getSummary } from "@/utils/admin-api";
+import { getTranslation } from "@/utils/translations";
+import { getServerLanguage } from "@/utils/translations-server";
 
 export const dynamic = "force-dynamic";
 
-type ChwListRow = {
-  chw_id: string;
-  name: string;
-  union_name: string;
-  upazila: string;
-  is_active: boolean;
-  patient_count: number;
-};
-
-type RiskSummaryRow = {
-  chw_id: string;
-  chw_name: string;
-  low_count: number;
-  moderate_count: number;
-  high_count: number;
-};
-
-async function getDashboardData() {
-  const supabase = createAdminClient();
-  const [chwResponse, riskResponse] = await Promise.all([
-    supabase.from("v_chw_list").select("chw_id,name,union_name,upazila,is_active,patient_count"),
-    supabase.from("v_risk_summary").select("chw_id,chw_name,low_count,moderate_count,high_count"),
-  ]);
-
-  if (chwResponse.error) {
-    throw new Error("Unable to load CHW list.");
-  }
-  if (riskResponse.error) {
-    throw new Error("Unable to load risk summary.");
-  }
-
-  return {
-    chws: (chwResponse.data ?? []) as ChwListRow[],
-    riskSummary: (riskResponse.data ?? []) as RiskSummaryRow[],
-  };
-}
-
 export default async function DashboardPage() {
-  const { chws, riskSummary } = await getDashboardData();
-  const totalPatients = chws.reduce((sum, chw) => sum + chw.patient_count, 0);
-  const activeChws = chws.filter((chw) => chw.is_active).length;
-  const highRiskTotal = riskSummary.reduce((sum, row) => sum + row.high_count, 0);
+  const summary = await getSummary();
+  const lang = await getServerLanguage();
+  const t = getTranslation(lang);
 
   return (
-    <div className="flex flex-col gap-5">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Active CHWs" value={activeChws} />
-        <Metric label="Tracked Patients" value={totalPatients} />
-        <Metric label="High Risk Patients" value={highRiskTotal} tone="risk" />
+    <div className="flex flex-col gap-6">
+      {/* Page Header */}
+      <div>
+        <h2 className="font-headline-lg text-headline-lg text-on-background">
+          {lang === "bn" ? "আঞ্চলিক ওভারভিউ: নরসিংদী জেলা" : "Regional Overview: Narsingdi District"}
+        </h2>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-1">
+          {t.overview_subtitle}
+        </p>
+      </div>
+
+      {/* 1. Summary Metric Cards (Bento Style Row) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter" aria-label="Key Metrics">
+        {/* Card 1: Total Patients */}
+        <div className="bg-surface rounded-xl p-card-padding border border-outline-variant flex flex-col justify-between h-32 relative overflow-hidden group hover:border-primary-container transition-colors">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary-container/5 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start">
+            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+              {t.tracked_patients}
+            </h3>
+            <span className="material-symbols-outlined text-primary" data-weight="fill">
+              groups
+            </span>
+          </div>
+          <div>
+            <p className="font-headline-lg text-headline-lg text-on-surface tabular-nums">
+              {summary.metrics.tracked_patients}
+            </p>
+            <p className="font-label-sm text-label-sm text-primary flex items-center gap-1 mt-1">
+              <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+              {lang === "bn" ? "লাইভ ট্র্যাকিং" : "Live Triage"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: High-Risk Alerts */}
+        <div className="bg-surface rounded-xl p-card-padding border border-outline-variant flex flex-col justify-between h-32 relative overflow-hidden group hover:border-error transition-colors">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-error-container/10 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start">
+            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+              {t.high_risk_patients}
+            </h3>
+            <span className="material-symbols-outlined text-error" data-weight="fill">
+              warning
+            </span>
+          </div>
+          <div>
+            <p className="font-headline-lg text-headline-lg text-error tabular-nums">
+              {summary.metrics.high_risk_patients}
+            </p>
+            <p className="font-label-sm text-label-sm text-error flex items-center gap-1 mt-1">
+              <span className="material-symbols-outlined text-[14px]">priority_high</span>
+              {lang === "bn" ? "জরুরী পর্যালোচনা" : "Review Required"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Active CHWs */}
+        <div className="bg-surface rounded-xl p-card-padding border border-outline-variant flex flex-col justify-between h-32 relative overflow-hidden group hover:border-primary-container transition-colors">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-tertiary-fixed/20 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start">
+            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+              {t.active_chws}
+            </h3>
+            <span className="material-symbols-outlined text-tertiary" data-weight="fill">
+              medical_services
+            </span>
+          </div>
+          <div>
+            <p className="font-headline-lg text-headline-lg text-on-surface tabular-nums">
+              {summary.metrics.active_chws}
+            </p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
+              {lang === "bn" ? "মাঠ পর্যায়ে সক্রিয়" : "Active Field Staff"}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 4: Active Upazilas (Coverage) */}
+        <div className="bg-surface rounded-xl p-card-padding border border-outline-variant flex flex-col justify-between h-32 relative overflow-hidden group hover:border-secondary-container transition-colors">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary-fixed/20 rounded-full group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start">
+            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+              {lang === "bn" ? "সক্রিয় উপজেলা" : "Coverage Area"}
+            </h3>
+            <span className="material-symbols-outlined text-secondary" data-weight="fill">
+              location_on
+            </span>
+          </div>
+          <div>
+            <p className="font-headline-lg text-headline-lg text-on-surface tabular-nums">
+              {summary.heatmap.length}
+            </p>
+            <p className="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
+              <span className="material-symbols-outlined text-[14px]">explore</span>
+              {lang === "bn" ? "উপজেলা কভারেজ" : "Upazila Units"}
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[1fr_1.15fr]">
-        <div className="rounded-md border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-4 py-3">
-            <h2 className="text-base font-semibold text-slate-950">CHW List</h2>
+      {/* 2. Bento Grid Layout: Map & Trend Chart */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Heatmap Spans 2 Columns */}
+        <div className="lg:col-span-2 bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm">
+          <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+            <h3 className="font-headline-md text-[18px] font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">location_on</span>
+              {t.static_upazila_risk}
+            </h3>
           </div>
+          <div className="p-4 bg-surface-container-low/30">
+            <UpazilaRiskMap rows={summary.heatmap} />
+          </div>
+        </div>
+
+        {/* Distribution Chart Spans 1 Column */}
+        <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col shadow-sm">
+          <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+            <h3 className="font-headline-md text-[18px] font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">bar_chart</span>
+              {t.patient_count_by_risk}
+            </h3>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-2 bg-surface">
+            {summary.risk_summary.length ? (
+              <RiskSummaryChart data={summary.risk_summary} />
+            ) : (
+              <p className="font-body-md text-body-md text-on-surface-variant p-6 text-center">
+                {lang === "bn" ? "কোনো তথ্য পাওয়া যায়নি।" : "No risk summary data found."}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Bottom Section: Active Personnel Coverage Table */}
+      <section className="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm" aria-labelledby="chw-list-heading">
+        <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+          <h3 id="chw-list-heading" className="font-headline-md text-[18px] font-bold text-on-surface flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">assignment_ind</span>
+            {t.chw_list}
+          </h3>
+        </div>
+
+        {summary.chws.length ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-normal text-slate-600">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Union</th>
-                  <th className="px-4 py-3">Upazila</th>
-                  <th className="px-4 py-3 text-right">Patients</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low border-b border-outline-variant font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                  <th className="px-6 py-3.5 font-medium">{t.col_name}</th>
+                  <th className="px-6 py-3.5 font-medium">{t.col_union}</th>
+                  <th className="px-6 py-3.5 font-medium">{t.col_upazila}</th>
+                  <th className="px-6 py-3.5 font-medium text-right">{t.col_patients}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {chws.map((chw) => (
-                  <tr key={chw.chw_id}>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-950">
+              <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant">
+                {summary.chws.map((chw) => (
+                  <tr key={chw.chw_id} className="hover:bg-surface-container-low/50 transition-colors">
+                    <td className="whitespace-nowrap px-6 py-3.5 font-bold text-on-surface">
                       {chw.name}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{chw.union_name}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700">{chw.upazila}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-950">
+                    <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant">
+                      {chw.union_name}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant">
+                      {chw.upazila}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-3.5 text-right font-bold text-primary tabular-nums">
                       {chw.patient_count}
                     </td>
                   </tr>
@@ -85,34 +188,12 @@ export default async function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-4 py-3">
-            <h2 className="text-base font-semibold text-slate-950">Patient Count by Risk Level</h2>
-          </div>
-          <RiskSummaryChart data={riskSummary} />
-        </div>
+        ) : (
+          <p className="px-6 py-12 text-center font-bold text-on-surface-variant">
+            {t.empty_chws}
+          </p>
+        )}
       </section>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: number;
-  tone?: "default" | "risk";
-}) {
-  return (
-    <div className="rounded-md border border-slate-200 bg-white px-4 py-3">
-      <p className="text-sm text-slate-600">{label}</p>
-      <p className={tone === "risk" ? "mt-1 text-2xl font-semibold text-rose-700" : "mt-1 text-2xl font-semibold text-slate-950"}>
-        {value}
-      </p>
     </div>
   );
 }

@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     supabase_url: AnyHttpUrl = Field(alias="SUPABASE_URL")
     supabase_anon_key: str = Field(alias="SUPABASE_ANON_KEY", min_length=1)
     supabase_service_role_key: str = Field(alias="SUPABASE_SERVICE_ROLE_KEY", min_length=1)
+    admin_dev_auth_enabled: bool = Field(default=False, alias="ADMIN_DEV_AUTH_ENABLED")
+    admin_dev_token: str = Field(default="", alias="ADMIN_DEV_TOKEN")
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
     hf_api_key: str = Field(default="", alias="HF_API_KEY")

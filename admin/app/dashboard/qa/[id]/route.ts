@@ -1,0 +1,18 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { deleteQaItem, updateQaItem } from "@/utils/admin-api";
+
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export async function POST(request: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  await updateQaItem(id, await request.json());
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  await deleteQaItem(id);
+  return NextResponse.json({ ok: true });
+}
