@@ -5,7 +5,7 @@ import { colors } from "@/theme";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function TabsLayout() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const copy = useCopy();
   return (
     <Tabs
@@ -19,6 +19,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
       <Tabs.Screen name="sync" options={{ href: null, title: copy.common.sync }} />
       <Tabs.Screen name="qa" options={{ href: null, title: copy.common.chat }} />
+      <Tabs.Screen name="verifications" options={{ href: null, title: language === "en" ? "Verifications" : "যাচাইকরণ" }} />
     </Tabs>
   );
 }

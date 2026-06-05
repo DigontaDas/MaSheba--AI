@@ -131,14 +131,14 @@ const translations = {
     gestationalAgePlaceholder: "গর্ভকালীন বয়স (সপ্তাহ)",
     chwModalTitle: "স্বাস্থ্যকর্মী অ্যাকাউন্ট",
     motherModalTitle: "মা এর অ্যাকাউন্ট",
-    emailPlaceholder: "ইমেইল এড্রেস",
+    emailPlaceholder: "ইমেইল বা মোবাইল নম্বর",
     passwordPlaceholder: "পাসওয়ার্ড",
     loginSubmitBtn: "লগইন করুন",
     signupSubmitBtn: "নিবন্ধন করুন",
     demoAutoLoginBtn: "ডেমো অটো-লগইন ⚡",
     closeBtn: "বন্ধ করুন",
     loadingText: "চালু হচ্ছে...",
-    signupSuccess: "নিবন্ধন সফল! অনুগ্রহ করে আপনার ইমেইল চেক করুন এবং অ্যাকাউন্ট সক্রিয় করতে ইমেইলটি নিশ্চিত করুন।",
+    signupSuccess: "নিবন্ধন সফল! অনুগ্রহ করে অ্যাকাউন্ট সক্রিয় করতে নির্দেশনা মেনে চলুন।",
     signupSuccessAuto: "নিবন্ধন সফল! ড্যাশবোর্ডে প্রবেশ করা হচ্ছে..."
   },
   en: {
@@ -156,14 +156,14 @@ const translations = {
     gestationalAgePlaceholder: "Gestational Age (Weeks)",
     chwModalTitle: "Health Worker Account",
     motherModalTitle: "Mother Account",
-    emailPlaceholder: "Email Address",
+    emailPlaceholder: "Email or Phone Number",
     passwordPlaceholder: "Password",
     loginSubmitBtn: "Log In",
     signupSubmitBtn: "Sign Up",
     demoAutoLoginBtn: "Demo Auto-Login ⚡",
     closeBtn: "Close",
     loadingText: "Loading...",
-    signupSuccess: "Registration successful! Please check your email inbox and verify your email to activate your account.",
+    signupSuccess: "Registration successful! Please follow verification instructions to activate your account.",
     signupSuccessAuto: "Registration successful! Redirecting to dashboard..."
   }
 };
@@ -525,11 +525,11 @@ export default function LoginScreen() {
                 </>
               )}
 
-              {/* Email Address */}
+              {/* Email or Phone Address */}
               <TextInput
-                accessibilityLabel="ইমেইল"
+                accessibilityLabel="ইমেইল বা মোবাইল"
                 autoCapitalize="none"
-                keyboardType="email-address"
+                keyboardType="default"
                 onChangeText={setEmail}
                 placeholder={t.emailPlaceholder}
                 placeholderTextColor="#A0A0A0"

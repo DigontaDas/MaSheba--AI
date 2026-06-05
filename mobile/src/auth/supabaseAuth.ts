@@ -40,12 +40,68 @@ type PatientRow = {
   updated_at: string;
 };
 
-export async function loginAndBootstrap(email: string, password: string): Promise<{ chwId: string }> {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.session) {
-    throw new Error(error?.message ?? "Unable to sign in");
+export function normalizePhone(input: string): string {
+  const trimmed = input.trim();
+  // Normalize simple Bangladeshi numbers (e.g. 01712345678 or 1712345678)
+  if (/^01\d{9}$/.test(trimmed)) {
+    return `+88${trimmed}`;
+  }
+  if (/^1\d{9}$/.test(trimmed)) {
+    return `+880${trimmed}`;
+  }
+  if (/^\+8801\d{9}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return trimmed;
+}
+
+export async function loginAndBootstrap(identifier: string, password: string): Promise<{ chwId: string }> {
+  const isEmail = identifier.includes("@");
+  let credentials;
+  
+  if (isEmail) {
+    credentials = { email: identifier.trim().toLowerCase(), password };
+  } else {
+    credentials = { phone: normalizePhone(identifier), password };
   }
 
+  let sessionData;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+    if (error || !data.session) {
+      if (!isEmail) {
+        // Fallback to phone email mapping
+        const fallbackEmail = `${normalizePhone(identifier).replace("+", "")}@maasheba.phone`;
+        const { data: fbData, error: fbError } = await supabase.auth.signInWithPassword({
+          email: fallbackEmail,
+          password
+        });
+        if (fbError || !fbData.session) {
+          throw new Error(fbError?.message ?? "Unable to sign in");
+        }
+        sessionData = fbData;
+      } else {
+        throw new Error(error?.message ?? "Unable to sign in");
+      }
+    } else {
+      sessionData = data;
+    }
+  } catch (err: any) {
+    if (isEmail) {
+      throw err;
+    }
+    const fallbackEmail = `${normalizePhone(identifier).replace("+", "")}@maasheba.phone`;
+    const { data: fbData, error: fbError } = await supabase.auth.signInWithPassword({
+      email: fallbackEmail,
+      password
+    });
+    if (fbError || !fbData.session) {
+      throw new Error(fbError?.message ?? err.message ?? "Unable to sign in");
+    }
+    sessionData = fbData;
+  }
+
+  const data = sessionData;
   await supabase.auth.setSession({
     access_token: data.session.access_token,
     refresh_token: data.session.refresh_token
@@ -89,48 +145,125 @@ export async function loginAndBootstrap(email: string, password: string): Promis
 }
 
 export async function signUpAndBootstrap(
-  email: string,
+  identifier: string,
   password: string,
   role: "chw" | "mother",
   name: string,
   extraMetadata: Record<string, any>
 ): Promise<{ sessionEstablished: boolean }> {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        role,
-        ...extraMetadata
+  const isEmail = identifier.includes("@");
+
+  if (isEmail) {
+    const { data, error } = await supabase.auth.signUp({
+      email: identifier.trim().toLowerCase(),
+      password,
+      options: {
+        data: {
+          name,
+          role,
+          ...extraMetadata
+        }
       }
+    });
+
+    if (error) {
+      throw new Error(error.message);
     }
-  });
 
-  if (error) {
-    throw new Error(error.message);
+    if (!data.user) {
+      throw new Error("This email is already registered. Please log in or use a different email.");
+    }
+
+    if (data.session) {
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token
+      });
+
+      await saveSession({
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        chwId: data.session.user.id
+      });
+
+      return { sessionEstablished: true };
+    }
+
+    return { sessionEstablished: false };
+  } else {
+    const phoneNormalized = normalizePhone(identifier);
+    const finalMetadata = {
+      ...extraMetadata,
+      phone: phoneNormalized
+    };
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        phone: phoneNormalized,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+            ...finalMetadata
+          }
+        }
+      });
+
+      if (error) {
+        // Fallback to phone email mapping
+        const fallbackEmail = `${phoneNormalized.replace("+", "")}@maasheba.phone`;
+        const { data: fbData, error: fbError } = await supabase.auth.signUp({
+          email: fallbackEmail,
+          password,
+          options: {
+            data: {
+              name,
+              role,
+              ...finalMetadata
+            }
+          }
+        });
+
+        if (fbError) {
+          throw new Error(fbError.message);
+        }
+
+        if (fbData.session) {
+          await supabase.auth.setSession({
+            access_token: fbData.session.access_token,
+            refresh_token: fbData.session.refresh_token
+          });
+
+          await saveSession({
+            accessToken: fbData.session.access_token,
+            refreshToken: fbData.session.refresh_token,
+            chwId: fbData.session.user.id
+          });
+
+          return { sessionEstablished: true };
+        }
+        return { sessionEstablished: false };
+      }
+
+      if (data.session) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+
+        await saveSession({
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          chwId: data.session.user.id
+        });
+
+        return { sessionEstablished: true };
+      }
+
+      return { sessionEstablished: false };
+    } catch (err: any) {
+      throw new Error(err.message || "Sign up failed");
+    }
   }
-
-  if (!data.user) {
-    throw new Error("This email is already registered. Please log in or use a different email.");
-  }
-
-  // If Supabase immediately returns a session (e.g. if email confirmation is disabled)
-  if (data.session) {
-    await supabase.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    });
-
-    await saveSession({
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      chwId: data.session.user.id
-    });
-
-    return { sessionEstablished: true };
-  }
-
-  return { sessionEstablished: false };
 }
-

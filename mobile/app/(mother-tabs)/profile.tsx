@@ -11,6 +11,19 @@ import { useCopy } from "@/data/useCopy";
 import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
+import { getPregnancyWeeks } from "@/utils/pregnancy";
+
+function getEDD(lmpDateStr: string | null | undefined): string {
+  if (!lmpDateStr) return "-";
+  try {
+    const lmp = new Date(lmpDateStr);
+    if (isNaN(lmp.getTime())) return "-";
+    const edd = new Date(lmp.getTime() + 280 * 24 * 60 * 60 * 1000);
+    return edd.toISOString().split("T")[0];
+  } catch {
+    return "-";
+  }
+}
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<MotherProfile | null>(null);
@@ -90,7 +103,27 @@ export default function ProfileScreen() {
   };
 
   const displayName = profile?.name ?? copy.profile.name;
-  const week = profile?.gestationalAgeWeeks ?? 28;
+  const week = getPregnancyWeeks(profile?.lmpDate, profile?.gestationalAgeWeeks);
+  const eddDate = getEDD(profile?.lmpDate);
+
+  // Determine verification status label and color
+  let statusLabel = "";
+  let statusColor = colors.secondary;
+  let statusIcon = "verified";
+
+  if (profile?.verificationStatus === "PENDING") {
+    statusLabel = language === "en" ? "Pending Verification" : "যাচাইকরণ পেন্ডিং";
+    statusColor = colors.outline;
+    statusIcon = "history";
+  } else if (profile?.verificationStatus === "REJECTED") {
+    statusLabel = language === "en" ? "Rejected" : "অনুমোদন মেলেনি";
+    statusColor = colors.error;
+    statusIcon = "error";
+  } else {
+    statusLabel = copy.profile.verifiedMother;
+    statusColor = colors.secondary;
+    statusIcon = "verified";
+  }
 
   return (
     <ScreenShell>
@@ -109,10 +142,18 @@ export default function ProfileScreen() {
           <Text style={styles.avatarText}>{displayName.slice(0, 1)}</Text>
         </View>
         <Text style={styles.name}>{displayName}</Text>
-        <View style={styles.verified}>
-          <Icon name="verified" color={colors.secondary} size={16} />
-          <Text style={styles.verifiedText}>{copy.profile.verifiedMother}</Text>
+        <View style={[styles.verified, { backgroundColor: statusColor + "15" }]}>
+          <Icon name={statusIcon} color={statusColor} size={16} />
+          <Text style={[styles.verifiedText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
+        {profile?.verificationStatus === "REJECTED" && profile?.rejectionReason ? (
+          <View style={styles.rejectionReasonBox}>
+            <Text style={styles.rejectionReasonLabel}>
+              {language === "bn" ? "প্রত্যাখ্যানের কারণ:" : "Reason for Rejection:"}
+            </Text>
+            <Text style={styles.rejectionReasonText}>{profile.rejectionReason}</Text>
+          </View>
+        ) : null}
       </View>
 
       <InfoSection
@@ -128,7 +169,7 @@ export default function ProfileScreen() {
         icon="favorite"
         title={copy.profile.pregnancyDetails}
         rows={[
-          [copy.profile.edd, copy.profile.eddValue],
+          [copy.profile.edd, eddDate],
           [copy.profile.currentWeek, language === "en" ? `${week} weeks` : `${toBanglaNumber(week)} সপ্তাহ`],
           [copy.profile.bloodGroup, copy.profile.bloodGroupValue]
         ]}
@@ -249,6 +290,25 @@ const styles = StyleSheet.create({
   verifiedText: {
     ...typography.caption,
     color: colors.onSecondaryFixed
+  },
+  rejectionReasonBox: {
+    alignItems: "center",
+    backgroundColor: colors.errorContainer,
+    borderRadius: radius.card,
+    gap: spacing.xs,
+    padding: spacing.base,
+    marginTop: spacing.sm,
+    width: "100%"
+  },
+  rejectionReasonLabel: {
+    ...typography.label,
+    color: colors.onErrorContainer,
+    fontFamily: typography.h2.fontFamily
+  },
+  rejectionReasonText: {
+    ...typography.body,
+    color: colors.onErrorContainer,
+    textAlign: "center"
   },
   section: {
     backgroundColor: colors.surfaceContainerLowest,

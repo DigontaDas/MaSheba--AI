@@ -1,0 +1,514 @@
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
+import { router } from "expo-router";
+import { supabase } from "@/auth/supabaseAuth";
+import { getCurrentMotherProfile, saveMotherId } from "@/auth/roleSession";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { ScreenShell } from "@/components/ui/ScreenShell";
+import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/context/LanguageContext";
+import { colors, radius, spacing, typography } from "@/theme";
+import { getLmpDateFromWeeks } from "@/utils/pregnancy";
+import { toBanglaNumber } from "@/utils/banglaNumerals";
+
+const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+export default function MotherSetupScreen() {
+  const { language: lang } = useLanguage();
+  
+  const [name, setName] = useState("");
+  const [gestationalAgeWeeks, setGestationalAgeWeeks] = useState("12");
+  const [chwEmailOrPhone, setChwEmailOrPhone] = useState("");
+  
+  const [certificateName, setCertificateName] = useState<string | null>(null);
+  const [certificateBlob, setCertificateBlob] = useState<Blob | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Attempt to pre-fill name if profile or auth user exists
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setName(user.user_metadata?.name || "");
+      }
+    });
+
+    getCurrentMotherProfile().then((profile) => {
+      if (profile) {
+        if (profile.name) setName(profile.name);
+        if (profile.gestationalAgeWeeks) setGestationalAgeWeeks(String(profile.gestationalAgeWeeks));
+        if (profile.chwEmail) setChwEmailOrPhone(profile.chwEmail);
+        else if (profile.chwPhone) setChwEmailOrPhone(profile.chwPhone);
+        if (profile.rejectionReason) setRejectionReason(profile.rejectionReason);
+      }
+    }).catch(() => undefined);
+  }, []);
+
+  const handleSelectMockCertificate = async (type: string) => {
+    setLoading(true);
+    setPickerVisible(false);
+    try {
+      // Convert the base64 placeholder to a real Blob using the fetch-data-uri trick
+      const response = await fetch(`data:image/png;base64,${DUMMY_CERT_BASE64}`);
+      const blob = await response.blob();
+      setCertificateBlob(blob);
+      setCertificateName(type);
+    } catch (err) {
+      setError(lang === "bn" ? "সার্টিফিকেট প্রসেস করতে ব্যর্থ হয়েছে" : "Failed to process certificate");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      setError(lang === "bn" ? "অনুগ্রহ করে আপনার নাম লিখুন" : "Please enter your name");
+      return;
+    }
+    const weeks = parseInt(gestationalAgeWeeks.trim(), 10);
+    if (isNaN(weeks) || weeks < 1 || weeks > 45) {
+      setError(lang === "bn" ? "গর্ভকালীন বয়স ১ থেকে ৪৫ সপ্তাহের মধ্যে দিন" : "Gestational weeks must be between 1 and 45");
+      return;
+    }
+    if (!chwEmailOrPhone.trim()) {
+      setError(lang === "bn" ? "অনুগ্রহ করে স্বাস্থ্যকর্মীর ইমেইল বা মোবাইল নম্বর দিন" : "Please enter Health Worker's email or phone");
+      return;
+    }
+    if (!certificateBlob) {
+      setError(lang === "bn" ? "অনুগ্রহ করে মেডিকেল সার্টিফিকেট আপলোড করুন" : "Please upload a medical certificate");
+      return;
+    }
+    if (certificateBlob.size > 5 * 1024 * 1024) {
+      setError(lang === "bn" ? "সার্টিফিকেটের সাইজ ৫ মেগাবাইটের বেশি হতে পারবে না" : "Certificate file size cannot exceed 5MB");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
+
+      // 1. Upload the certificate blob to Supabase Storage certificates bucket
+      const uploadPath = `public/${user.id}_cert.png`;
+      const { error: uploadErr } = await supabase.storage
+        .from("certificates")
+        .upload(uploadPath, certificateBlob, {
+          contentType: "image/png",
+          upsert: true
+        });
+
+      if (uploadErr) throw new Error(`Storage error: ${uploadErr.message}`);
+
+      // 2. Get the public URL of the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from("certificates")
+        .getPublicUrl(uploadPath);
+
+      // 3. Compute lmp_date based on gestational weeks input
+      const lmpDate = getLmpDateFromWeeks(weeks);
+
+      const isEmail = chwEmailOrPhone.includes("@");
+      const cleanChwVal = chwEmailOrPhone.trim();
+
+      // 4. Update the mother's record
+      const { error: dbErr } = await supabase
+        .from("mothers")
+        .update({
+          name: name.trim(),
+          chw_email: isEmail ? cleanChwVal.toLowerCase() : null,
+          chw_phone: !isEmail ? cleanChwVal : null,
+          lmp_date: lmpDate,
+          gestational_age_weeks: weeks,
+          certificate_url: publicUrl,
+          verification_status: "PENDING"
+        })
+        .eq("auth_user_id", user.id);
+
+      if (dbErr) throw dbErr;
+
+      // Ensure local session is updated with mother ID
+      const { data: motherData } = await supabase
+        .from("mothers")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      if (motherData?.id) {
+        await saveMotherId(motherData.id);
+      }
+
+      Alert.alert(
+        lang === "bn" ? "তথ্য জমা হয়েছে" : "Submission Successful",
+        lang === "bn" ? "আপনার সার্টিফিকেট যাচাইকরণের জন্য পাঠানো হয়েছে। অনুগ্রহ করে স্বাস্থ্যকর্মীর অনুমোদনের জন্য অপেক্ষা করুন।" : "Your certificate has been sent for verification. Please wait for Health Worker approval.",
+        [{ text: lang === "bn" ? "ঠিক আছে" : "OK", onPress: () => router.replace("/(mother-tabs)/home") }]
+      );
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ScreenShell>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              {lang === "bn" ? "মায়ের প্রোফাইল সেটআপ" : "Maa Profile Setup"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {lang === "bn" ? "গর্ভকালীন সেবা পেতে আপনার তথ্য পূরণ করুন" : "Fill details to activate your pregnancy care account"}
+            </Text>
+          </View>
+
+          <View style={styles.card}>
+            {rejectionReason && (
+              <View style={styles.rejectionCard}>
+                <View style={styles.rejectionHeader}>
+                  <Icon name="error" color={colors.error} size={18} />
+                  <Text style={styles.rejectionTitle}>
+                    {lang === "bn" ? "প্রত্যাখ্যানের কারণ:" : "Reason for Rejection:"}
+                  </Text>
+                </View>
+                <Text style={styles.rejectionText}>{rejectionReason}</Text>
+              </View>
+            )}
+
+            {/* Mother Name Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                {lang === "bn" ? "মায়ের নাম" : "Mother's Name"}
+              </Text>
+              <TextInput
+                onChangeText={setName}
+                placeholder={lang === "bn" ? "মায়ের নাম লিখুন" : "Enter mother's name"}
+                placeholderTextColor="#A0A0A0"
+                style={styles.input}
+                value={name}
+              />
+            </View>
+
+            {/* Gestational Age Weeks Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                {lang === "bn" ? "গর্ভকালীন বয়স (সপ্তাহে)" : "Gestational Age (in weeks)"}
+              </Text>
+              <TextInput
+                keyboardType="numeric"
+                onChangeText={setGestationalAgeWeeks}
+                placeholder={lang === "bn" ? "যেমন: ১২" : "e.g. 12"}
+                placeholderTextColor="#A0A0A0"
+                style={styles.input}
+                value={gestationalAgeWeeks}
+              />
+              <Text style={styles.helperText}>
+                {lang === "bn" 
+                  ? "সপ্তাহ অনুযায়ী আপনার শেষ মাসিকের তারিখ (LMP) স্বয়ংক্রিয়ভাবে গণনা করা হবে।" 
+                  : "Last Menstrual Period (LMP) will be computed automatically based on weeks."}
+              </Text>
+            </View>
+
+            {/* Health Worker Assigned Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                {lang === "bn" ? "যাচাইকারী স্বাস্থ্যকর্মীর ইমেইল বা মোবাইল" : "Assigned Health Worker's Email or Phone"}
+              </Text>
+              <TextInput
+                autoCapitalize="none"
+                onChangeText={setChwEmailOrPhone}
+                placeholder={lang === "bn" ? "ইমেইল বা মোবাইল নম্বর" : "Email address or phone number"}
+                placeholderTextColor="#A0A0A0"
+                style={styles.input}
+                value={chwEmailOrPhone}
+              />
+              <Text style={styles.helperText}>
+                {lang === "bn" 
+                  ? "যে স্বাস্থ্যকর্মী আপনার সার্টিফিকেটটি অনুমোদন করবেন তার যোগাযোগ নম্বর বা ইমেইল লিখুন।" 
+                  : "Contact details of the health worker who will verify and approve your profile."}
+              </Text>
+            </View>
+
+            {/* Certificate Upload Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                {lang === "bn" ? "গর্ভধারণের মেডিকেল সার্টিফিকেট" : "Pregnancy Medical Certificate"}
+              </Text>
+              <Pressable
+                onPress={() => setPickerVisible(true)}
+                style={[
+                  styles.uploadBox,
+                  certificateName ? styles.uploadBoxActive : null
+                ]}
+              >
+                {certificateName ? (
+                  <View style={styles.uploadBoxContent}>
+                    <Icon name="check-circle" color={colors.secondary} size={36} />
+                    <Text style={styles.uploadTextActive}>{certificateName}</Text>
+                    <Text style={styles.uploadSubtext}>
+                      {lang === "bn" ? "সার্টিফিকেট পরিবর্তন করতে ট্যাপ করুন" : "Tap to change certificate"}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.uploadBoxContent}>
+                    <Icon name="cloud-upload" color={colors.outline} size={36} />
+                    <Text style={styles.uploadText}>
+                      {lang === "bn" ? "সার্টিফিকেট সংযুক্ত করুন" : "Upload Medical Certificate"}
+                    </Text>
+                    <Text style={styles.uploadSubtext}>
+                      {lang === "bn" ? "পিডিএফ বা ছবি ফাইল নির্বাচন করুন" : "Select a PDF or image file"}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <View style={styles.btnWrapper}>
+              <PrimaryButton
+                label={lang === "bn" ? "সংরক্ষণ ও জমা দিন" : "Submit for Verification"}
+                onPress={handleSubmit}
+                loading={loading}
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Simulated Document Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={pickerVisible}
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPickerVisible(false)} />
+          <View style={styles.modalPanel}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {lang === "bn" ? "সার্টিফিকেট ফাইল নির্বাচন করুন" : "Select Certificate File"}
+              </Text>
+              <Pressable onPress={() => setPickerVisible(false)}>
+                <Icon name="close" size={24} color={colors.onSurface} />
+              </Pressable>
+            </View>
+
+            <View style={styles.modalOptions}>
+              <OptionRow
+                icon="description"
+                title={lang === "bn" ? "গর্ভকালীন স্বাস্থ্য কার্ড" : "Maternity Health Card.jpg"}
+                onPress={() => handleSelectMockCertificate("Maternity Health Card.jpg")}
+              />
+              <OptionRow
+                icon="image"
+                title={lang === "bn" ? "হাসপাতাল নিবন্ধন সনদ" : "Hospital Admission Record.png"}
+                onPress={() => handleSelectMockCertificate("Hospital Admission Record.png")}
+              />
+              <OptionRow
+                icon="photo-camera"
+                title={lang === "bn" ? "ছবি তুলুন" : "Take Photo (Pregnancy Certificate.png)"}
+                onPress={() => handleSelectMockCertificate("Pregnancy Certificate.png")}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ScreenShell>
+  );
+}
+
+function OptionRow({
+  icon,
+  title,
+  onPress
+}: {
+  icon: "description" | "image" | "photo-camera";
+  title: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.optionRow}>
+      <Icon name={icon} color={colors.primary} size={24} />
+      <Text style={styles.optionText}>{title}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  scroll: {
+    padding: spacing.base,
+    paddingBottom: 40
+  },
+  header: {
+    marginBottom: spacing.lg,
+    gap: spacing.xs
+  },
+  title: {
+    ...typography.h1,
+    color: colors.primary
+  },
+  subtitle: {
+    ...typography.body,
+    color: colors.onSurfaceVariant
+  },
+  card: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    padding: spacing.cardPadding,
+    gap: spacing.base
+  },
+  rejectionCard: {
+    backgroundColor: colors.errorContainer + "20",
+    borderColor: colors.error,
+    borderRadius: radius.base,
+    borderWidth: 1,
+    padding: spacing.base,
+    gap: spacing.xs
+  },
+  rejectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  rejectionTitle: {
+    ...typography.body,
+    color: colors.error,
+    fontWeight: "bold",
+    fontFamily: typography.h2.fontFamily
+  },
+  rejectionText: {
+    ...typography.body,
+    color: colors.onSurfaceVariant,
+    fontSize: 14
+  },
+  inputGroup: {
+    gap: spacing.xs
+  },
+  label: {
+    ...typography.label,
+    color: colors.onSurface,
+    fontWeight: "bold"
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.base,
+    borderWidth: 1,
+    color: colors.onSurface,
+    fontSize: 16,
+    minHeight: 48,
+    paddingHorizontal: spacing.base
+  },
+  helperText: {
+    ...typography.caption,
+    color: colors.outline
+  },
+  uploadBox: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.card,
+    borderStyle: "dashed",
+    borderWidth: 2,
+    justifyContent: "center",
+    minHeight: 140,
+    padding: spacing.base
+  },
+  uploadBoxActive: {
+    backgroundColor: colors.secondaryContainer,
+    borderStyle: "solid",
+    borderColor: colors.secondary
+  },
+  uploadBoxContent: {
+    alignItems: "center",
+    gap: spacing.xs,
+    justifyContent: "center"
+  },
+  uploadText: {
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: "bold"
+  },
+  uploadTextActive: {
+    ...typography.body,
+    color: colors.onSecondaryContainer,
+    fontWeight: "bold"
+  },
+  uploadSubtext: {
+    ...typography.caption,
+    color: colors.outline
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.error,
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  btnWrapper: {
+    marginTop: spacing.sm
+  },
+  modalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    flex: 1,
+    justifyContent: "flex-end"
+  },
+  modalPanel: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    width: "100%",
+    gap: spacing.base
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.onSurface
+  },
+  modalOptions: {
+    gap: spacing.xs
+  },
+  optionRow: {
+    alignItems: "center",
+    borderBottomColor: colors.outlineVariant,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: spacing.base,
+    minHeight: 56,
+    paddingHorizontal: spacing.sm
+  },
+  optionText: {
+    ...typography.body,
+    color: colors.onSurface
+  }
+});

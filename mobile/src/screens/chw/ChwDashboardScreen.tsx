@@ -162,6 +162,26 @@ export default function ChwDashboardScreen() {
           </View>
         </Pressable>
 
+        {/* Verification Card */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/(tabs)/verifications")}
+          style={styles.verificationCard}
+        >
+          <View style={styles.verificationIcon}>
+            <Icon name="verified" color="#FFFFFF" size={22} />
+          </View>
+          <View style={styles.verificationTextWrap}>
+            <Text style={styles.verificationTitle}>
+              {language === "en" ? "Maa Verification Requests" : "মায়ের যাচাইকরণ অনুরোধ"}
+            </Text>
+            <Text style={styles.verificationDesc}>
+              {language === "en" ? "Review certificate uploads & verify accounts" : "সার্টিফিকেট আপলোড দেখে অ্যাকাউন্ট অনুমোদন করুন"}
+            </Text>
+          </View>
+          <Icon name="chevron-right" color="#E57A58" size={20} />
+        </Pressable>
+
         <View style={styles.statsCard}>
           <Text style={styles.sectionTitle}>{language === "en" ? "Today's Progress" : "আজকের অগ্রগতি"}</Text>
           <View style={styles.statsGrid}>
@@ -343,6 +363,37 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     gap: 14,
     padding: 20
+  },
+  verificationCard: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12
+  },
+  verificationIcon: {
+    backgroundColor: "#E57A58",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  verificationTextWrap: {
+    flex: 1,
+    gap: 2
+  },
+  verificationTitle: {
+    color: "#4A3E39",
+    fontSize: 15,
+    fontWeight: "bold"
+  },
+  verificationDesc: {
+    color: "#70605A",
+    fontSize: 12
   },
   nextText: {
     gap: 4

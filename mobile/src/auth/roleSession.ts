@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { saveSession, getSession } from "./secureSession";
-import { supabase } from "./supabaseAuth";
+import { supabase, normalizePhone } from "./supabaseAuth";
 
 const USER_ROLE_KEY = "maasheba.user_role";
 const MOTHER_ID_KEY = "maasheba.mother_id";
@@ -14,6 +14,12 @@ type MotherRow = {
   phone: string | null;
   gestational_age_weeks: number | null;
   is_active: boolean;
+  verification_status: string;
+  certificate_url: string | null;
+  lmp_date: string | null;
+  chw_email: string | null;
+  chw_phone: string | null;
+  rejection_reason: string | null;
 };
 
 export type MotherProfile = {
@@ -22,6 +28,12 @@ export type MotherProfile = {
   patientId: string | null;
   phone: string | null;
   gestationalAgeWeeks: number | null;
+  verificationStatus: string;
+  certificateUrl: string | null;
+  lmpDate: string | null;
+  chwEmail: string | null;
+  chwPhone: string | null;
+  rejectionReason: string | null;
 };
 
 export async function saveUserRole(role: UserRole): Promise<void> {
@@ -48,12 +60,53 @@ export async function clearRoleSession(): Promise<void> {
   ]);
 }
 
-export async function loginMother(email: string, password: string): Promise<MotherProfile> {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.session) {
-    throw new Error(error?.message ?? "Unable to sign in");
+export async function loginMother(identifier: string, password: string): Promise<MotherProfile> {
+  const isEmail = identifier.includes("@");
+  let credentials;
+  
+  if (isEmail) {
+    credentials = { email: identifier.trim().toLowerCase(), password };
+  } else {
+    credentials = { phone: normalizePhone(identifier), password };
   }
 
+  let sessionData;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+    if (error || !data.session) {
+      if (!isEmail) {
+        // Fallback email
+        const fallbackEmail = `${normalizePhone(identifier).replace("+", "")}@maasheba.phone`;
+        const { data: fbData, error: fbError } = await supabase.auth.signInWithPassword({
+          email: fallbackEmail,
+          password
+        });
+        if (fbError || !fbData.session) {
+          throw new Error(fbError?.message ?? "Unable to sign in");
+        }
+        sessionData = fbData;
+      } else {
+        throw new Error(error?.message ?? "Unable to sign in");
+      }
+    } else {
+      sessionData = data;
+    }
+  } catch (err: any) {
+    if (isEmail) {
+      throw err;
+    }
+    const fallbackEmail = `${normalizePhone(identifier).replace("+", "")}@maasheba.phone`;
+    const { data: fbData, error: fbError } = await supabase.auth.signInWithPassword({
+      email: fallbackEmail,
+      password
+    });
+    if (fbError || !fbData.session) {
+      throw new Error(fbError?.message ?? err.message ?? "Unable to sign in");
+    }
+    sessionData = fbData;
+  }
+
+  const data = sessionData;
   await supabase.auth.setSession({
     access_token: data.session.access_token,
     refresh_token: data.session.refresh_token
@@ -61,7 +114,7 @@ export async function loginMother(email: string, password: string): Promise<Moth
 
   const { data: mother, error: motherError } = await supabase
     .from("mothers")
-    .select("id,name,patient_id,phone,gestational_age_weeks,is_active")
+    .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,certificate_url,lmp_date,chw_email,chw_phone,rejection_reason")
     .eq("auth_user_id", data.session.user.id)
     .single<MotherRow>();
 
@@ -82,7 +135,13 @@ export async function loginMother(email: string, password: string): Promise<Moth
     name: mother.name,
     patientId: mother.patient_id,
     phone: mother.phone,
-    gestationalAgeWeeks: mother.gestational_age_weeks
+    gestationalAgeWeeks: mother.gestational_age_weeks,
+    verificationStatus: mother.verification_status || "PENDING",
+    certificateUrl: mother.certificate_url,
+    lmpDate: mother.lmp_date,
+    chwEmail: mother.chw_email,
+    chwPhone: mother.chw_phone,
+    rejectionReason: mother.rejection_reason
   };
 }
 
@@ -94,7 +153,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
 
   const { data: mother, error } = await supabase
     .from("mothers")
-    .select("id,name,patient_id,phone,gestational_age_weeks,is_active")
+    .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,certificate_url,lmp_date,chw_email,chw_phone,rejection_reason")
     .eq("id", motherId)
     .maybeSingle<MotherRow>();
 
@@ -107,7 +166,13 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     name: mother.name,
     patientId: mother.patient_id,
     phone: mother.phone,
-    gestationalAgeWeeks: mother.gestational_age_weeks
+    gestationalAgeWeeks: mother.gestational_age_weeks,
+    verificationStatus: mother.verification_status || "PENDING",
+    certificateUrl: mother.certificate_url,
+    lmpDate: mother.lmp_date,
+    chwEmail: mother.chw_email,
+    chwPhone: mother.chw_phone,
+    rejectionReason: mother.rejection_reason
   };
 }
 
