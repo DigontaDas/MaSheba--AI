@@ -52,7 +52,7 @@ export default function RootLayout() {
     <LanguageProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)/login" />
+        <Stack.Screen name="(auth)/login" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(mother-tabs)" />
         <Stack.Screen name="assessment/[patientId]" />

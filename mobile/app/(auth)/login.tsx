@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -231,6 +232,22 @@ export default function LoginScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalRole, setModalRole] = useState<UserRole | null>(null);
   const [modalMode, setModalMode] = useState<"login" | "signup">("login");
+
+  const isKeyboardVisibleRef = useRef(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      isKeyboardVisibleRef.current = true;
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      isKeyboardVisibleRef.current = false;
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
   
   // Inputs
   const [name, setName] = useState("");
@@ -321,6 +338,10 @@ export default function LoginScreen() {
 
   useEffect(() => {
     const onBackPress = () => {
+      if (isKeyboardVisibleRef.current) {
+        Keyboard.dismiss();
+        return true;
+      }
       if (modalVisible) {
         setModalVisible(false);
         return true;
