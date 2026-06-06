@@ -185,7 +185,7 @@ export function PatientsRegistryClient({ patients, lang, t }: PatientsRegistryCl
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-label-sm">
+                      <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-label-sm">
                         {new Date(row.updated_at).toLocaleString(
                           lang === "bn" ? "bn-BD" : "en-US",
                           { dateStyle: "medium", timeStyle: "short" }

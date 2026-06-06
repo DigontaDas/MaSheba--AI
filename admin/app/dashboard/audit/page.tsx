@@ -46,7 +46,7 @@ export default async function AuditPage() {
                   <td className="whitespace-nowrap px-6 py-3.5 text-on-surface font-semibold">
                     {event.actor_user_id || "system"}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant font-semibold text-xs font-label-sm">
+                  <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant font-semibold text-xs font-label-sm">
                     {new Date(event.created_at).toLocaleString()}
                   </td>
                 </tr>

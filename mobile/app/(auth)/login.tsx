@@ -614,18 +614,26 @@ export default function LoginScreen() {
         }
 
         setError(null);
+        const successMsg = role === "CHW"
+          ? (lang === "bn" ? "নিবন্ধন সফল! আপনার অ্যাকাউন্টটি অ্যাডমিন অনুমোদনের অপেক্ষায় রয়েছে।" : "Registration successful! Your account is pending admin approval.")
+          : (lang === "bn" ? t.signupSuccessAuto : t.signupSuccessAuto);
+
         Alert.alert(
           lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
-          lang === "bn" ? t.signupSuccessAuto : t.signupSuccessAuto,
+          successMsg,
           [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
         );
         setModalVisible(false);
         router.replace(role === "CHW" ? "/(tabs)/home" : "/(mother-tabs)/home");
       } else {
         setError(null);
+        const successMsg = role === "CHW"
+          ? (lang === "bn" ? "নিবন্ধন সফল! আপনার অ্যাকাউন্টটি অ্যাডমিন অনুমোদনের অপেক্ষায় রয়েছে।" : "Registration successful! Your account is pending admin approval.")
+          : (lang === "bn" ? t.signupSuccess : t.signupSuccess);
+
         Alert.alert(
           lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
-          lang === "bn" ? t.signupSuccess : t.signupSuccess,
+          successMsg,
           [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
         );
         setModalVisible(false);

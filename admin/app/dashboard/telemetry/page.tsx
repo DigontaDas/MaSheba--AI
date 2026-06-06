@@ -63,7 +63,7 @@ export default async function TelemetryPage() {
                       </span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold text-xs font-label-sm">
+                  <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold text-xs font-label-sm">
                     {new Date(failure.created_at).toLocaleString()}
                   </td>
                   <td className="whitespace-nowrap px-6 py-3.5 text-right font-label-lg">

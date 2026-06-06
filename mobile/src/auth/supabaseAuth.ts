@@ -144,6 +144,25 @@ export async function loginAndBootstrap(identifier: string, password: string): P
   return { chwId: chw.id };
 }
 
+async function getProfileIdForSession(authUserId: string, role: "chw" | "mother"): Promise<string> {
+  if (role === "chw") {
+    const { data: chwRecord } = await supabase
+      .from("chws")
+      .select("id")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
+    if (chwRecord) return chwRecord.id;
+  } else if (role === "mother") {
+    const { data: motherRecord } = await supabase
+      .from("mothers")
+      .select("id")
+      .eq("auth_user_id", authUserId)
+      .maybeSingle();
+    if (motherRecord) return motherRecord.id;
+  }
+  return authUserId;
+}
+
 export async function signUpAndBootstrap(
   identifier: string,
   password: string,
@@ -180,10 +199,11 @@ export async function signUpAndBootstrap(
         refresh_token: data.session.refresh_token
       });
 
+      const profileId = await getProfileIdForSession(data.session.user.id, role);
       await saveSession({
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
-        chwId: data.session.user.id
+        chwId: profileId
       });
 
       return { sessionEstablished: true };
@@ -235,10 +255,11 @@ export async function signUpAndBootstrap(
             refresh_token: fbData.session.refresh_token
           });
 
+          const profileId = await getProfileIdForSession(fbData.session.user.id, role);
           await saveSession({
             accessToken: fbData.session.access_token,
             refreshToken: fbData.session.refresh_token,
-            chwId: fbData.session.user.id
+            chwId: profileId
           });
 
           return { sessionEstablished: true };
@@ -252,10 +273,11 @@ export async function signUpAndBootstrap(
           refresh_token: data.session.refresh_token
         });
 
+        const profileId = await getProfileIdForSession(data.session.user.id, role);
         await saveSession({
           accessToken: data.session.access_token,
           refreshToken: data.session.refresh_token,
-          chwId: data.session.user.id
+          chwId: profileId
         });
 
         return { sessionEstablished: true };
@@ -267,3 +289,4 @@ export async function signUpAndBootstrap(
     }
   }
 }
+

@@ -1,5 +1,5 @@
 import { requireAdminBearerToken } from "@/utils/admin-auth";
-import type { AuditEvent, ChwRow, PatientRow, QaItem, SmsFailure, SummaryPayload } from "@/utils/admin-types";
+import type { AuditEvent, ChwRow, PendingChwRow, PatientRow, QaItem, SmsFailure, SummaryPayload } from "@/utils/admin-types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localhost:8000";
 
@@ -38,10 +38,29 @@ export async function getChws(): Promise<ChwRow[]> {
   return payload.chws;
 }
 
+export async function getPendingChws(): Promise<PendingChwRow[]> {
+  const payload = await adminFetch<{ chws: PendingChwRow[] }>("/api/v1/admin/chws/pending-verifications");
+  return payload.chws;
+}
+
 export async function updateChwStatus(chwId: string, isActive: boolean): Promise<void> {
   await adminFetch(`/api/v1/admin/chws/${encodeURIComponent(chwId)}/status`, {
     method: "PATCH",
     body: JSON.stringify({ is_active: isActive }),
+  });
+}
+
+export async function updateChwVerification(
+  chwId: string,
+  status: "APPROVED" | "REJECTED",
+  rejectionReason?: string
+): Promise<void> {
+  await adminFetch(`/api/v1/admin/chws/${encodeURIComponent(chwId)}/verification`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      verification_status: status,
+      rejection_reason: rejectionReason,
+    }),
   });
 }
 

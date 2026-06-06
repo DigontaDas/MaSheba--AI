@@ -9,6 +9,19 @@ export type ChwRow = {
   patient_count: number;
 };
 
+export type PendingChwRow = {
+  id: string;
+  name: string;
+  union_name: string;
+  upazila: string;
+  organization_name: string | null;
+  worker_type: string | null;
+  years_of_experience: number;
+  certificate_url: string | null;
+  verification_status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+};
+
 export type RiskSummaryRow = {
   chw_id: string;
   chw_name: string;
