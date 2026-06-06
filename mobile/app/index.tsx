@@ -58,7 +58,7 @@ async function routeFromStoredSession() {
     .eq("auth_user_id", user.id)
     .maybeSingle<ActiveRoleRow>();
 
-  if (chw?.is_active) {
+  if (chw) {
     await saveUserRole("CHW");
     router.replace("/(tabs)/home");
     return;

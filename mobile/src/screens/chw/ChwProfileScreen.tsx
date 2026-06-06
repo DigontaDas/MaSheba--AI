@@ -220,25 +220,7 @@ export default function ChwProfileScreen() {
 
         {/* Actions Card List Panel */}
         <View style={styles.actionsCard}>
-          {/* Admin Dashboard */}
-          <Pressable
-            onPress={() => {
-              router.push("/admin-dashboard");
-            }}
-            style={styles.actionRow}
-          >
-            <View style={styles.actionLeft}>
-              <View style={[styles.actionIconWrap, { backgroundColor: "#F0F2F5" }]}>
-                <Icon name="dashboard" color="#4A4E69" size={18} />
-              </View>
-              <Text style={styles.actionText}>
-                {language === "en" ? "Admin Dashboard" : "অ্যাডমিন ড্যাশবোর্ড"}
-              </Text>
-            </View>
-            <Icon name="chevron-right" color="#A08E88" size={18} />
-          </Pressable>
 
-          <View style={styles.divider} />
 
           {/* Edit Profile */}
           <Pressable

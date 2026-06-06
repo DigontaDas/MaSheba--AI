@@ -30,12 +30,12 @@ const ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const PASSWORD = "Mother_B_demo_password";
 
 const MOTHERS = [
-  { email: "mother-amina@maasheba.local",    name: "Amina Khatun",     patient_id: "11111111-1111-1111-1111-111111111101", phone: "+8801700000001", weeks: 28 },
-  { email: "mother-rahima@maasheba.local",   name: "Rahima Begum",     patient_id: "11111111-1111-1111-1111-111111111102", phone: "+8801700000002", weeks: 32 },
-  { email: "mother-sharmin@maasheba.local",  name: "Sharmin Akter",    patient_id: "11111111-1111-1111-1111-111111111103", phone: "+8801700000003", weeks: 20 },
-  { email: "mother-nasima@maasheba.local",   name: "Nasima Begum",     patient_id: "11111111-1111-1111-1111-111111111104", phone: "+8801700000004", weeks: 34 },
-  { email: "mother-fatema@maasheba.local",   name: "Fatema Akter",     patient_id: "11111111-1111-1111-1111-111111111105", phone: "+8801700000005", weeks: 26 },
-  { email: "mother-jannatul@maasheba.local", name: "Jannatul Ferdous",  patient_id: "11111111-1111-1111-1111-111111111106", phone: "+8801700000006", weeks: 18 },
+  { email: "mother-amina@maasheba.local",    name: "আমিনা খাতুন",     patient_id: "11111111-1111-1111-1111-111111111101", phone: "+8801700000001", weeks: 28 },
+  { email: "mother-rahima@maasheba.local",   name: "রহিমা বেগম",     patient_id: "11111111-1111-1111-1111-111111111102", phone: "+8801700000002", weeks: 32 },
+  { email: "mother-sharmin@maasheba.local",  name: "শারমিন আক্তার",    patient_id: "11111111-1111-1111-1111-111111111103", phone: "+8801700000003", weeks: 20 },
+  { email: "mother-nasima@maasheba.local",   name: "নাসিমা বেগম",     patient_id: "11111111-1111-1111-1111-111111111104", phone: "+8801700000004", weeks: 34 },
+  { email: "mother-fatema@maasheba.local",   name: "ফাতেমা আক্তার",     patient_id: "11111111-1111-1111-1111-111111111105", phone: "+8801700000005", weeks: 26 },
+  { email: "mother-jannatul@maasheba.local", name: "জান্নাতুল ফেরদৌস",  patient_id: "11111111-1111-1111-1111-111111111106", phone: "+8801700000006", weeks: 18 },
 ];
 
 function request(method, url, headers, body) {

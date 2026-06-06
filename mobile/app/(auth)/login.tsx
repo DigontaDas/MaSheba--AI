@@ -18,8 +18,9 @@ import { Image } from "expo-image";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { SecondaryButton } from "@/components/ui/SecondaryButton";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { loginAndBootstrap, signUpAndBootstrap } from "@/auth/supabaseAuth";
+import { loginAndBootstrap, signUpAndBootstrap, supabase } from "@/auth/supabaseAuth";
 import { loginMother, saveUserRole, saveMotherId, type UserRole } from "@/auth/roleSession";
+import * as ImagePicker from "expo-image-picker";
 import { saveSession } from "@/auth/secureSession";
 import { upsertPatients } from "@/db/patients";
 import { getDB } from "@/db/database";
@@ -52,37 +53,67 @@ async function seedLocalChwDemoData() {
   await saveSession({
     accessToken: "mock-access-token",
     refreshToken: "mock-refresh-token",
-    chwId: "chw-demo-id"
+    chwId: "00000000-0000-0000-0000-0000000000a1"
   });
   await saveUserRole("CHW");
 
   const demoPatients: Patient[] = [
     {
-      id: "patient-1",
-      chw_id: "chw-demo-id",
-      name: "রহিমা বেগম",
+      id: "11111111-1111-1111-1111-111111111101",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "আমিনা খাতুন",
       age: 24,
       gestational_age_weeks: 28,
-      last_risk_level: "HIGH",
+      last_risk_level: "LOW",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
-      id: "patient-2",
-      chw_id: "chw-demo-id",
-      name: "ফাতেমা খাতুন",
-      age: 28,
-      gestational_age_weeks: 14,
+      id: "11111111-1111-1111-1111-111111111102",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "রহিমা বেগম",
+      age: 29,
+      gestational_age_weeks: 32,
       last_risk_level: "MODERATE",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
-      id: "patient-3",
-      chw_id: "chw-demo-id",
-      name: "আসমা আক্তার",
+      id: "11111111-1111-1111-1111-111111111103",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "শারমিন আক্তার",
       age: 21,
-      gestational_age_weeks: 8,
+      gestational_age_weeks: 20,
+      last_risk_level: "LOW",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: "11111111-1111-1111-1111-111111111104",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "নাসিমা বেগম",
+      age: 34,
+      gestational_age_weeks: 34,
+      last_risk_level: "HIGH",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: "11111111-1111-1111-1111-111111111105",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "ফাতেমা আক্তার",
+      age: 27,
+      gestational_age_weeks: 26,
+      last_risk_level: "MODERATE",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: "11111111-1111-1111-1111-111111111106",
+      chw_id: "00000000-0000-0000-0000-0000000000a1",
+      name: "জান্নাতুল ফেরদৌস",
+      age: 19,
+      gestational_age_weeks: 18,
       last_risk_level: "LOW",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -94,11 +125,11 @@ async function seedLocalChwDemoData() {
   try {
     const db = await getDB();
     await db.execAsync(`
-      DELETE FROM visits WHERE chw_id = 'chw-demo-id';
+      DELETE FROM visits WHERE chw_id = '00000000-0000-0000-0000-0000000000a1';
       INSERT OR REPLACE INTO visits (
         id, patient_id, chw_id, bp_systolic, bp_diastolic, weight_kg, hemoglobin, swelling_present, symptom_flags, risk_level, visited_at, device_id, created_at
       ) VALUES (
-        'visit-1', 'patient-1', 'chw-demo-id', 140, 95, 62.5, 10.2, 1, '{"headache":true}', 'HIGH', '${new Date().toISOString()}', 'emulator-device', '${new Date().toISOString()}'
+        'visit-1', '11111111-1111-1111-1111-111111111102', '00000000-0000-0000-0000-0000000000a1', 140, 95, 62.5, 10.2, 1, '{"headache":true}', 'HIGH', '${new Date().toISOString()}', 'emulator-device', '${new Date().toISOString()}'
       );
     `);
   } catch (_dbErr) {
@@ -169,6 +200,28 @@ const translations = {
   }
 };
 
+const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function base64ToBlob(base64: string, mimeType: string): Blob {
+  const str = base64.replace(/=+$/, '');
+  const len = str.length;
+  const bytes = new Uint8Array(((len * 3) / 4) | 0);
+  let p = 0;
+  for (let i = 0; i < len; i += 4) {
+    const encoded1 = chars.indexOf(str[i]);
+    const encoded2 = chars.indexOf(str[i + 1]);
+    const encoded3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
+    const encoded4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
+
+    const value = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
+    bytes[p++] = (value >> 16) & 255;
+    if (i + 2 < len) bytes[p++] = (value >> 8) & 255;
+    if (i + 3 < len) bytes[p++] = value & 255;
+  }
+  return new Blob([bytes], { type: mimeType });
+}
+
 export default function LoginScreen() {
   const { language: lang, setLanguage } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
@@ -182,9 +235,82 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
+  // CHW Signup inputs
+  const [orgName, setOrgName] = useState("");
+  const [workerType, setWorkerType] = useState("");
+  const [experience, setExperience] = useState("");
+  const [workingArea, setWorkingArea] = useState("");
+  const [certificateUrlText, setCertificateUrlText] = useState("");
+  const [certificateName, setCertificateName] = useState<string | null>(null);
+  const [certificateBlob, setCertificateBlob] = useState<Blob | null>(null);
+  const [certPickerVisible, setCertPickerVisible] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<LoadingAction | null>(null);
   const [heroFailed, setHeroFailed] = useState(false);
+
+  const handleSelectMockCertificate = (type: string) => {
+    setError(null);
+    try {
+      const blob = base64ToBlob(DUMMY_CERT_BASE64, "image/png");
+      setCertificateBlob(blob);
+      setCertificateName(type);
+      setCertPickerVisible(false);
+    } catch (err) {
+      setError(lang === "bn" ? "সার্টিফিকেট প্রসেস করতে ব্যর্থ হয়েছে" : "Failed to process certificate");
+    }
+  };
+
+  const handleLaunchCamera = async () => {
+    setCertPickerVisible(false);
+    setError(null);
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          lang === "bn" ? "অনুমতি প্রয়োজন" : "Permission Required",
+          lang === "bn" ? "ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন" : "Camera permission is required to take photo"
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        setCertificateBlob(blob);
+        setCertificateName(asset.fileName || "camera_photo.png");
+      }
+    } catch (err) {
+      setError(lang === "bn" ? "ক্যামেরা খুলতে ব্যর্থ হয়েছে" : "Failed to open camera");
+    }
+  };
+
+  const handleLaunchImageLibrary = async () => {
+    setCertPickerVisible(false);
+    setError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        setCertificateBlob(blob);
+        setCertificateName(asset.fileName || "library_photo.png");
+      }
+    } catch (err) {
+      setError(lang === "bn" ? "গ্যালারি খুলতে ব্যর্থ হয়েছে" : "Failed to open image library");
+    }
+  };
 
   const t = translations[lang];
   const loading = loadingAction !== null;
@@ -219,6 +345,13 @@ export default function LoginScreen() {
     setModalMode("login");
     setName("");
     setClinicCode("");
+    setOrgName("");
+    setWorkerType("");
+    setExperience("");
+    setWorkingArea("");
+    setCertificateUrlText("");
+    setCertificateName(null);
+    setCertificateBlob(null);
     setEmail("");
     setPassword("");
     setError(null);
@@ -239,7 +372,10 @@ export default function LoginScreen() {
     setError(null);
     try {
       const emailLower = nextEmail.trim().toLowerCase();
-      if (emailLower === "admin" && nextPassword === "admin123") {
+      const passwordTrimmed = nextPassword.trim();
+
+      // Admin shortcut — must match before any role-specific logic
+      if (emailLower === "admin" && passwordTrimmed === "admin123") {
         await saveUserRole("ADMIN");
         await saveSession({
           accessToken: "mock-admin-token",
@@ -252,26 +388,63 @@ export default function LoginScreen() {
       }
 
       if (role === "CHW") {
+        const isDemoChwCredentials =
+          emailLower === DEMO_CHW_EMAIL.toLowerCase() || action === "demo-chw";
         try {
           await loginAndBootstrap(nextEmail.trim(), nextPassword);
           await saveUserRole("CHW");
           setModalVisible(false);
           router.replace("/(tabs)/home");
         } catch (_bootstrapError) {
-          // console.warn("Supabase CHW bootstrap failed, falling back to offline demo:", _bootstrapError)
-          await seedLocalChwDemoData();
-          setModalVisible(false);
-          router.replace("/(tabs)/home");
+          // Only silently fall back to offline demo for the actual demo CHW credentials.
+          // Any other failed login (e.g. wrong password, admin creds mis-routed) surfaces an error.
+          if (isDemoChwCredentials) {
+            await seedLocalChwDemoData();
+            setModalVisible(false);
+            router.replace("/(tabs)/home");
+          } else {
+            const msg = _bootstrapError instanceof Error
+              ? _bootstrapError.message
+              : (lang === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed");
+            setError(msg);
+          }
         }
         return;
       }
 
-      // For Mother: DO NOT fall back to fake local session.
-      // The CHW chat REQUIRES a real Supabase auth session + mother profile.
-      // Show the real error to the user so they can retry with correct credentials.
-      await loginMother(nextEmail.trim(), nextPassword);
-      setModalVisible(false);
-      router.replace("/(mother-tabs)/home");
+      if (role === "MOTHER") {
+        if (action === "demo-mother" || emailLower === DEMO_MOTHER_EMAIL.toLowerCase()) {
+          await seedLocalMotherDemoData();
+          setModalVisible(false);
+          router.replace("/(mother-tabs)/home");
+          return;
+        }
+
+        try {
+          await loginMother(nextEmail.trim(), nextPassword);
+          setModalVisible(false);
+          router.replace("/(mother-tabs)/home");
+        } catch (motherLoginError: any) {
+          const errMsg = motherLoginError?.message || "";
+          const isDbOrSchemaError = 
+            errMsg.includes("verification_status") || 
+            errMsg.includes("column") || 
+            errMsg.includes("relation") || 
+            errMsg.includes("Database") ||
+            errMsg.includes("network") || 
+            errMsg.includes("fetch") || 
+            errMsg.includes("Failed to fetch");
+
+          if (isDbOrSchemaError) {
+            await seedLocalMotherDemoData();
+            setModalVisible(false);
+            router.replace("/(mother-tabs)/home");
+          } else {
+            throw motherLoginError;
+          }
+        }
+        return;
+      }
     } catch (loginError) {
       const msg = loginError instanceof Error ? loginError.message : "লগইন ব্যর্থ হয়েছে";
       // console.error("Login error:", msg)
@@ -293,7 +466,44 @@ export default function LoginScreen() {
         setError(lang === "bn" ? "অনুগ্রহ করে ক্লিনিক কোড দিন" : "Please enter clinic code");
         return;
       }
+      if (!orgName.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে প্রতিষ্ঠানের নাম লিখুন" : "Please enter organization name");
+        return;
+      }
+      if (!workerType.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে কর্মী ধরন লিখুন" : "Please enter worker type");
+        return;
+      }
+      if (!workingArea.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে কর্ম এলাকা লিখুন" : "Please enter working area");
+        return;
+      }
+      if (!experience.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে আপনার অভিজ্ঞতা বছর লিখুন" : "Please enter years of experience");
+        return;
+      }
+      const expYears = parseInt(experience.trim(), 10);
+      if (isNaN(expYears) || expYears < 0) {
+        setError(lang === "bn" ? "অভিজ্ঞতা অবশ্যই একটি সঠিক সংখ্যা হতে হবে" : "Years of experience must be a valid number");
+        return;
+      }
+      if (!certificateUrlText.trim() && !certificateBlob) {
+        setError(
+          lang === "bn"
+            ? "অনুগ্রহ করে একটি সার্টিফিকেট আপলোড করুন অথবা লিংক প্রদান করুন"
+            : "Please upload a certificate or provide a link"
+        );
+        return;
+      }
+
       extraMetadata.clinic_code = clinicCode.trim();
+      extraMetadata.organization_name = orgName.trim();
+      extraMetadata.worker_type = workerType.trim();
+      extraMetadata.years_of_experience = expYears;
+      extraMetadata.working_area = workingArea.trim();
+      if (certificateUrlText.trim()) {
+        extraMetadata.certificate_url = certificateUrlText.trim();
+      }
     } else {
       if (!gestationalAge.trim()) {
         setError(lang === "bn" ? "অনুগ্রহ করে গর্ভকালীন বয়স দিন" : "Please enter gestational age");
@@ -320,6 +530,45 @@ export default function LoginScreen() {
       );
 
       if (sessionEstablished) {
+        if (role === "CHW" && certificateBlob) {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session?.user?.id) {
+              const userId = sessionData.session.user.id;
+              const fileExt = certificateName ? certificateName.split('.').pop() : 'png';
+              const fileName = `${userId}_${Date.now()}.${fileExt}`;
+              
+              const { data: uploadData, error: uploadErr } = await supabase.storage
+                .from('certificates')
+                .upload(fileName, certificateBlob, {
+                  contentType: 'image/' + (fileExt === 'jpg' ? 'jpeg' : fileExt),
+                  upsert: true
+                });
+              if (uploadErr) throw uploadErr;
+
+              const { data: urlData } = supabase.storage
+                .from('certificates')
+                .getPublicUrl(fileName);
+
+              if (urlData?.publicUrl) {
+                const { error: dbUpdateErr } = await supabase
+                  .from('chws')
+                  .update({ certificate_url: urlData.publicUrl })
+                  .eq('auth_user_id', userId);
+                if (dbUpdateErr) throw dbUpdateErr;
+              }
+            }
+          } catch (uploadError) {
+            console.error("Certificate upload failed:", uploadError);
+            Alert.alert(
+              lang === "bn" ? "সার্টিফিকেট আপলোড ব্যর্থ" : "Certificate Upload Failed",
+              lang === "bn" 
+                ? "আপনার অ্যাকাউন্ট তৈরি হয়েছে, কিন্তু সার্টিফিকেট আপলোড করা যায়নি।"
+                : "Your account was created, but the certificate upload failed."
+            );
+          }
+        }
+
         setError(null);
         Alert.alert(
           lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
@@ -508,7 +757,11 @@ export default function LoginScreen() {
             {/* Input Forms list */}
             <View style={styles.modalFormContent}>
               {modalMode === "signup" && (
-                <>
+                <ScrollView 
+                  style={{ maxHeight: 320 }} 
+                  contentContainerStyle={{ gap: 12 }}
+                  keyboardShouldPersistTaps="handled"
+                >
                   {/* Name field */}
                   <TextInput
                     onChangeText={setName}
@@ -520,13 +773,73 @@ export default function LoginScreen() {
 
                   {/* Role-specific Signup Fields */}
                   {modalRole === "CHW" ? (
-                    <TextInput
-                      onChangeText={setClinicCode}
-                      placeholder={t.clinicCodePlaceholder}
-                      placeholderTextColor="#A0A0A0"
-                      style={styles.modalInput}
-                      value={clinicCode}
-                    />
+                    <>
+                      <TextInput
+                        onChangeText={setClinicCode}
+                        placeholder={t.clinicCodePlaceholder}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={clinicCode}
+                      />
+                      <TextInput
+                        onChangeText={setOrgName}
+                        placeholder={lang === "bn" ? "প্রতিষ্ঠানের নাম" : "Organization Name"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={orgName}
+                      />
+                      <TextInput
+                        onChangeText={setWorkerType}
+                        placeholder={lang === "bn" ? "কর্মী ধরন (যেমন: HA, FWA, NGO)" : "Worker Type (e.g. HA, FWA, NGO)"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={workerType}
+                      />
+                      <TextInput
+                        keyboardType="numeric"
+                        onChangeText={setExperience}
+                        placeholder={lang === "bn" ? "অভিজ্ঞতা (বছর)" : "Years of Experience"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={experience}
+                      />
+                      <TextInput
+                        onChangeText={setWorkingArea}
+                        placeholder={lang === "bn" ? "কর্ম এলাকা (ইউনিয়ন/উপজেলা)" : "Working Area (Union/Upazila)"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={workingArea}
+                      />
+                      
+                      {/* Certificate Upload Interface */}
+                      <View style={styles.certSection}>
+                        <Pressable
+                          onPress={() => setCertPickerVisible(true)}
+                          style={[styles.uploadBox, certificateBlob && styles.uploadBoxActive]}
+                        >
+                          <View style={styles.uploadBoxContent}>
+                            <Icon name={certificateBlob ? "check-circle" : "cloud-upload"} color={certificateBlob ? "#FFFFFF" : "#4A6047"} size={20} />
+                            <Text style={certificateBlob ? styles.uploadTextActive : styles.uploadText}>
+                              {certificateBlob
+                                ? (lang === "bn" ? `সংযুক্ত: ${certificateName}` : `Attached: ${certificateName}`)
+                                : (lang === "bn" ? "সার্টিফিকেট ফাইল আপলোড" : "Upload Certificate")}
+                            </Text>
+                          </View>
+                        </Pressable>
+
+                        <Text style={styles.orDividerText}>
+                          {lang === "bn" ? "— অথবা লিংক দিন —" : "— OR PROVIDE LINK —"}
+                        </Text>
+
+                        <TextInput
+                          onChangeText={setCertificateUrlText}
+                          placeholder={lang === "bn" ? "সার্টিফিকেট লিংক (ঐচ্ছিক)" : "Certificate Link (Optional)"}
+                          placeholderTextColor="#A0A0A0"
+                          style={styles.modalInput}
+                          value={certificateUrlText}
+                        />
+                      </View>
+                    </>
                   ) : (
                     <TextInput
                       keyboardType="numeric"
@@ -537,7 +850,7 @@ export default function LoginScreen() {
                       value={gestationalAge}
                     />
                   )}
-                </>
+                </ScrollView>
               )}
 
               {/* Email or Phone Address */}
@@ -588,6 +901,60 @@ export default function LoginScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Certificate Source Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={certPickerVisible}
+        onRequestClose={() => setCertPickerVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCertPickerVisible(false)} />
+          <View style={styles.modalPanel}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {lang === "bn" ? "সার্টিফিকেট ফাইল নির্বাচন করুন" : "Select Certificate File"}
+              </Text>
+              <Pressable onPress={() => setCertPickerVisible(false)}>
+                <Icon name="close" size={24} color="#70605A" />
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 12, marginTop: 12, paddingBottom: 20 }}>
+              <Pressable
+                onPress={handleLaunchImageLibrary}
+                style={styles.optionRow}
+              >
+                <Icon name="image" color="#E57A58" size={24} />
+                <Text style={styles.optionText}>
+                  {lang === "bn" ? "গ্যালারি থেকে ছবি নির্বাচন করুন" : "Choose Photo from Gallery"}
+                </Text>
+              </Pressable>
+              
+              <Pressable
+                onPress={handleLaunchCamera}
+                style={styles.optionRow}
+              >
+                <Icon name="photo-camera" color="#E57A58" size={24} />
+                <Text style={styles.optionText}>
+                  {lang === "bn" ? "ক্যামেরা দিয়ে ছবি তুলুন" : "Take Photo with Camera"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => handleSelectMockCertificate("Demo Certificate (Mock).png")}
+                style={styles.optionRow}
+              >
+                <Icon name="description" color="#E57A58" size={24} />
+                <Text style={styles.optionText}>
+                  {lang === "bn" ? "ডেমো ডকুমেন্ট যুক্ত করুন (Mock)" : "Use Demo Mock Certificate"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -849,5 +1216,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     textDecorationLine: "underline"
+  },
+  certSection: {
+    marginTop: 8,
+    gap: 8
+  },
+  uploadBox: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#EBDCD9",
+    borderRadius: 8,
+    borderStyle: "dashed",
+    borderWidth: 1.5,
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16
+  },
+  uploadBoxActive: {
+    backgroundColor: "#E57A58",
+    borderColor: "#E57A58",
+    borderStyle: "solid"
+  },
+  uploadBoxContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  uploadText: {
+    color: "#4A6047",
+    fontSize: 15,
+    fontWeight: "600"
+  },
+  uploadTextActive: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600"
+  },
+  orDividerText: {
+    textAlign: "center",
+    color: "#A08E88",
+    fontSize: 12,
+    marginVertical: 4,
+    fontWeight: "bold"
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EBDCD9"
+  },
+  optionText: {
+    color: "#54433d",
+    fontSize: 16
   }
 });

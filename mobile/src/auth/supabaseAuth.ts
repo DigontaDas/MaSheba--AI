@@ -113,8 +113,8 @@ export async function loginAndBootstrap(identifier: string, password: string): P
     .eq("auth_user_id", data.session.user.id)
     .single<ChwRow>();
 
-  if (chwError || !chw?.is_active) {
-    throw new Error(chwError?.message ?? "Authenticated user is not an active CHW");
+  if (chwError || !chw) {
+    throw new Error(chwError?.message ?? "Authenticated user has no health worker profile");
   }
 
   const { data: patients, error: patientsError } = await supabase

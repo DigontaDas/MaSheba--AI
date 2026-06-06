@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,7 +11,9 @@ import {
   TextInput,
   Modal,
   Dimensions,
-  Platform
+  Platform,
+  Linking,
+  Alert
 } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
@@ -333,7 +335,7 @@ export default function AdminDashboardScreen() {
   const [chws, setChws] = useState<ChwListRow[]>(SEEDED_CHWS);
   const [riskSummary, setRiskSummary] = useState<RiskSummaryRow[]>(SEEDED_RISK_SUMMARY);
   const [patients, setPatients] = useState<PatientRow[]>(SEEDED_PATIENTS);
-  const [activeTab, setActiveTab] = useState<"chws" | "patients">("chws");
+  const [activeTab, setActiveTab] = useState<"chws" | "patients" | "verifications">("chws");
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
 
@@ -346,69 +348,177 @@ export default function AdminDashboardScreen() {
   const [selectedPatient, setSelectedPatient] = useState<PatientRow | null>(null);
   const [selectedChw, setSelectedChw] = useState<ChwListRow | null>(null);
 
+  // Verification states
+  const [pendingChws, setPendingChws] = useState<any[]>([]);
+  const [rejectingChwId, setRejectingChwId] = useState<string | null>(null);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState("");
+  const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
+
   const t = translations[lang];
 
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        setLoading(true);
-        // Attempt to fetch from Supabase
-        const [chwRes, riskRes, patientRes] = await Promise.all([
-          supabase.from("v_chw_list").select("chw_id,name,union_name,upazila,is_active,patient_count"),
-          supabase.from("v_risk_summary").select("chw_id,chw_name,low_count,moderate_count,high_count"),
-          supabase.from("patients").select("id,chw_id,name,age,gestational_age_weeks,last_risk_level")
-        ]);
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Attempt to fetch from Supabase
+      const [chwRes, riskRes, patientRes, pendingChwsRes] = await Promise.all([
+        supabase.from("v_chw_list").select("chw_id,name,union_name,upazila,is_active,patient_count"),
+        supabase.from("v_risk_summary").select("chw_id,chw_name,low_count,moderate_count,high_count"),
+        supabase.from("patients").select("id,chw_id,name,age,gestational_age_weeks,last_risk_level"),
+        supabase.from("chws").select("id, name, union_name, upazila, organization_name, worker_type, years_of_experience, certificate_url, verification_status").eq("verification_status", "PENDING")
+      ]);
 
-        if (chwRes.data && chwRes.data.length > 0) {
-          const fetchedChws = chwRes.data as ChwListRow[];
-          const mergedChws = [...fetchedChws];
-          SEEDED_CHWS.forEach(seeded => {
-            if (!mergedChws.some(x => x.chw_id === seeded.chw_id)) {
-              mergedChws.push(seeded);
-            }
-          });
-          setChws(mergedChws);
-          setIsOffline(false);
-        } else {
-          setIsOffline(true);
-          setChws(SEEDED_CHWS);
-        }
-
-        if (riskRes.data && riskRes.data.length > 0) {
-          const fetchedRisk = riskRes.data as RiskSummaryRow[];
-          const mergedRisk = [...fetchedRisk];
-          SEEDED_RISK_SUMMARY.forEach(seeded => {
-            if (!mergedRisk.some(x => x.chw_id === seeded.chw_id)) {
-              mergedRisk.push(seeded);
-            }
-          });
-          setRiskSummary(mergedRisk);
-        } else {
-          setRiskSummary(SEEDED_RISK_SUMMARY);
-        }
-
-        if (patientRes.data && patientRes.data.length > 0) {
-          const fetchedPatients = patientRes.data as PatientRow[];
-          const mergedPatients = [...fetchedPatients];
-          SEEDED_PATIENTS.forEach(seeded => {
-            if (!mergedPatients.some(x => x.id === seeded.id)) {
-              mergedPatients.push(seeded);
-            }
-          });
-          setPatients(mergedPatients);
-        } else {
-          setPatients(SEEDED_PATIENTS);
-        }
-      } catch (err) {
-        // Fallback to offline seeded data
+      if (chwRes.data && chwRes.data.length > 0) {
+        const fetchedChws = chwRes.data as ChwListRow[];
+        const mergedChws = [...fetchedChws];
+        SEEDED_CHWS.forEach(seeded => {
+          if (!mergedChws.some(x => x.chw_id === seeded.chw_id)) {
+            mergedChws.push(seeded);
+          }
+        });
+        setChws(mergedChws);
+        setIsOffline(false);
+      } else {
         setIsOffline(true);
-      } finally {
-        setLoading(false);
+        setChws(SEEDED_CHWS);
       }
-    }
 
-    loadDashboard();
+      if (riskRes.data && riskRes.data.length > 0) {
+        const fetchedRisk = riskRes.data as RiskSummaryRow[];
+        const mergedRisk = [...fetchedRisk];
+        SEEDED_RISK_SUMMARY.forEach(seeded => {
+          if (!mergedRisk.some(x => x.chw_id === seeded.chw_id)) {
+            mergedRisk.push(seeded);
+          }
+        });
+        setRiskSummary(mergedRisk);
+      } else {
+        setRiskSummary(SEEDED_RISK_SUMMARY);
+      }
+
+      if (patientRes.data && patientRes.data.length > 0) {
+        const fetchedPatients = patientRes.data as PatientRow[];
+        const mergedPatients = [...fetchedPatients];
+        SEEDED_PATIENTS.forEach(seeded => {
+          if (!mergedPatients.some(x => x.id === seeded.id)) {
+            mergedPatients.push(seeded);
+          }
+        });
+        setPatients(mergedPatients);
+      } else {
+        setPatients(SEEDED_PATIENTS);
+      }
+
+      if (pendingChwsRes.data) {
+        setPendingChws(pendingChwsRes.data);
+      }
+    } catch (err) {
+      // Fallback to offline seeded data
+      setIsOffline(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const refreshPendingChws = async () => {
+    try {
+      const { data } = await supabase
+        .from("chws")
+        .select("id, name, union_name, upazila, organization_name, worker_type, years_of_experience, certificate_url, verification_status")
+        .eq("verification_status", "PENDING");
+      if (data) setPendingChws(data);
+    } catch (err) {
+      console.error("Error refreshing pending CHWs:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // Real-time Postgres insert subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("public-chws-inserts")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chws"
+        },
+        (payload) => {
+          const newChw = payload.new;
+          if (newChw && newChw.verification_status === "PENDING") {
+            Alert.alert(
+              lang === "bn" ? "নতুন আবেদন!" : "New CHW Registration!",
+              lang === "bn" 
+                ? `নতুন স্বাস্থ্যকর্মী "${newChw.name}" নিবন্ধনের আবেদন করেছেন।`
+                : `A new health worker "${newChw.name}" has registered and is pending verification.`,
+              [
+                { text: lang === "bn" ? "যাচাই করুন" : "Verify", onPress: () => setActiveTab("verifications") },
+                { text: lang === "bn" ? "ঠিক আছে" : "OK" }
+              ]
+            );
+            refreshPendingChws();
+            loadDashboard();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lang, loadDashboard]);
+
+  const handleApproveChw = async (chwId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chws")
+        .update({ is_active: true, verification_status: "APPROVED" })
+        .eq("id", chwId);
+      if (error) throw error;
+      
+      Alert.alert(
+        lang === "bn" ? "অনুমোদিত" : "Approved",
+        lang === "bn" ? "কর্মী সফলভাবে অনুমোদিত হয়েছে।" : "CHW worker successfully approved."
+      );
+      refreshPendingChws();
+      loadDashboard();
+    } catch (err: any) {
+      Alert.alert(lang === "bn" ? "ব্যর্থ" : "Failed", err.message || "Failed to approve");
+    }
+  };
+
+  const handleRejectChw = async () => {
+    if (!rejectionReasonInput.trim()) {
+      Alert.alert(lang === "bn" ? "ত্রুটি" : "Error", lang === "bn" ? "প্রত্যাখ্যানের কারণ লিখুন" : "Please input a rejection reason");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("chws")
+        .update({
+          is_active: false,
+          verification_status: "REJECTED",
+          rejection_reason: rejectionReasonInput.trim()
+        })
+        .eq("id", rejectingChwId);
+      if (error) throw error;
+
+      Alert.alert(
+        lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected",
+        lang === "bn" ? "আবেদনটি প্রত্যাখ্যান করা হয়েছে।" : "Application has been rejected."
+      );
+      setRejectionModalVisible(false);
+      setRejectingChwId(null);
+      setRejectionReasonInput("");
+      refreshPendingChws();
+      loadDashboard();
+    } catch (err: any) {
+      Alert.alert(lang === "bn" ? "ব্যর্থ" : "Failed", err.message || "Failed to reject");
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut().catch(() => undefined);
@@ -632,6 +742,14 @@ export default function AdminDashboardScreen() {
                 {t.patientTab}
               </Text>
             </Pressable>
+            <Pressable
+              onPress={() => setActiveTab("verifications")}
+              style={[styles.tabButton, activeTab === "verifications" && styles.tabButtonActive]}
+            >
+              <Text style={[styles.tabButtonText, activeTab === "verifications" && styles.tabButtonTextActive]}>
+                {lang === "bn" ? "যাচাইকরণ অনুরোধ" : "Verification Requests"}
+              </Text>
+            </Pressable>
           </View>
 
           {/* Risk Level Filter Scroll (When Patient registry is active) */}
@@ -704,7 +822,7 @@ export default function AdminDashboardScreen() {
           )}
 
           {/* Directory Tables */}
-          {activeTab === "chws" ? (
+          {activeTab === "chws" && (
             <View style={styles.sectionCard}>
               <View style={styles.tableTitleContainer}>
                 <Text style={styles.sectionTitle}>{t.chwList}</Text>
@@ -739,7 +857,9 @@ export default function AdminDashboardScreen() {
                 </Pressable>
               ))}
             </View>
-          ) : (
+          )}
+
+          {activeTab === "patients" && (
             <View style={styles.sectionCard}>
               <View style={styles.tableTitleContainer}>
                 <Text style={styles.sectionTitle}>{t.patientList}</Text>
@@ -787,6 +907,91 @@ export default function AdminDashboardScreen() {
                   </Text>
                 </Pressable>
               ))}
+            </View>
+          )}
+
+          {/* Verification Requests Tab View */}
+          {activeTab === "verifications" && (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>
+                {lang === "bn" ? "অপেক্ষমাণ স্বাস্থ্যকর্মী যাচাইকরণ" : "Pending Health Worker Verifications"}
+              </Text>
+              {pendingChws.length === 0 ? (
+                <View style={styles.emptyPendingContainer}>
+                  <Icon name="check-circle" size={40} color="#2E7D32" />
+                  <Text style={styles.emptyPendingText}>
+                    {lang === "bn" ? "কোন অপেক্ষমাণ আবেদন নেই" : "No pending verification requests"}
+                  </Text>
+                </View>
+              ) : (
+                pendingChws.map((chw) => (
+                  <View key={chw.id} style={styles.pendingChwCard}>
+                    <View style={styles.pendingChwHeader}>
+                      <Text style={styles.pendingChwName}>{chw.name}</Text>
+                      <View style={styles.pendingChwStatusBadge}>
+                        <Text style={styles.pendingChwStatusBadgeText}>{chw.verification_status}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.pendingChwDetails}>
+                      <View style={styles.pendingDetailRow}>
+                        <Text style={styles.pendingDetailLabel}>{lang === "bn" ? "ইউনিয়ন/এলাকা" : "Union/Area"}:</Text>
+                        <Text style={styles.pendingDetailValue}>{chw.union_name}</Text>
+                      </View>
+                      <View style={styles.pendingDetailRow}>
+                        <Text style={styles.pendingDetailLabel}>{lang === "bn" ? "উপজেলা" : "Upazila"}:</Text>
+                        <Text style={styles.pendingDetailValue}>{chw.upazila}</Text>
+                      </View>
+                      <View style={styles.pendingDetailRow}>
+                        <Text style={styles.pendingDetailLabel}>{lang === "bn" ? "প্রতিষ্ঠান" : "Organization"}:</Text>
+                        <Text style={styles.pendingDetailValue}>{chw.organization_name || "—"}</Text>
+                      </View>
+                      <View style={styles.pendingDetailRow}>
+                        <Text style={styles.pendingDetailLabel}>{lang === "bn" ? "কর্মী ধরন" : "Worker Type"}:</Text>
+                        <Text style={styles.pendingDetailValue}>{chw.worker_type || "—"}</Text>
+                      </View>
+                      <View style={styles.pendingDetailRow}>
+                        <Text style={styles.pendingDetailLabel}>{lang === "bn" ? "অভিজ্ঞতা" : "Experience"}:</Text>
+                        <Text style={styles.pendingDetailValue}>{chw.years_of_experience} {lang === "bn" ? "বছর" : "years"}</Text>
+                      </View>
+                    </View>
+
+                    {chw.certificate_url && (
+                      <Pressable
+                        onPress={() => Linking.openURL(chw.certificate_url)}
+                        style={styles.pendingViewDocBtn}
+                      >
+                        <Icon name="insert-drive-file" color="#E57A58" size={16} />
+                        <Text style={styles.pendingViewDocBtnText}>
+                          {lang === "bn" ? "সার্টিফিকেট নথি দেখুন" : "View Certificate Document"}
+                        </Text>
+                      </Pressable>
+                    )}
+
+                    <View style={styles.pendingActionButtons}>
+                      <Pressable
+                        onPress={() => {
+                          setRejectingChwId(chw.id);
+                          setRejectionModalVisible(true);
+                        }}
+                        style={[styles.pendingActionBtn, styles.pendingRejectBtn]}
+                      >
+                        <Text style={styles.pendingRejectBtnText}>
+                          {lang === "bn" ? "প্রত্যাখ্যান" : "Reject"}
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleApproveChw(chw.id)}
+                        style={[styles.pendingActionBtn, styles.pendingApproveBtn]}
+                      >
+                        <Text style={styles.pendingApproveBtnText}>
+                          {lang === "bn" ? "অনুমোদন" : "Approve"}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
           )}
 
@@ -904,6 +1109,76 @@ export default function AdminDashboardScreen() {
 
                 <Pressable onPress={() => setSelectedChw(null)} style={styles.closeActionBtnSecondary}>
                   <Text style={styles.closeActionBtnSecondaryText}>{t.closeBtn}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectionModalVisible && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={rejectionModalVisible}
+          onRequestClose={() => {
+            setRejectionModalVisible(false);
+            setRejectingChwId(null);
+            setRejectionReasonInput("");
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {lang === "bn" ? "প্রত্যাখ্যানের কারণ লিখুন" : "Input Rejection Reason"}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setRejectionModalVisible(false);
+                    setRejectingChwId(null);
+                    setRejectionReasonInput("");
+                  }}
+                  style={styles.modalCloseBtn}
+                >
+                  <Icon name="close" size={20} color="#70605A" />
+                </Pressable>
+              </View>
+
+              <View style={styles.modalBody}>
+                <TextInput
+                  style={styles.rejectionTextInput}
+                  placeholder={lang === "bn" ? "কারণ লিখুন (যেমন: সার্টিফিকেট অস্পষ্ট বা ত্রুটিযুক্ত)" : "Enter reason (e.g. invalid certificate)"}
+                  placeholderTextColor="#A0908A"
+                  multiline
+                  numberOfLines={4}
+                  value={rejectionReasonInput}
+                  onChangeText={setRejectionReasonInput}
+                />
+              </View>
+
+              <View style={styles.modalActionsRow}>
+                <Pressable
+                  onPress={() => {
+                    setRejectionModalVisible(false);
+                    setRejectingChwId(null);
+                    setRejectionReasonInput("");
+                  }}
+                  style={styles.closeActionBtnSecondary}
+                >
+                  <Text style={styles.closeActionBtnSecondaryText}>
+                    {lang === "bn" ? "বাতিল" : "Cancel"}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleRejectChw}
+                  style={styles.filterActionBtn}
+                >
+                  <Text style={styles.filterActionBtnText}>
+                    {lang === "bn" ? "প্রত্যাখ্যান নিশ্চিত করুন" : "Confirm Rejection"}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -1401,6 +1676,122 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#E57A58",
     fontWeight: "bold"
+  },
+  emptyPendingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    gap: 10
+  },
+  emptyPendingText: {
+    color: "#70605A",
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  pendingChwCard: {
+    backgroundColor: "#FCFAF9",
+    borderColor: "#F5ECE9",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10
+  },
+  pendingChwHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  pendingChwName: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#2C2523"
+  },
+  pendingChwStatusBadge: {
+    backgroundColor: "#FCEBE5",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6
+  },
+  pendingChwStatusBadgeText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#E57A58"
+  },
+  pendingChwDetails: {
+    gap: 4
+  },
+  pendingDetailRow: {
+    flexDirection: "row",
+    gap: 6
+  },
+  pendingDetailLabel: {
+    fontSize: 12,
+    color: "#70605A",
+    fontWeight: "600",
+    width: 90
+  },
+  pendingDetailValue: {
+    fontSize: 12,
+    color: "#2C2523",
+    fontWeight: "700",
+    flex: 1
+  },
+  pendingViewDocBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#FCEBE5",
+    borderRadius: 8,
+    alignSelf: "flex-start"
+  },
+  pendingViewDocBtnText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#E57A58"
+  },
+  pendingActionButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 6
+  },
+  pendingActionBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  pendingRejectBtn: {
+    borderWidth: 1.5,
+    borderColor: "#ba1a1a",
+    backgroundColor: "transparent"
+  },
+  pendingRejectBtnText: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#ba1a1a"
+  },
+  pendingApproveBtn: {
+    backgroundColor: "#2E7D32"
+  },
+  pendingApproveBtnText: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#FFFFFF"
+  },
+  rejectionTextInput: {
+    backgroundColor: "#FFF9F6",
+    borderColor: "#EBDCD9",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    color: "#2C2523",
+    textAlignVertical: "top",
+    minHeight: 80
   }
 });
 

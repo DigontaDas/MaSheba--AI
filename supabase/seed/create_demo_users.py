@@ -96,7 +96,7 @@ def main() -> None:
     "PATCH",
     f"{supabase_url}/rest/v1/chws?id=eq.{chw_id}",
     rest_headers,
-    {"auth_user_id": user_ids[demo_chw_email], "is_active": True},
+    {"auth_user_id": user_ids[demo_chw_email], "is_active": True, "verification_status": "APPROVED"},
   )
   print("CHW_A linked")
 

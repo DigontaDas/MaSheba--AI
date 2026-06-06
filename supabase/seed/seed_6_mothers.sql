@@ -51,7 +51,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Amina Khatun","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"আমিনা খাতুন","role":"mother"}'::jsonb
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -64,7 +64,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Rahima Begum","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"রহিমা বেগম","role":"mother"}'::jsonb
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -77,7 +77,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Sharmin Akter","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"শারমিন আক্তার","role":"mother"}'::jsonb
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -90,7 +90,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Nasima Begum","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"নাসিমা বেগম","role":"mother"}'::jsonb
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -103,7 +103,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Fatema Akter","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"ফাতেমা আক্তার","role":"mother"}'::jsonb
   ),
   (
     '00000000-0000-0000-0000-000000000000',
@@ -116,7 +116,7 @@ VALUES
     now(),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Jannatul Ferdous","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"জান্নাতুল ফেরদৌস","role":"mother"}'::jsonb
   );
 
 -- 5. Insert the 6 mothers into public.mothers table
@@ -133,7 +133,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000001',
     '50000000-0000-0000-0000-000000000001',
-    'Amina Khatun',
+    'আমিনা খাতুন',
     '11111111-1111-1111-1111-111111111101',
     '+8801700000001',
     28,
@@ -142,7 +142,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000002',
     '50000000-0000-0000-0000-000000000002',
-    'Rahima Begum',
+    'রহিমা বেগম',
     '11111111-1111-1111-1111-111111111102',
     '+8801700000002',
     32,
@@ -151,7 +151,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000003',
     '50000000-0000-0000-0000-000000000003',
-    'Sharmin Akter',
+    'শারমিন আক্তার',
     '11111111-1111-1111-1111-111111111103',
     '+8801700000003',
     20,
@@ -160,7 +160,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000004',
     '50000000-0000-0000-0000-000000000004',
-    'Nasima Begum',
+    'নাসিমা বেগম',
     '11111111-1111-1111-1111-111111111104',
     '+8801700000004',
     34,
@@ -169,7 +169,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000005',
     '50000000-0000-0000-0000-000000000005',
-    'Fatema Akter',
+    'ফাতেমা আক্তার',
     '11111111-1111-1111-1111-111111111105',
     '+8801700000005',
     26,
@@ -178,7 +178,7 @@ VALUES
   (
     '60000000-0000-0000-0000-000000000006',
     '50000000-0000-0000-0000-000000000006',
-    'Jannatul Ferdous',
+    'জান্নাতুল ফেরদৌস',
     '11111111-1111-1111-1111-111111111106',
     '+8801700000006',
     18,

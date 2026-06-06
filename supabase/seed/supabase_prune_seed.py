@@ -99,7 +99,7 @@ def main() -> None:
     {
       "email": "mother-amina@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Amina Khatun",
+      "name": "আমিনা খাতুন",
       "patient_id": "11111111-1111-1111-1111-111111111101",
       "phone": "+8801700000001",
       "gestational_age_weeks": 28
@@ -107,7 +107,7 @@ def main() -> None:
     {
       "email": "mother-rahima@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Rahima Begum",
+      "name": "রহিমা বেগম",
       "patient_id": "11111111-1111-1111-1111-111111111102",
       "phone": "+8801700000002",
       "gestational_age_weeks": 32
@@ -115,7 +115,7 @@ def main() -> None:
     {
       "email": "mother-sharmin@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Sharmin Akter",
+      "name": "শারমিন আক্তার",
       "patient_id": "11111111-1111-1111-1111-111111111103",
       "phone": "+8801700000003",
       "gestational_age_weeks": 20
@@ -123,7 +123,7 @@ def main() -> None:
     {
       "email": "mother-nasima@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Nasima Begum",
+      "name": "নাসিমা বেগম",
       "patient_id": "11111111-1111-1111-1111-111111111104",
       "phone": "+8801700000004",
       "gestational_age_weeks": 34
@@ -131,7 +131,7 @@ def main() -> None:
     {
       "email": "mother-fatema@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Fatema Akter",
+      "name": "ফাতেমা আক্তার",
       "patient_id": "11111111-1111-1111-1111-111111111105",
       "phone": "+8801700000005",
       "gestational_age_weeks": 26
@@ -139,7 +139,7 @@ def main() -> None:
     {
       "email": "mother-jannatul@maasheba.local",
       "password": "Mother_B_demo_password",
-      "name": "Jannatul Ferdous",
+      "name": "জান্নাতুল ফেরদৌস",
       "patient_id": "11111111-1111-1111-1111-111111111106",
       "phone": "+8801700000006",
       "gestational_age_weeks": 18

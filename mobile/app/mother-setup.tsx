@@ -21,6 +21,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 import { getLmpDateFromWeeks } from "@/utils/pregnancy";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import * as ImagePicker from "expo-image-picker";
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
@@ -57,17 +58,93 @@ export default function MotherSetupScreen() {
     }).catch(() => undefined);
   }, []);
 
-  const handleSelectMockCertificate = async (type: string) => {
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function base64ToBlob(base64: string, mimeType: string): Blob {
+  const str = base64.replace(/=+$/, '');
+  const len = str.length;
+  const bytes = new Uint8Array(((len * 3) / 4) | 0);
+  let p = 0;
+  for (let i = 0; i < len; i += 4) {
+    const encoded1 = chars.indexOf(str[i]);
+    const encoded2 = chars.indexOf(str[i + 1]);
+    const encoded3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
+    const encoded4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
+
+    const value = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
+    bytes[p++] = (value >> 16) & 255;
+    if (i + 2 < len) bytes[p++] = (value >> 8) & 255;
+    if (i + 3 < len) bytes[p++] = value & 255;
+  }
+  return new Blob([bytes], { type: mimeType });
+}
+
+  const handleSelectMockCertificate = (type: string) => {
     setLoading(true);
     setPickerVisible(false);
     try {
-      // Convert the base64 placeholder to a real Blob using the fetch-data-uri trick
-      const response = await fetch(`data:image/png;base64,${DUMMY_CERT_BASE64}`);
-      const blob = await response.blob();
+      const blob = base64ToBlob(DUMMY_CERT_BASE64, "image/png");
       setCertificateBlob(blob);
       setCertificateName(type);
+      setError(null);
     } catch (err) {
       setError(lang === "bn" ? "সার্টিফিকেট প্রসেস করতে ব্যর্থ হয়েছে" : "Failed to process certificate");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLaunchCamera = async () => {
+    setPickerVisible(false);
+    setError(null);
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          lang === "bn" ? "অনুমতি প্রয়োজন" : "Permission Required",
+          lang === "bn" ? "ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন" : "Camera permission is required to take photo"
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setLoading(true);
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        setCertificateBlob(blob);
+        setCertificateName(asset.fileName || "camera_photo.png");
+      }
+    } catch (err) {
+      setError(lang === "bn" ? "ক্যামেরা খুলতে ব্যর্থ হয়েছে" : "Failed to open camera");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLaunchImageLibrary = async () => {
+    setPickerVisible(false);
+    setError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setLoading(true);
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        setCertificateBlob(blob);
+        setCertificateName(asset.fileName || "library_photo.png");
+      }
+    } catch (err) {
+      setError(lang === "bn" ? "গ্যালারি খুলতে ব্যর্থ হয়েছে" : "Failed to open image library");
     } finally {
       setLoading(false);
     }
@@ -83,18 +160,6 @@ export default function MotherSetupScreen() {
       setError(lang === "bn" ? "গর্ভকালীন বয়স ১ থেকে ৪৫ সপ্তাহের মধ্যে দিন" : "Gestational weeks must be between 1 and 45");
       return;
     }
-    if (!chwEmailOrPhone.trim()) {
-      setError(lang === "bn" ? "অনুগ্রহ করে স্বাস্থ্যকর্মীর ইমেইল বা মোবাইল নম্বর দিন" : "Please enter Health Worker's email or phone");
-      return;
-    }
-    if (!certificateBlob) {
-      setError(lang === "bn" ? "অনুগ্রহ করে মেডিকেল সার্টিফিকেট আপলোড করুন" : "Please upload a medical certificate");
-      return;
-    }
-    if (certificateBlob.size > 5 * 1024 * 1024) {
-      setError(lang === "bn" ? "সার্টিফিকেটের সাইজ ৫ মেগাবাইটের বেশি হতে পারবে না" : "Certificate file size cannot exceed 5MB");
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -103,39 +168,23 @@ export default function MotherSetupScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not logged in");
 
-      // 1. Upload the certificate blob to Supabase Storage certificates bucket
-      const uploadPath = `public/${user.id}_cert.png`;
-      const { error: uploadErr } = await supabase.storage
-        .from("certificates")
-        .upload(uploadPath, certificateBlob, {
-          contentType: "image/png",
-          upsert: true
-        });
-
-      if (uploadErr) throw new Error(`Storage error: ${uploadErr.message}`);
-
-      // 2. Get the public URL of the uploaded image
-      const { data: { publicUrl } } = supabase.storage
-        .from("certificates")
-        .getPublicUrl(uploadPath);
-
-      // 3. Compute lmp_date based on gestational weeks input
+      // 1. Compute lmp_date based on gestational weeks input
       const lmpDate = getLmpDateFromWeeks(weeks);
 
-      const isEmail = chwEmailOrPhone.includes("@");
       const cleanChwVal = chwEmailOrPhone.trim();
+      const hasChw = cleanChwVal.length > 0;
+      const isEmail = hasChw && cleanChwVal.includes("@");
 
-      // 4. Update the mother's record
+      // 2. Update the mother's record (verified instantly)
       const { error: dbErr } = await supabase
         .from("mothers")
         .update({
           name: name.trim(),
-          chw_email: isEmail ? cleanChwVal.toLowerCase() : null,
-          chw_phone: !isEmail ? cleanChwVal : null,
+          chw_email: hasChw && isEmail ? cleanChwVal.toLowerCase() : null,
+          chw_phone: hasChw && !isEmail ? cleanChwVal : null,
           lmp_date: lmpDate,
           gestational_age_weeks: weeks,
-          certificate_url: publicUrl,
-          verification_status: "PENDING"
+          verification_status: "VERIFIED"
         })
         .eq("auth_user_id", user.id);
 
@@ -153,8 +202,8 @@ export default function MotherSetupScreen() {
       }
 
       Alert.alert(
-        lang === "bn" ? "তথ্য জমা হয়েছে" : "Submission Successful",
-        lang === "bn" ? "আপনার সার্টিফিকেট যাচাইকরণের জন্য পাঠানো হয়েছে। অনুগ্রহ করে স্বাস্থ্যকর্মীর অনুমোদনের জন্য অপেক্ষা করুন।" : "Your certificate has been sent for verification. Please wait for Health Worker approval.",
+        lang === "bn" ? "প্রোফাইল সেটআপ সফল" : "Setup Successful",
+        lang === "bn" ? "আপনার তথ্য সফলভাবে সংরক্ষিত হয়েছে।" : "Your pregnancy details have been successfully saved.",
         [{ text: lang === "bn" ? "ঠিক আছে" : "OK", onPress: () => router.replace("/(mother-tabs)/home") }]
       );
     } catch (err: any) {
@@ -230,7 +279,7 @@ export default function MotherSetupScreen() {
             {/* Health Worker Assigned Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
-                {lang === "bn" ? "যাচাইকারী স্বাস্থ্যকর্মীর ইমেইল বা মোবাইল" : "Assigned Health Worker's Email or Phone"}
+                {lang === "bn" ? "যাচাইকারী স্বাস্থ্যকর্মীর ইমেইল বা মোবাইল (ঐচ্ছিক)" : "Assigned Health Worker's Email or Phone (Optional)"}
               </Text>
               <TextInput
                 autoCapitalize="none"
@@ -247,39 +296,7 @@ export default function MotherSetupScreen() {
               </Text>
             </View>
 
-            {/* Certificate Upload Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                {lang === "bn" ? "গর্ভধারণের মেডিকেল সার্টিফিকেট" : "Pregnancy Medical Certificate"}
-              </Text>
-              <Pressable
-                onPress={() => setPickerVisible(true)}
-                style={[
-                  styles.uploadBox,
-                  certificateName ? styles.uploadBoxActive : null
-                ]}
-              >
-                {certificateName ? (
-                  <View style={styles.uploadBoxContent}>
-                    <Icon name="check-circle" color={colors.secondary} size={36} />
-                    <Text style={styles.uploadTextActive}>{certificateName}</Text>
-                    <Text style={styles.uploadSubtext}>
-                      {lang === "bn" ? "সার্টিফিকেট পরিবর্তন করতে ট্যাপ করুন" : "Tap to change certificate"}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.uploadBoxContent}>
-                    <Icon name="cloud-upload" color={colors.outline} size={36} />
-                    <Text style={styles.uploadText}>
-                      {lang === "bn" ? "সার্টিফিকেট সংযুক্ত করুন" : "Upload Medical Certificate"}
-                    </Text>
-                    <Text style={styles.uploadSubtext}>
-                      {lang === "bn" ? "পিডিএফ বা ছবি ফাইল নির্বাচন করুন" : "Select a PDF or image file"}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
+            {/* Certificate upload is not required for Mothers. Managed by CHW. */}
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -315,19 +332,19 @@ export default function MotherSetupScreen() {
 
             <View style={styles.modalOptions}>
               <OptionRow
-                icon="description"
-                title={lang === "bn" ? "গর্ভকালীন স্বাস্থ্য কার্ড" : "Maternity Health Card.jpg"}
-                onPress={() => handleSelectMockCertificate("Maternity Health Card.jpg")}
-              />
-              <OptionRow
                 icon="image"
-                title={lang === "bn" ? "হাসপাতাল নিবন্ধন সনদ" : "Hospital Admission Record.png"}
-                onPress={() => handleSelectMockCertificate("Hospital Admission Record.png")}
+                title={lang === "bn" ? "গ্যালারি থেকে ছবি নির্বাচন করুন" : "Choose Photo from Gallery"}
+                onPress={handleLaunchImageLibrary}
               />
               <OptionRow
                 icon="photo-camera"
-                title={lang === "bn" ? "ছবি তুলুন" : "Take Photo (Pregnancy Certificate.png)"}
-                onPress={() => handleSelectMockCertificate("Pregnancy Certificate.png")}
+                title={lang === "bn" ? "ক্যামেরা দিয়ে ছবি তুলুন" : "Take Photo with Camera"}
+                onPress={handleLaunchCamera}
+              />
+              <OptionRow
+                icon="description"
+                title={lang === "bn" ? "ডেমো ডকুমেন্ট যুক্ত করুন (Mock)" : "Use Demo Mock Certificate"}
+                onPress={() => handleSelectMockCertificate("Demo Pregnancy Certificate (Mock).png")}
               />
             </View>
           </View>

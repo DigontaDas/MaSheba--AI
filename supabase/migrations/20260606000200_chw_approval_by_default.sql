@@ -28,10 +28,10 @@ BEGIN
       IF lower(user_clinic_code) LIKE '%palash%' THEN
         chw_union := 'Palash Union';
         chw_upazila := 'Palash';
-      ELIF lower(user_clinic_code) LIKE '%putia%' OR lower(user_clinic_code) LIKE '%shibpur%' THEN
+      ELSIF lower(user_clinic_code) LIKE '%putia%' OR lower(user_clinic_code) LIKE '%shibpur%' THEN
         chw_union := 'Putia Union';
         chw_upazila := 'Shibpur';
-      ELIF lower(user_clinic_code) LIKE '%radhanagar%' OR lower(user_clinic_code) LIKE '%raipura%' THEN
+      ELSIF lower(user_clinic_code) LIKE '%radhanagar%' OR lower(user_clinic_code) LIKE '%raipura%' THEN
         chw_union := 'Radhanagar Union';
         chw_upazila := 'Raipura';
       END IF;

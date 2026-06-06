@@ -26,7 +26,7 @@ BEGIN
     'mother-amina@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Amina Khatun","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"আমিনা খাতুন","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-amina@maasheba.local');
 
   SELECT id INTO v_amina FROM auth.users WHERE email = 'mother-amina@maasheba.local';
@@ -37,7 +37,7 @@ BEGIN
     'mother-rahima@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Rahima Begum","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"রহিমা বেগম","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-rahima@maasheba.local');
 
   SELECT id INTO v_rahima FROM auth.users WHERE email = 'mother-rahima@maasheba.local';
@@ -48,7 +48,7 @@ BEGIN
     'mother-sharmin@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Sharmin Akter","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"শারমিন আক্তার","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-sharmin@maasheba.local');
 
   SELECT id INTO v_sharmin FROM auth.users WHERE email = 'mother-sharmin@maasheba.local';
@@ -59,7 +59,7 @@ BEGIN
     'mother-nasima@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Nasima Begum","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"নাসিমা বেগম","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-nasima@maasheba.local');
 
   SELECT id INTO v_nasima FROM auth.users WHERE email = 'mother-nasima@maasheba.local';
@@ -70,7 +70,7 @@ BEGIN
     'mother-fatema@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Fatema Akter","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"ফাতেমা আক্তার","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-fatema@maasheba.local');
 
   SELECT id INTO v_fatema FROM auth.users WHERE email = 'mother-fatema@maasheba.local';
@@ -81,7 +81,7 @@ BEGIN
     'mother-jannatul@maasheba.local', crypt('Mother_B_demo_password', gen_salt('bf', 10)),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
-    '{"email_verified":true,"name":"Jannatul Ferdous","role":"mother"}'::jsonb
+    '{"email_verified":true,"name":"জান্নাতুল ফেরদৌস","role":"mother"}'::jsonb
   WHERE NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'mother-jannatul@maasheba.local');
 
   SELECT id INTO v_jannatul FROM auth.users WHERE email = 'mother-jannatul@maasheba.local';
@@ -124,12 +124,12 @@ BEGIN
   -- Upsert public.mothers
   INSERT INTO public.mothers (auth_user_id, name, patient_id, phone, gestational_age_weeks, is_active)
   VALUES
-    (v_amina,    'Amina Khatun',    '11111111-1111-1111-1111-111111111101', '+8801700000001', 28, true),
-    (v_rahima,   'Rahima Begum',    '11111111-1111-1111-1111-111111111102', '+8801700000002', 32, true),
-    (v_sharmin,  'Sharmin Akter',   '11111111-1111-1111-1111-111111111103', '+8801700000003', 20, true),
-    (v_nasima,   'Nasima Begum',    '11111111-1111-1111-1111-111111111104', '+8801700000004', 34, true),
-    (v_fatema,   'Fatema Akter',    '11111111-1111-1111-1111-111111111105', '+8801700000005', 26, true),
-    (v_jannatul, 'Jannatul Ferdous','11111111-1111-1111-1111-111111111106', '+8801700000006', 18, true)
+    (v_amina,    'আমিনা খাতুন',    '11111111-1111-1111-1111-111111111101', '+8801700000001', 28, true),
+    (v_rahima,   'রহিমা বেগম',    '11111111-1111-1111-1111-111111111102', '+8801700000002', 32, true),
+    (v_sharmin,  'শারমিন আক্তার',   '11111111-1111-1111-1111-111111111103', '+8801700000003', 20, true),
+    (v_nasima,   'নাসিমা বেগম',    '11111111-1111-1111-1111-111111111104', '+8801700000004', 34, true),
+    (v_fatema,   'ফাতেমা আক্তার',    '11111111-1111-1111-1111-111111111105', '+8801700000005', 26, true),
+    (v_jannatul, 'জান্নাতুল ফেরদৌস','11111111-1111-1111-1111-111111111106', '+8801700000006', 18, true)
   ON CONFLICT (auth_user_id) DO UPDATE SET
     name = EXCLUDED.name,
     patient_id = EXCLUDED.patient_id,

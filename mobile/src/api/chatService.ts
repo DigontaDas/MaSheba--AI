@@ -39,7 +39,7 @@ export async function listAssignedMothers(chwId: string): Promise<ChatMother[]> 
   if (error) throw error;
 
   return ((data ?? []) as unknown as ChatMother[])
-    .filter((mother) => !mother.patient || (mother.patient as ChatMother["patient"] & { chw_id?: string })?.chw_id === chwId)
+    .filter((mother) => mother.patient && (mother.patient as ChatMother["patient"] & { chw_id?: string })?.chw_id === chwId)
     .map((mother) => ({
       ...mother,
       gestational_age_weeks: mother.gestational_age_weeks ?? mother.patient?.gestational_age_weeks ?? null
