@@ -38,16 +38,24 @@ export type HeatmapRow = {
   total_patients: number;
 };
 
-export type PatientRow = {
+export type MotherRegistryRow = {
   id: string;
-  chw_id: string;
+  auth_user_id: string;
   name: string;
-  age: number;
-  gestational_age_weeks: number;
-  last_risk_level: RiskLevel;
+  phone: string | null;
+  verification_status: "PENDING" | "VERIFIED" | "REJECTED";
+  patient_id: string | null;
+  chw_id: string | null;
+  chw_name: string | null;
+  age: number | null;
+  gestational_age_weeks: number | null;
+  last_risk_level: RiskLevel | null;
+  link_status: "LINKED" | "UNLINKED";
   created_at: string;
   updated_at: string;
 };
+
+export type PatientRow = MotherRegistryRow;
 
 export type QaItem = {
   id: string;

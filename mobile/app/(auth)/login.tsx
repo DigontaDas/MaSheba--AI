@@ -4,7 +4,6 @@ import {
   BackHandler,
   Keyboard,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -43,15 +42,9 @@ const DEMO_MOTHER_EMAIL = process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL || "mother-r
 const DEMO_MOTHER_PASSWORD = process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD || "Mother_B_demo_password";
 const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-live-a@maasheba.local";
 const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_demo_password";
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
-const ALLOW_LOCAL_ADMIN_SHORTCUT =
-  __DEV__ ||
-  /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/i.test(API_BASE);
-
 const demoCredentials: Record<UserRole, DemoCredential> = {
   CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
-  MOTHER: { email: DEMO_MOTHER_EMAIL, password: DEMO_MOTHER_PASSWORD },
-  ADMIN: { email: "admin", password: "admin123" }
+  MOTHER: { email: DEMO_MOTHER_EMAIL, password: DEMO_MOTHER_PASSWORD }
 };
 
 async function seedLocalChwDemoData() {
@@ -158,7 +151,6 @@ const translations = {
     tagline: "আপনার গর্ভকালীন সঙ্গী",
     motherBtn: "মা হিসেবে চালিয়ে যান  →",
     chwBtn: "স্বাস্থ্যকর্মী হিসেবে চালিয়ে যান",
-    adminBtn: "অ্যাডমিন ড্যাশবোর্ড দেখুন  →",
     whoCompliance: "WHO নির্দেশিকা অনুসরণ করে",
     offlineNotice: "ইন্টারনেট ছাড়াও অফলাইনে কাজ করে",
     loginTab: "লগইন",
@@ -183,7 +175,6 @@ const translations = {
     tagline: "Your Pregnancy Companion",
     motherBtn: "Continue as Mother  →",
     chwBtn: "Continue as Health Worker",
-    adminBtn: "View Admin Dashboard  →",
     whoCompliance: "Following WHO Guidelines",
     offlineNotice: "Works Offline Without Internet",
     loginTab: "Login",
@@ -397,39 +388,6 @@ export default function LoginScreen() {
     setError(null);
     try {
       const emailLower = nextEmail.trim().toLowerCase();
-      const passwordTrimmed = nextPassword.trim();
-
-      // Admin shortcut — must match before any role-specific logic
-      if (emailLower === "admin" && passwordTrimmed === "admin123") {
-        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
-        const adminPassword = process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
-        if (!adminEmail || !adminPassword) {
-          throw new Error(
-            lang === "bn"
-              ? "অ্যাডমিন ক্রেডেনশিয়াল কনফিগার করা নেই (EXPO_PUBLIC_ADMIN_EMAIL এবং EXPO_PUBLIC_ADMIN_PASSWORD সেট করুন)।"
-              : "Admin credentials not configured (set EXPO_PUBLIC_ADMIN_EMAIL and EXPO_PUBLIC_ADMIN_PASSWORD)."
-          );
-        }
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: adminEmail,
-          password: adminPassword
-        });
-        if (error || !data.session) {
-          throw new Error(
-            error?.message ??
-              (lang === "bn" ? "অ্যাডমিন লগইন ব্যর্থ হয়েছে।" : "Admin login failed.")
-          );
-        }
-        await saveUserRole("ADMIN");
-        await saveSession({
-          accessToken: data.session.access_token,
-          refreshToken: data.session.refresh_token,
-          chwId: data.session.user.id
-        });
-        setModalVisible(false);
-        router.replace("/admin-dashboard");
-        return;
-      }
 
       if (role === "CHW") {
         const isDemoChwCredentials =

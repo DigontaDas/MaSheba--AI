@@ -259,6 +259,66 @@ def _page(rows: list[dict[str, Any]], page: CursorPage) -> dict[str, Any]:
     }
 
 
+def _in_filter(values: list[str]) -> str:
+    return ",".join(quote(value, safe="") for value in values if value)
+
+
+async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[dict[str, Any]]:
+    mothers = await _supabase_get(
+        settings,
+        "mothers",
+        select="id,auth_user_id,name,phone,verification_status,patient_id,gestational_age_weeks,created_at,updated_at",
+        query=page.query,
+    )
+    patient_ids = sorted({mother.get("patient_id") for mother in mothers if mother.get("patient_id")})
+    patients_by_id: dict[str, dict[str, Any]] = {}
+    chws_by_id: dict[str, dict[str, Any]] = {}
+
+    if patient_ids:
+        patients = await _supabase_get(
+            settings,
+            "patients",
+            select="id,chw_id,name,age,gestational_age_weeks,last_risk_level,created_at,updated_at",
+            query=f"&id=in.({_in_filter(patient_ids)})",
+        )
+        patients_by_id = {patient["id"]: patient for patient in patients if patient.get("id")}
+
+        chw_ids = sorted({patient.get("chw_id") for patient in patients if patient.get("chw_id")})
+        if chw_ids:
+            chws = await _supabase_get(
+                settings,
+                "chws",
+                select="id,name",
+                query=f"&id=in.({_in_filter(chw_ids)})",
+            )
+            chws_by_id = {chw["id"]: chw for chw in chws if chw.get("id")}
+
+    rows: list[dict[str, Any]] = []
+    for mother in mothers:
+        patient = patients_by_id.get(mother.get("patient_id") or "")
+        chw_id = patient.get("chw_id") if patient else None
+        chw = chws_by_id.get(chw_id or "")
+        rows.append(
+            {
+                "id": mother.get("id"),
+                "auth_user_id": mother.get("auth_user_id"),
+                "name": mother.get("name"),
+                "phone": mother.get("phone"),
+                "verification_status": mother.get("verification_status"),
+                "patient_id": mother.get("patient_id"),
+                "chw_id": chw_id,
+                "chw_name": chw.get("name") if chw else None,
+                "age": patient.get("age") if patient else None,
+                "gestational_age_weeks": patient.get("gestational_age_weeks") if patient and patient.get("gestational_age_weeks") is not None else mother.get("gestational_age_weeks"),
+                "last_risk_level": patient.get("last_risk_level") if patient else None,
+                "link_status": "LINKED" if patient else "UNLINKED",
+                "created_at": mother.get("created_at"),
+                "updated_at": mother.get("updated_at") or mother.get("created_at"),
+            }
+        )
+    return rows
+
+
 @router.get("/summary", response_model=None)
 async def get_summary(
     settings: Settings = Depends(get_settings),
@@ -266,9 +326,10 @@ async def get_summary(
 ) -> dict[str, Any] | JSONResponse:
     try:
         chws, risk_summary, heatmap = await _load_summary_rows(settings)
+        mothers = await _supabase_get(settings, "mothers", select="id", query="&limit=10000")
         await audit(settings, admin, "admin.summary.read", "dashboard")
         return {
-            "metrics": _metrics(chws, risk_summary),
+            "metrics": _metrics(chws, risk_summary, len(mothers)),
             "chws": chws,
             "risk_summary": risk_summary,
             "heatmap": heatmap,
@@ -371,14 +432,9 @@ async def get_patients(
 ) -> dict[str, Any] | JSONResponse:
     try:
         page = _cursor_page(order="updated_at.desc,id.desc", fields=("updated_at", "id"), direction="desc", limit=limit, cursor=cursor)
-        patients = await _supabase_get(
-            settings,
-            "patients",
-            select="id,chw_id,name,age,gestational_age_weeks,last_risk_level,created_at,updated_at",
-            query=page.query,
-        )
-        await audit(settings, admin, "admin.patients.read", "patient")
-        return {"patients": patients, "page": _page(patients, page)}
+        mothers = await _load_mother_registry(settings, page)
+        await audit(settings, admin, "admin.patients.read", "mother")
+        return {"patients": mothers, "page": _page(mothers, page)}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -550,10 +606,10 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
     return chws, risk_summary, heatmap
 
 
-def _metrics(chws: list[dict[str, Any]], risk_summary: list[dict[str, Any]]) -> dict[str, int]:
+def _metrics(chws: list[dict[str, Any]], risk_summary: list[dict[str, Any]], mother_count: int | None = None) -> dict[str, int]:
     return {
         "active_chws": sum(1 for chw in chws if chw.get("is_active")),
-        "tracked_patients": sum(int(chw.get("patient_count") or 0) for chw in chws),
+        "tracked_patients": mother_count if mother_count is not None else sum(int(chw.get("patient_count") or 0) for chw in chws),
         "high_risk_patients": sum(int(row.get("high_count") or 0) for row in risk_summary),
     }
 

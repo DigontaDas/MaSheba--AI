@@ -1,5 +1,5 @@
 import { requireAdminBearerToken } from "@/utils/admin-auth";
-import type { AuditEvent, ChwRow, PendingChwRow, PatientRow, QaItem, SmsFailure, SummaryPayload } from "@/utils/admin-types";
+import type { AuditEvent, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload } from "@/utils/admin-types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localhost:8000";
 
@@ -64,8 +64,8 @@ export async function updateChwVerification(
   });
 }
 
-export async function getPatients(): Promise<PatientRow[]> {
-  const payload = await adminFetch<{ patients: PatientRow[] }>("/api/v1/admin/patients");
+export async function getPatients(): Promise<MotherRegistryRow[]> {
+  const payload = await adminFetch<{ patients: MotherRegistryRow[] }>("/api/v1/admin/patients");
   return payload.patients;
 }
 

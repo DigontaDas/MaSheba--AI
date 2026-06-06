@@ -56,7 +56,6 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(mother-tabs)" />
         <Stack.Screen name="assessment/[patientId]" />
-        <Stack.Screen name="admin-dashboard" />
       </Stack>
       <StatusBar style="dark" />
     </LanguageProvider>

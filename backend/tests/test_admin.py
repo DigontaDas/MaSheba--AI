@@ -69,6 +69,8 @@ def install_admin_httpx(
             if "/rest/v1/v_chw_list" in url:
                 return httpx.Response(200, json=[{"chw_id": "chw-a", "name": "CHW A", "union_name": "Shibpur", "upazila": "Narsingdi", "is_active": True, "patient_count": 2}])
             if "/rest/v1/chws" in url:
+                if "id=in." in url:
+                    return httpx.Response(200, json=[{"id": "chw-a", "name": "CHW A"}])
                 return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "union_name": "Shibpur", "upazila": "Narsingdi", "organization_name": "Clinic", "worker_type": "HA", "years_of_experience": 3, "certificate_url": "https://example.com/cert.png", "verification_status": "PENDING", "created_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/v_risk_summary" in url:
                 return httpx.Response(200, json=[{"chw_id": "chw-a", "chw_name": "CHW A", "low_count": 1, "moderate_count": 0, "high_count": 1}])
@@ -76,6 +78,34 @@ def install_admin_httpx(
                 if fail_heatmap:
                     return httpx.Response(404, json={"message": "relation v_upazila_risk_heatmap does not exist"})
                 return httpx.Response(200, json=[{"upazila": "Narsingdi", "low_count": 1, "moderate_count": 0, "high_count": 1, "total_patients": 2}])
+            if "/rest/v1/mothers" in url:
+                return httpx.Response(
+                    200,
+                    json=[
+                        {
+                            "id": "mother-linked",
+                            "auth_user_id": "auth-linked",
+                            "name": "Seed Mother",
+                            "phone": "+8801700000001",
+                            "verification_status": "PENDING",
+                            "patient_id": "patient-a",
+                            "gestational_age_weeks": 28,
+                            "created_at": "2026-06-03T00:00:00Z",
+                            "updated_at": "2026-06-03T00:00:00Z",
+                        },
+                        {
+                            "id": "mother-real",
+                            "auth_user_id": "auth-real",
+                            "name": "Real Phone Mother",
+                            "phone": "+8801712345678",
+                            "verification_status": "VERIFIED",
+                            "patient_id": None,
+                            "gestational_age_weeks": 12,
+                            "created_at": "2026-06-04T00:00:00Z",
+                            "updated_at": "2026-06-04T00:00:00Z",
+                        },
+                    ],
+                )
             if "/rest/v1/patients" in url:
                 return httpx.Response(200, json=[{"id": "patient-a", "chw_id": "chw-a", "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/master_qa" in url:
@@ -244,6 +274,29 @@ def test_admin_can_list_pending_chw_verifications(client: TestClient, monkeypatc
     assert "limit=50" in state["gets"][2]["url"]
 
 
+def test_admin_patients_returns_mother_registry_with_unlinked_real_mothers(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.get("/api/v1/admin/patients", headers={"Authorization": "Bearer admin-token"})
+
+    assert response.status_code == 200
+    body = response.json()
+    linked, unlinked = body["patients"]
+    assert linked["id"] == "mother-linked"
+    assert linked["patient_id"] == "patient-a"
+    assert linked["chw_id"] == "chw-a"
+    assert linked["chw_name"] == "CHW A"
+    assert linked["last_risk_level"] == "HIGH"
+    assert linked["link_status"] == "LINKED"
+    assert unlinked["id"] == "mother-real"
+    assert unlinked["patient_id"] is None
+    assert unlinked["last_risk_level"] is None
+    assert unlinked["link_status"] == "UNLINKED"
+    urls = [item["url"] for item in state["gets"]]
+    assert any("/rest/v1/mothers" in url and "order=updated_at.desc,id.desc" in url for url in urls)
+    assert any("/rest/v1/patients" in url and "id=in.(patient-a)" in url for url in urls)
+
+
 def test_admin_list_endpoints_apply_cursor_pagination(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     state = install_admin_httpx(monkeypatch)
     headers = {"Authorization": "Bearer admin-token"}
@@ -266,7 +319,7 @@ def test_admin_list_endpoints_apply_cursor_pagination(client: TestClient, monkey
     assert all(response.json()["page"]["limit"] == 1 for response in responses)
     urls = [item["url"] for item in state["gets"]]
     assert any("or=(name.gt.CHW%20A,and(name.eq.CHW%20A,chw_id.gt.chw-a))" in url for url in urls)
-    assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.patient-a))" in url for url in urls)
+    assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.patient-a))" in url and "/rest/v1/mothers" in url for url in urls)
     assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.qa-a))" in url for url in urls)
     assert any("or=(created_at.lt.2026-06-02T00%3A00%3A00Z,and(created_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.sms-a))" in url for url in urls)
     assert any("or=(created_at.lt.2026-06-02T00%3A00%3A00Z,and(created_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.audit-a))" in url for url in urls)

@@ -17,18 +17,10 @@ async function clearAuthState() {
   await Promise.all([clearSession(), clearRoleSession()]);
 }
 
-import { getUserRole } from "@/auth/roleSession";
-
 async function routeFromStoredSession() {
   const storedSession = await getSession();
   if (!storedSession) {
     router.replace("/(auth)/login");
-    return;
-  }
-
-  const role = await getUserRole();
-  if (role === "ADMIN") {
-    router.replace("/admin-dashboard");
     return;
   }
 

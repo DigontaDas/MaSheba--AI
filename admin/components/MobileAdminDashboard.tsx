@@ -120,7 +120,7 @@ export function MobileAdminDashboard({ language, patients, summary }: Props) {
   const filteredPatients = useMemo(
     () =>
       patients.filter((patient) => {
-        const chw = chwsById.get(patient.chw_id);
+        const chw = patient.chw_id ? chwsById.get(patient.chw_id) : null;
         const matchesQuery = [patient.name, chw?.name, chw?.union_name, chw?.upazila]
           .filter(Boolean)
           .some((value) => value!.toLowerCase().includes(query));
@@ -236,10 +236,10 @@ export function MobileAdminDashboard({ language, patients, summary }: Props) {
       {selectedPatient ? (
         <DetailModal title={t.details} onClose={() => setSelectedPatient(null)}>
           <DetailRow label={t.name} value={selectedPatient.name} />
-          <DetailRow label={t.age} value={`${selectedPatient.age} ${t.years}`} />
-          <DetailRow label={t.weeks} value={selectedPatient.gestational_age_weeks.toString()} />
+          <DetailRow label={t.age} value={selectedPatient.age == null ? "Not set" : `${selectedPatient.age} ${t.years}`} />
+          <DetailRow label={t.weeks} value={selectedPatient.gestational_age_weeks == null ? "Not set" : selectedPatient.gestational_age_weeks.toString()} />
           <DetailRow label={t.risk} value={riskLabel(selectedPatient.last_risk_level, t)} />
-          <DetailRow label={t.assignedChw} value={chwsById.get(selectedPatient.chw_id)?.name ?? selectedPatient.chw_id} />
+          <DetailRow label={t.assignedChw} value={selectedPatient.chw_id ? chwsById.get(selectedPatient.chw_id)?.name ?? selectedPatient.chw_id : "Not linked"} />
         </DetailModal>
       ) : null}
     </div>
@@ -363,14 +363,14 @@ function PatientTable({
         {patients.map((patient) => (
           <tr className="cursor-pointer hover:bg-brand-cream/20" key={patient.id} onClick={() => onSelect(patient)}>
             <td className="whitespace-nowrap px-4 py-3 font-bold text-slate-800">{patient.name}</td>
-            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{patient.age}</td>
-            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{patient.gestational_age_weeks}</td>
+            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{patient.age ?? "Not set"}</td>
+            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{patient.gestational_age_weeks ?? "Not set"}</td>
             <td className="whitespace-nowrap px-4 py-3">
-              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${riskStyles[patient.last_risk_level].bg} ${riskStyles[patient.last_risk_level].text}`}>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${patient.last_risk_level ? `${riskStyles[patient.last_risk_level].bg} ${riskStyles[patient.last_risk_level].text}` : "bg-slate-100 text-slate-500"}`}>
                 {riskLabel(patient.last_risk_level, t)}
               </span>
             </td>
-            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{chwsById.get(patient.chw_id)?.name ?? patient.chw_id}</td>
+            <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-500">{patient.chw_id ? chwsById.get(patient.chw_id)?.name ?? patient.chw_id : "Not linked"}</td>
           </tr>
         ))}
       </tbody>
@@ -407,7 +407,8 @@ function EmptyState({ label }: { label: string }) {
   return <div className="px-4 py-10 text-center text-sm font-bold text-slate-400">{label}</div>;
 }
 
-function riskLabel(risk: RiskLevel, t: typeof copy.en) {
+function riskLabel(risk: RiskLevel | null, t: typeof copy.en) {
+  if (!risk) return "Not assessed";
   if (risk === "HIGH") return t.high;
   if (risk === "MODERATE") return t.moderate;
   return t.low;

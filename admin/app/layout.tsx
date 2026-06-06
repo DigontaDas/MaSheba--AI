@@ -19,6 +19,21 @@ export const metadata: Metadata = {
   description: "Internal MaaSheba AI admin dashboard",
 };
 
+const themeScript = `
+(() => {
+  try {
+    const stored = window.localStorage.getItem("maasheba.admin.theme");
+    const cookie = document.cookie.match(/(?:^|; )maasheba_theme=([^;]+)/)?.[1];
+    const theme = stored === "light" || cookie === "light" ? "light" : "dark";
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  } catch {
+    document.documentElement.classList.add("dark");
+    document.documentElement.style.colorScheme = "dark";
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${workSans.variable} ${hindSiliguri.variable}`} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
