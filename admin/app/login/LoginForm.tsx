@@ -36,24 +36,24 @@ export function LoginForm() {
       onSubmit={handleSubmit}
     >
       <div>
-        <label className="font-label-lg text-label-lg text-on-surface" htmlFor="email">
+        <label className="font-label-lg text-label-lg text-on-surface-variant" htmlFor="email">
           Username or Email
         </label>
         <input
           autoComplete="username"
-          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary-fixed-dim/30 transition duration-150"
+          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] duration-150 ease-out"
           id="email"
           name="email"
           required
         />
       </div>
       <div>
-        <label className="font-label-lg text-label-lg text-on-surface" htmlFor="password">
+        <label className="font-label-lg text-label-lg text-on-surface-variant" htmlFor="password">
           Password
         </label>
         <input
           autoComplete="current-password"
-          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary-fixed-dim/30 transition duration-150"
+          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] duration-150 ease-out"
           id="password"
           name="password"
           required
@@ -74,7 +74,7 @@ function SubmitButton() {
   const status = useFormStatus();
   return (
     <button
-      className="h-11 rounded-full bg-primary px-4 font-label-lg text-label-lg text-on-primary transition hover:bg-surface-tint active:scale-98 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+      className="h-11 rounded-full bg-primary px-4 font-label-lg text-label-lg text-on-primary transition-all duration-150 ease-out hover:bg-surface-tint active:scale-[0.96] hover:shadow-md hover:shadow-primary/10 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
       disabled={status.pending}
       type="submit"
     >
