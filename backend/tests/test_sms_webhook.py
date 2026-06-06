@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-import httpx
 
 from app.main import app
 from app.core.config import Settings

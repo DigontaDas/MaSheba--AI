@@ -31,9 +31,12 @@ type PendingMother = {
   created_at: string;
 };
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
+
 export default function VerificationsScreen() {
   const { language: lang } = useLanguage();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [verifications, setVerifications] = useState<PendingMother[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMother, setSelectedMother] = useState<PendingMother | null>(null);
@@ -48,10 +51,9 @@ export default function VerificationsScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
-
-  const loadPendingVerifications = async () => {
-    setLoading(true);
+  const loadPendingVerifications = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     try {
       const session = await getSession();
@@ -73,6 +75,7 @@ export default function VerificationsScreen() {
       setError(err.message || "Error");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -244,7 +247,7 @@ export default function VerificationsScreen() {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={loadPendingVerifications} style={styles.retryBtn}>
+          <Pressable onPress={() => loadPendingVerifications()} style={styles.retryBtn}>
             <Text style={styles.retryText}>{lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}</Text>
           </Pressable>
         </View>
@@ -253,8 +256,8 @@ export default function VerificationsScreen() {
           contentContainerStyle={styles.list}
           data={filteredMothers}
           keyExtractor={(item) => item.id}
-          refreshing={loading}
-          onRefresh={loadPendingVerifications}
+          refreshing={refreshing}
+          onRefresh={() => loadPendingVerifications(true)}
           renderItem={({ item }) => (
             <View style={styles.verifyCard}>
               <View style={styles.cardInfo}>

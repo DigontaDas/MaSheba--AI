@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 from typing import Any
 
 import httpx
@@ -14,6 +16,8 @@ class FakeSettings:
     supabase_url = "https://example.supabase.co"
     supabase_anon_key = "anon"
     supabase_service_role_key = "service"
+    admin_dev_auth_enabled = False
+    admin_dev_token = ""
 
 
 @pytest.fixture(autouse=True)
@@ -64,6 +68,8 @@ def install_admin_httpx(
                 return httpx.Response(200, json=[{"auth_user_id": "00000000-0000-0000-0000-00000000ad01", "role": role, "is_active": True}])
             if "/rest/v1/v_chw_list" in url:
                 return httpx.Response(200, json=[{"chw_id": "chw-a", "name": "CHW A", "union_name": "Shibpur", "upazila": "Narsingdi", "is_active": True, "patient_count": 2}])
+            if "/rest/v1/chws" in url:
+                return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "union_name": "Shibpur", "upazila": "Narsingdi", "organization_name": "Clinic", "worker_type": "HA", "years_of_experience": 3, "certificate_url": "https://example.com/cert.png", "verification_status": "PENDING", "created_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/v_risk_summary" in url:
                 return httpx.Response(200, json=[{"chw_id": "chw-a", "chw_name": "CHW A", "low_count": 1, "moderate_count": 0, "high_count": 1}])
             if "/rest/v1/v_upazila_risk_heatmap" in url:
@@ -98,7 +104,7 @@ def install_admin_httpx(
         async def patch(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
             state["patches"].append({"url": url, "headers": headers, "json": json})
             if "/rest/v1/chws" in url:
-                return httpx.Response(200, json=[{"id": "chw-a", "is_active": json["is_active"]}])
+                return httpx.Response(200, json=[{"id": "chw-a", **json}])
             if "/rest/v1/master_qa" in url:
                 return httpx.Response(200, json=[{"id": "qa-a", "trimester": "T1", "topic": json.get("topic", "Nutrition"), "question_bn": "প্রশ্ন", "answer_bn": "উত্তর", "question_en": "Question", "answer_en": "Answer", "severity": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/sms_failures" in url:
@@ -113,6 +119,15 @@ def install_admin_httpx(
 
     monkeypatch.setattr("app.routers.admin.httpx.AsyncClient", FakeAsyncClient)
     return state
+
+
+def encode_cursor(payload: dict[str, str]) -> str:
+    encoded = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode()
+    return encoded.rstrip("=")
+
+
+def posted_audits(state: dict[str, Any]) -> list[dict[str, Any]]:
+    return [item["json"] for item in state["posts"] if "/rest/v1/admin_audit_events" in item["url"]]
 
 
 def test_admin_router_is_registered() -> None:
@@ -214,6 +229,160 @@ def test_admin_can_reactivate_chw(client: TestClient, monkeypatch: pytest.Monkey
     assert state["patches"][0]["json"] == {"is_active": True}
 
 
+def test_admin_can_list_pending_chw_verifications(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.get("/api/v1/admin/chws/pending-verifications", headers={"Authorization": "Bearer admin-token"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["chws"][0]["verification_status"] == "PENDING"
+    assert body["page"]["limit"] == 50
+    assert body["page"]["count"] == 1
+    assert "verification_status=eq.PENDING" in state["gets"][2]["url"]
+    assert "order=created_at.asc,id.asc" in state["gets"][2]["url"]
+    assert "limit=50" in state["gets"][2]["url"]
+
+
+def test_admin_list_endpoints_apply_cursor_pagination(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+    headers = {"Authorization": "Bearer admin-token"}
+
+    chw_cursor = encode_cursor({"name": "CHW A", "chw_id": "chw-a"})
+    patient_cursor = encode_cursor({"updated_at": "2026-06-02T00:00:00Z", "id": "patient-a"})
+    qa_cursor = encode_cursor({"updated_at": "2026-06-02T00:00:00Z", "id": "qa-a"})
+    sms_cursor = encode_cursor({"created_at": "2026-06-02T00:00:00Z", "id": "sms-a"})
+    audit_cursor = encode_cursor({"created_at": "2026-06-02T00:00:00Z", "id": "audit-a"})
+
+    responses = [
+        client.get(f"/api/v1/admin/chws?limit=1&cursor={chw_cursor}", headers=headers),
+        client.get(f"/api/v1/admin/patients?limit=1&cursor={patient_cursor}", headers=headers),
+        client.get(f"/api/v1/admin/qa?limit=1&cursor={qa_cursor}", headers=headers),
+        client.get(f"/api/v1/admin/telemetry/sms?limit=1&cursor={sms_cursor}", headers=headers),
+        client.get(f"/api/v1/admin/audit?limit=1&cursor={audit_cursor}", headers=headers),
+    ]
+
+    assert all(response.status_code == 200 for response in responses)
+    assert all(response.json()["page"]["limit"] == 1 for response in responses)
+    urls = [item["url"] for item in state["gets"]]
+    assert any("or=(name.gt.CHW%20A,and(name.eq.CHW%20A,chw_id.gt.chw-a))" in url for url in urls)
+    assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.patient-a))" in url for url in urls)
+    assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.qa-a))" in url for url in urls)
+    assert any("or=(created_at.lt.2026-06-02T00%3A00%3A00Z,and(created_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.sms-a))" in url for url in urls)
+    assert any("or=(created_at.lt.2026-06-02T00%3A00%3A00Z,and(created_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.audit-a))" in url for url in urls)
+
+
+def test_invalid_admin_pagination_cursor_is_rejected(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.get("/api/v1/admin/chws?cursor=not-a-valid-cursor", headers={"Authorization": "Bearer admin-token"})
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert not any("/rest/v1/v_chw_list" in item["url"] for item in state.get("gets", []))
+
+
+def test_super_admin_can_approve_chw_verification(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.patch(
+        "/api/v1/admin/chws/chw-a/verification",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"verification_status": "APPROVED"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["verification_status"] == "APPROVED"
+    assert state["patches"][0]["json"] == {
+        "is_active": True,
+        "verification_status": "APPROVED",
+        "rejection_reason": None,
+    }
+    audits = posted_audits(state)
+    assert audits[-1]["action"] == "admin.chw.verification.update"
+    assert audits[-1]["entity_type"] == "chw"
+    assert audits[-1]["entity_id"] == "chw-a"
+    assert audits[-1]["metadata"] == {
+        "is_active": True,
+        "verification_status": "APPROVED",
+        "rejection_reason": None,
+    }
+
+
+def test_super_admin_can_reject_chw_verification(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.patch(
+        "/api/v1/admin/chws/chw-a/verification",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"verification_status": "REJECTED", "rejection_reason": "Certificate is unreadable."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["verification_status"] == "REJECTED"
+    assert state["patches"][0]["json"] == {
+        "is_active": False,
+        "verification_status": "REJECTED",
+        "rejection_reason": "Certificate is unreadable.",
+    }
+    audits = posted_audits(state)
+    assert audits[-1]["action"] == "admin.chw.verification.update"
+    assert audits[-1]["entity_type"] == "chw"
+    assert audits[-1]["entity_id"] == "chw-a"
+    assert audits[-1]["metadata"] == {
+        "is_active": False,
+        "verification_status": "REJECTED",
+        "rejection_reason": "Certificate is unreadable.",
+    }
+
+
+def test_chw_rejection_requires_reason(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.patch(
+        "/api/v1/admin/chws/chw-a/verification",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"verification_status": "REJECTED", "rejection_reason": ""},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert state["patches"] == []
+
+
+def test_non_super_admin_cannot_update_chw_verification(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="admin")
+
+    response = client.patch(
+        "/api/v1/admin/chws/chw-a/verification",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"verification_status": "APPROVED"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "FORBIDDEN"
+    assert state["patches"] == []
+
+
+def test_dev_admin_token_can_approve_chw_verification(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    class DevAuthSettings(FakeSettings):
+        admin_dev_auth_enabled = True
+        admin_dev_token = "local-admin-dev-token"
+
+    app.dependency_overrides[get_settings] = lambda: DevAuthSettings()
+    state = install_admin_httpx(monkeypatch)
+
+    response = client.patch(
+        "/api/v1/admin/chws/chw-a/verification",
+        headers={"Authorization": "Bearer local-admin-dev-token"},
+        json={"verification_status": "APPROVED"},
+    )
+
+    assert response.status_code == 200
+    assert state["patches"][0]["json"]["verification_status"] == "APPROVED"
+    assert not any("/auth/v1/user" in item["url"] for item in state.get("gets", []))
+
+
 def test_admin_can_crud_qa_items(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     state = install_admin_httpx(monkeypatch)
     headers = {"Authorization": "Bearer admin-token"}
@@ -279,7 +448,7 @@ def test_admin_sms_telemetry_returns_empty_list_when_table_is_missing(
     response = client.get("/api/v1/admin/telemetry/sms", headers={"Authorization": "Bearer admin-token"})
 
     assert response.status_code == 200
-    assert response.json() == {"failures": []}
+    assert response.json() == {"failures": [], "page": {"limit": 50, "count": 0, "next_cursor": None}}
 
 
 def test_admin_export_supports_csv_and_pdf(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -333,4 +502,4 @@ def test_admin_audit_endpoint_returns_empty_list_when_table_is_missing(
     response = client.get("/api/v1/admin/audit", headers={"Authorization": "Bearer admin-token"})
 
     assert response.status_code == 200
-    assert response.json() == {"events": []}
+    assert response.json() == {"events": [], "page": {"limit": 50, "count": 0, "next_cursor": None}}

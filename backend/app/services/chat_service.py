@@ -652,7 +652,7 @@ The output MUST be a JSON object with the following keys:
         "generationConfig": generation_config,
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
             response = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)

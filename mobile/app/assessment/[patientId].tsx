@@ -42,8 +42,8 @@ const CHECKLIST_ITEMS = [
 const CHECKLIST_FLAG_KEYS = CHECKLIST_ITEMS.map((item) => item.flagKey);
 
 function buildDefaultChecks(record: any): CheckItem[] {
-  const isHighRisk = record.last_risk_level === "HIGH" || record.name?.includes("ফাতেমা");
-  const isModRisk = record.last_risk_level === "MODERATE" || record.name?.includes("আসমা");
+  const isHighRisk = record.last_risk_level === "HIGH";
+  const isModRisk = record.last_risk_level === "MODERATE";
 
   return CHECKLIST_ITEMS.map((item) => {
     if (isHighRisk) {
@@ -231,6 +231,10 @@ export default function RiskAssessmentScreen() {
 
     try {
       const session = await getSession();
+      if (!session) {
+        Alert.alert("⚠️ সেশন শেষ", "অনুগ্রহ করে আবার লগইন করুন।");
+        return;
+      }
       const deviceId = await getDeviceId();
       
       const visitInput = {
@@ -250,15 +254,73 @@ export default function RiskAssessmentScreen() {
         } as any
       };
 
-      const riskScore = systolicVal >= 140 ? 0.85 : (systolicVal >= 125 ? 0.5 : 0.2);
+      // --- Multi-vital clinical risk scoring ---
+      // Each factor contributes points; HIGH ≥ 3 pts, MODERATE ≥ 1 pt, LOW = 0 pts
+      // Based on WHO/Bangladesh MOHFW ANC triage guidelines
+      const swellingPresent = checks.find((c) => c.id === 4)?.checked ?? false;
+      const gestAge = patient?.gestational_age_weeks ?? 0;
+
+      let riskPoints = 0;
+      const riskReasons: string[] = [];
+
+      // Blood Pressure (most critical single factor)
+      if (systolicVal >= 140 || diastolicVal >= 90) {
+        riskPoints += 3;  // Severe: pre-eclampsia threshold
+        riskReasons.push("উচ্চ রক্তচাপ (≥140/90 mmHg)");
+      } else if (systolicVal >= 130 || diastolicVal >= 80) {
+        riskPoints += 1;  // Mild hypertension
+        riskReasons.push("সামান্য উচ্চ রক্তচাপ");
+      }
+
+      // Hemoglobin (anaemia)
+      if (hbVal < 7) {
+        riskPoints += 2;  // Severe anaemia
+        riskReasons.push("গুরুতর রক্তস্বল্পতা (Hb < ৭ g/dL)");
+      } else if (hbVal < 10) {
+        riskPoints += 1;  // Moderate anaemia
+        riskReasons.push("রক্তস্বল্পতা (Hb < ১০ g/dL)");
+      }
+
+      // FHR (foetal distress: normal 110-160 bpm)
+      if (fhrVal !== null) {
+        if (fhrVal < 100 || fhrVal > 180) {
+          riskPoints += 2;
+          riskReasons.push("অস্বাভাবিক ভ্রূণ হৃদস্পন্দন (FHR)");
+        } else if (fhrVal < 110 || fhrVal > 160) {
+          riskPoints += 1;
+          riskReasons.push("সীমান্তবর্তী FHR");
+        }
+      }
+
+      // Swelling / Oedema
+      if (swellingPresent) {
+        riskPoints += 1;
+        riskReasons.push("শোথ (Edema) উপস্থিত");
+      }
+
+      // High gestational age compound risk (≥ 36 weeks + any other flag)
+      if (gestAge >= 36 && riskPoints >= 1) {
+        riskPoints += 1;
+        riskReasons.push("উন্নত গর্ভাবস্থা (≥৩৬ সপ্তাহ)");
+      }
+
+      const computedRiskLevel: "HIGH" | "MODERATE" | "LOW" =
+        riskPoints >= 3 ? "HIGH" : riskPoints >= 1 ? "MODERATE" : "LOW";
+      const riskScore = riskPoints >= 3 ? 0.9 : riskPoints >= 1 ? 0.5 : 0.1;
+      const reasonsSummary = riskReasons.length > 0 ? riskReasons : ["সব সূচক স্বাভাবিক"];
 
       await insertVisit({
         patient: {
           id: patientId,
+          chw_id: session.chwId,
           name: patient?.name ?? "ফাতেমা বেগম",
-          gestational_age_weeks: patient?.gestational_age_weeks ?? 32
-        } as any,
-        chwId: session?.chwId ?? "demo-chw",
+          age: patient?.age ?? 0,
+          gestational_age_weeks: patient?.gestational_age_weeks ?? 32,
+          last_risk_level: (patient?.last_risk_level ?? "LOW") as any,
+          created_at: patient?.created_at ?? new Date().toISOString(),
+          updated_at: patient?.updated_at ?? new Date().toISOString()
+        },
+        chwId: session.chwId,
         deviceId,
         input: visitInput,
         prediction: {
@@ -275,12 +337,9 @@ export default function RiskAssessmentScreen() {
       Alert.alert("💾 তথ্য সংরক্ষিত", "পরিদর্শন ও মূল্যায়ন বিবরণী সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।");
       router?.back?.();
     } catch (e) {
-      const riskScore = systolicVal >= 140 ? 0.85 : (systolicVal >= 125 ? 0.5 : 0.2);
-      if (riskScore >= 0.7) {
-        notifyNow("⚠️ উচ্চ ঝুঁকি", `${patient?.name ?? "ফাতেমা বেগম"} জরুরি মূল্যায়ন প্রয়োজন`, "maasheba-emergency");
-      }
-      Alert.alert("সফলতা", "পরিদর্শন বিবরণী অফলাইনে সংরক্ষিত হয়েছে!");
-      router?.back?.();
+      // Genuinely failed to save — show error, do NOT claim success
+      const errMsg = e instanceof Error ? e.message : "ডেটা সংরক্ষণ করা যায়নি";
+      Alert.alert("❌ সংরক্ষণ ব্যর্থ", errMsg);
     }
   };
 
@@ -310,8 +369,8 @@ export default function RiskAssessmentScreen() {
 
   // Real-time risk detection based on vital entries
   const currentSystolic = Number(bpSystolic) || 0;
-  const isHigh = patient?.last_risk_level === "HIGH" || currentSystolic >= 140 || patientName.includes("ফাতেমা");
-  const isModerate = !isHigh && (patient?.last_risk_level === "MODERATE" || currentSystolic >= 125 || patientName.includes("আসমা"));
+  const isHigh = patient?.last_risk_level === "HIGH" || currentSystolic >= 140;
+  const isModerate = !isHigh && (patient?.last_risk_level === "MODERATE" || currentSystolic >= 125);
   const isNormal = !isHigh && !isModerate;
 
   // Dynamic Styles and Strings mapping perfectly to category

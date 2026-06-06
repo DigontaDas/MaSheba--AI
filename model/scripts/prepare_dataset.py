@@ -93,7 +93,7 @@ def main() -> int:
         action="store_true",
         help="Train on covered numeric features only; uncovered app inputs remain deterministic rules.",
     )
-    args = parser.parse_args()
+    parser.parse_args()
 
     ensure_dirs()
     frames = [prepare_source(path) for path in iter_source_files()]
@@ -165,7 +165,7 @@ def main() -> int:
         f"Rows: {len(prepared)}",
         f"Mobile input features: {', '.join(INPUT_FEATURES)}",
         f"Model features: {', '.join(MODEL_FEATURES)}",
-        f"Hemoglobin handled by deterministic rules: True",
+        "Hemoglobin handled by deterministic rules: True",
         f"Imputed weight rows: {int(weight_missing.sum())}",
         f"Imputed gestational age rows: {int(gestation_missing.sum())}",
         "",

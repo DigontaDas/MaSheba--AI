@@ -20,11 +20,15 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2",
-  "ruff>=0.5"
+  "ruff>=0.5",
+  "pip-audit>=2.7"
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools]
+packages = []
 
 [tool.ruff]
 line-length = 100

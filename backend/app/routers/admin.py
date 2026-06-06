@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import csv
+import base64
 import io
+import json
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 from urllib.parse import quote
 
 import httpx
@@ -34,6 +36,11 @@ class ChwStatusRequest(BaseModel):
     is_active: bool
 
 
+class ChwVerificationRequest(BaseModel):
+    verification_status: Literal["APPROVED", "REJECTED"]
+    rejection_reason: str | None = Field(default=None, max_length=500)
+
+
 class QaCreateRequest(BaseModel):
     trimester: Literal["T1", "T2", "T3", "POSTPARTUM", "ALL"]
     topic: str = Field(min_length=1, max_length=160)
@@ -60,6 +67,14 @@ class QaUpdateRequest(BaseModel):
 class SmsReviewRequest(BaseModel):
     review_status: Literal["OPEN", "REVIEWED", "DISMISSED"]
     review_notes: str | None = Field(default=None, max_length=2000)
+
+
+class CursorPage(NamedTuple):
+    query: str
+    order: str
+    limit: int
+    fields: tuple[str, str]
+    direction: Literal["asc", "desc"]
 
 
 def error_response(status_code: int, code: str, message: str) -> JSONResponse:
@@ -193,6 +208,57 @@ def _require_super_admin(admin: AdminContext, action: str) -> None:
         raise AdminAuthError(status.HTTP_403_FORBIDDEN, "FORBIDDEN", f"Super-admin privileges are required to {action}.")
 
 
+def _decode_cursor(cursor: str | None) -> dict[str, str] | None:
+    if not cursor:
+        return None
+    try:
+        padding = "=" * (-len(cursor) % 4)
+        decoded = base64.urlsafe_b64decode(f"{cursor}{padding}".encode()).decode()
+        payload = json.loads(decoded)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.") from exc
+    if not isinstance(payload, dict) or not all(isinstance(value, str) for value in payload.values()):
+        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.")
+    return payload
+
+
+def _encode_cursor(row: dict[str, Any], fields: tuple[str, str]) -> str:
+    payload = {field: str(row.get(field) or "") for field in fields}
+    encoded = base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode()).decode()
+    return encoded.rstrip("=")
+
+
+def _cursor_page(
+    *,
+    order: str,
+    fields: tuple[str, str],
+    direction: Literal["asc", "desc"],
+    limit: int,
+    cursor: str | None,
+    extra_query: str = "",
+) -> CursorPage:
+    query = extra_query
+    cursor_payload = _decode_cursor(cursor)
+    if cursor_payload:
+        first, second = fields
+        if first not in cursor_payload or second not in cursor_payload:
+            raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.")
+        operator = "gt" if direction == "asc" else "lt"
+        first_value = quote(cursor_payload[first], safe="")
+        second_value = quote(cursor_payload[second], safe="")
+        query += f"&or=({first}.{operator}.{first_value},and({first}.eq.{first_value},{second}.{operator}.{second_value}))"
+    query += f"&order={order}&limit={limit}"
+    return CursorPage(query=query, order=order, limit=limit, fields=fields, direction=direction)
+
+
+def _page(rows: list[dict[str, Any]], page: CursorPage) -> dict[str, Any]:
+    return {
+        "limit": page.limit,
+        "count": len(rows),
+        "next_cursor": _encode_cursor(rows[-1], page.fields) if len(rows) == page.limit and rows else None,
+    }
+
+
 @router.get("/summary", response_model=None)
 async def get_summary(
     settings: Settings = Depends(get_settings),
@@ -213,13 +279,44 @@ async def get_summary(
 
 @router.get("/chws", response_model=None)
 async def get_chws(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        chws = await _supabase_get(settings, "v_chw_list", select="chw_id,name,union_name,upazila,is_active,patient_count", query="&order=name.asc")
+        page = _cursor_page(order="name.asc,chw_id.asc", fields=("name", "chw_id"), direction="asc", limit=limit, cursor=cursor)
+        chws = await _supabase_get(settings, "v_chw_list", select="chw_id,name,union_name,upazila,is_active,patient_count", query=page.query)
         await audit(settings, admin, "admin.chws.read", "chw")
-        return {"chws": chws}
+        return {"chws": chws, "page": _page(chws, page)}
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.get("/chws/pending-verifications", response_model=None)
+async def get_pending_chw_verifications(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        page = _cursor_page(
+            order="created_at.asc,id.asc",
+            fields=("created_at", "id"),
+            direction="asc",
+            limit=limit,
+            cursor=cursor,
+            extra_query="&verification_status=eq.PENDING",
+        )
+        pending = await _supabase_get(
+            settings,
+            "chws",
+            select="id,name,union_name,upazila,organization_name,worker_type,years_of_experience,certificate_url,verification_status,created_at",
+            query=page.query,
+        )
+        await audit(settings, admin, "admin.chw.verifications.read", "chw")
+        return {"chws": pending, "page": _page(pending, page)}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -241,33 +338,63 @@ async def update_chw_status(
         return _handle_admin_error(error)
 
 
-@router.get("/patients", response_model=None)
-async def get_patients(
+@router.patch("/chws/{chw_id}/verification", response_model=None)
+async def update_chw_verification(
+    chw_id: str,
+    request: ChwVerificationRequest,
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
+        _require_super_admin(admin, "approve or reject CHW verification requests")
+        if request.verification_status == "REJECTED" and not (request.rejection_reason or "").strip():
+            return error_response(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Rejection reason is required.")
+
+        payload: dict[str, Any] = {
+            "is_active": request.verification_status == "APPROVED",
+            "verification_status": request.verification_status,
+            "rejection_reason": None if request.verification_status == "APPROVED" else request.rejection_reason.strip(),
+        }
+        updated = await _supabase_patch(settings, "chws", chw_id, payload)
+        await audit(settings, admin, "admin.chw.verification.update", "chw", chw_id, payload)
+        return updated
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.get("/patients", response_model=None)
+async def get_patients(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        page = _cursor_page(order="updated_at.desc,id.desc", fields=("updated_at", "id"), direction="desc", limit=limit, cursor=cursor)
         patients = await _supabase_get(
             settings,
             "patients",
             select="id,chw_id,name,age,gestational_age_weeks,last_risk_level,created_at,updated_at",
-            query="&order=updated_at.desc&limit=500",
+            query=page.query,
         )
         await audit(settings, admin, "admin.patients.read", "patient")
-        return {"patients": patients}
+        return {"patients": patients, "page": _page(patients, page)}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
 
 @router.get("/qa", response_model=None)
 async def get_qa_items(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        items = await _supabase_get(settings, "master_qa", select="id,trimester,topic,question_bn,answer_bn,question_en,answer_en,severity,created_at,updated_at", query="&order=updated_at.desc")
+        page = _cursor_page(order="updated_at.desc,id.desc", fields=("updated_at", "id"), direction="desc", limit=limit, cursor=cursor)
+        items = await _supabase_get(settings, "master_qa", select="id,trimester,topic,question_bn,answer_bn,question_en,answer_en,severity,created_at,updated_at", query=page.query)
         await audit(settings, admin, "admin.qa.read", "master_qa")
-        return {"items": items}
+        return {"items": items, "page": _page(items, page)}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -321,21 +448,24 @@ async def delete_qa_item(
 
 @router.get("/telemetry/sms", response_model=None)
 async def get_sms_telemetry(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
+        page = _cursor_page(order="created_at.desc,id.desc", fields=("created_at", "id"), direction="desc", limit=limit, cursor=cursor)
         failures = await _supabase_get(
             settings,
             "sms_failures",
             select="id,visit_id,phone_number,message,error_message,attempts,created_at,review_status,review_notes,reviewed_at",
-            query="&order=created_at.desc&limit=200",
+            query=page.query,
         )
         await audit(settings, admin, "admin.telemetry.sms.read", "sms_failure")
-        return {"failures": failures}
+        return {"failures": failures, "page": _page(failures, page)}
     except AdminAuthError as error:
         if error.code == "DATABASE_QUERY_FAILED":
-            return {"failures": []}
+            return {"failures": [], "page": {"limit": limit, "count": 0, "next_cursor": None}}
         return _handle_admin_error(error)
 
 
@@ -388,22 +518,25 @@ async def export_report(
 
 @router.get("/audit", response_model=None)
 async def get_audit_events(
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
         _require_super_admin(admin, "read audit events")
+        page = _cursor_page(order="created_at.desc,id.desc", fields=("created_at", "id"), direction="desc", limit=limit, cursor=cursor)
         events = await _supabase_get(
             settings,
             "admin_audit_events",
             select="id,actor_user_id,action,entity_type,entity_id,metadata,created_at",
-            query="&order=created_at.desc&limit=200",
+            query=page.query,
         )
         await audit(settings, admin, "admin.audit.read", "admin_audit_events")
-        return {"events": events}
+        return {"events": events, "page": _page(events, page)}
     except AdminAuthError as error:
         if error.code == "DATABASE_QUERY_FAILED":
-            return {"events": []}
+            return {"events": [], "page": {"limit": limit, "count": 0, "next_cursor": None}}
         return _handle_admin_error(error)
 
 

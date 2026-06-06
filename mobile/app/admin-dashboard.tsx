@@ -19,11 +19,12 @@ import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { supabase } from "@/auth/supabaseAuth";
 import { clearRoleSession } from "@/auth/roleSession";
-import { clearSession } from "@/auth/secureSession";
+import { clearSession, getSession } from "@/auth/secureSession";
 import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 
 const { width } = Dimensions.get("window");
+const API_BASE = (process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com").replace(/\/+$/, "");
 
 type ChwListRow = {
   chw_id: string;
@@ -50,6 +51,39 @@ type PatientRow = {
   gestational_age_weeks: number;
   last_risk_level: "LOW" | "MODERATE" | "HIGH";
 };
+
+type PendingChwRow = {
+  id: string;
+  name: string;
+  union_name: string | null;
+  upazila: string | null;
+  organization_name: string | null;
+  worker_type: string | null;
+  years_of_experience: number | null;
+  certificate_url: string | null;
+  verification_status: "PENDING" | "APPROVED" | "REJECTED";
+};
+
+async function adminApi<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const session = await getSession();
+  if (!session?.accessToken) {
+    throw new Error("Admin session is required.");
+  }
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${session.accessToken}`);
+  headers.set("Content-Type", "application/json");
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message = payload?.error?.message || payload?.detail || `Admin request failed with HTTP ${response.status}`;
+    throw new Error(message);
+  }
+  return payload as T;
+}
 
 // Seeded offline demo fallback data
 // Seeded offline demo fallback data
@@ -349,7 +383,8 @@ export default function AdminDashboardScreen() {
   const [selectedChw, setSelectedChw] = useState<ChwListRow | null>(null);
 
   // Verification states
-  const [pendingChws, setPendingChws] = useState<any[]>([]);
+  const [pendingChws, setPendingChws] = useState<PendingChwRow[]>([]);
+  const [pendingChwError, setPendingChwError] = useState<string | null>(null);
   const [rejectingChwId, setRejectingChwId] = useState<string | null>(null);
   const [rejectionReasonInput, setRejectionReasonInput] = useState("");
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
@@ -364,18 +399,14 @@ export default function AdminDashboardScreen() {
         supabase.from("v_chw_list").select("chw_id,name,union_name,upazila,is_active,patient_count"),
         supabase.from("v_risk_summary").select("chw_id,chw_name,low_count,moderate_count,high_count"),
         supabase.from("patients").select("id,chw_id,name,age,gestational_age_weeks,last_risk_level"),
-        supabase.from("chws").select("id, name, union_name, upazila, organization_name, worker_type, years_of_experience, certificate_url, verification_status").eq("verification_status", "PENDING")
+        adminApi<{ chws: PendingChwRow[]; loadError?: boolean }>("/api/v1/admin/chws/pending-verifications").catch((err) => {
+          setPendingChwError(err instanceof Error ? err.message : "Failed to load pending verifications");
+          return { chws: [], loadError: true };
+        })
       ]);
 
       if (chwRes.data && chwRes.data.length > 0) {
-        const fetchedChws = chwRes.data as ChwListRow[];
-        const mergedChws = [...fetchedChws];
-        SEEDED_CHWS.forEach(seeded => {
-          if (!mergedChws.some(x => x.chw_id === seeded.chw_id)) {
-            mergedChws.push(seeded);
-          }
-        });
-        setChws(mergedChws);
+        setChws(chwRes.data as ChwListRow[]);
         setIsOffline(false);
       } else {
         setIsOffline(true);
@@ -383,33 +414,20 @@ export default function AdminDashboardScreen() {
       }
 
       if (riskRes.data && riskRes.data.length > 0) {
-        const fetchedRisk = riskRes.data as RiskSummaryRow[];
-        const mergedRisk = [...fetchedRisk];
-        SEEDED_RISK_SUMMARY.forEach(seeded => {
-          if (!mergedRisk.some(x => x.chw_id === seeded.chw_id)) {
-            mergedRisk.push(seeded);
-          }
-        });
-        setRiskSummary(mergedRisk);
+        setRiskSummary(riskRes.data as RiskSummaryRow[]);
       } else {
         setRiskSummary(SEEDED_RISK_SUMMARY);
       }
 
       if (patientRes.data && patientRes.data.length > 0) {
-        const fetchedPatients = patientRes.data as PatientRow[];
-        const mergedPatients = [...fetchedPatients];
-        SEEDED_PATIENTS.forEach(seeded => {
-          if (!mergedPatients.some(x => x.id === seeded.id)) {
-            mergedPatients.push(seeded);
-          }
-        });
-        setPatients(mergedPatients);
+        setPatients(patientRes.data as PatientRow[]);
       } else {
         setPatients(SEEDED_PATIENTS);
       }
 
-      if (pendingChwsRes.data) {
-        setPendingChws(pendingChwsRes.data);
+      setPendingChws(pendingChwsRes.chws);
+      if (!pendingChwsRes.loadError) {
+        setPendingChwError(null);
       }
     } catch (err) {
       // Fallback to offline seeded data
@@ -421,13 +439,12 @@ export default function AdminDashboardScreen() {
 
   const refreshPendingChws = async () => {
     try {
-      const { data } = await supabase
-        .from("chws")
-        .select("id, name, union_name, upazila, organization_name, worker_type, years_of_experience, certificate_url, verification_status")
-        .eq("verification_status", "PENDING");
-      if (data) setPendingChws(data);
+      const payload = await adminApi<{ chws: PendingChwRow[] }>("/api/v1/admin/chws/pending-verifications");
+      setPendingChws(payload.chws);
+      setPendingChwError(null);
     } catch (err) {
       console.error("Error refreshing pending CHWs:", err);
+      setPendingChwError(err instanceof Error ? err.message : "Failed to refresh pending verifications");
     }
   };
 
@@ -473,11 +490,10 @@ export default function AdminDashboardScreen() {
 
   const handleApproveChw = async (chwId: string) => {
     try {
-      const { error } = await supabase
-        .from("chws")
-        .update({ is_active: true, verification_status: "APPROVED" })
-        .eq("id", chwId);
-      if (error) throw error;
+      await adminApi(`/api/v1/admin/chws/${encodeURIComponent(chwId)}/verification`, {
+        method: "PATCH",
+        body: JSON.stringify({ verification_status: "APPROVED" })
+      });
       
       Alert.alert(
         lang === "bn" ? "অনুমোদিত" : "Approved",
@@ -496,15 +512,14 @@ export default function AdminDashboardScreen() {
       return;
     }
     try {
-      const { error } = await supabase
-        .from("chws")
-        .update({
-          is_active: false,
+      if (!rejectingChwId) throw new Error("No CHW selected for rejection");
+      await adminApi(`/api/v1/admin/chws/${encodeURIComponent(rejectingChwId)}/verification`, {
+        method: "PATCH",
+        body: JSON.stringify({
           verification_status: "REJECTED",
           rejection_reason: rejectionReasonInput.trim()
         })
-        .eq("id", rejectingChwId);
-      if (error) throw error;
+      });
 
       Alert.alert(
         lang === "bn" ? "প্রত্যাখ্যাত" : "Rejected",
@@ -916,6 +931,9 @@ export default function AdminDashboardScreen() {
               <Text style={styles.sectionTitle}>
                 {lang === "bn" ? "অপেক্ষমাণ স্বাস্থ্যকর্মী যাচাইকরণ" : "Pending Health Worker Verifications"}
               </Text>
+              {pendingChwError ? (
+                <Text style={styles.pendingErrorText}>{pendingChwError}</Text>
+              ) : null}
               {pendingChws.length === 0 ? (
                 <View style={styles.emptyPendingContainer}>
                   <Icon name="check-circle" size={40} color="#2E7D32" />
@@ -958,7 +976,7 @@ export default function AdminDashboardScreen() {
 
                     {chw.certificate_url && (
                       <Pressable
-                        onPress={() => Linking.openURL(chw.certificate_url)}
+                        onPress={() => Linking.openURL(String(chw.certificate_url))}
                         style={styles.pendingViewDocBtn}
                       >
                         <Icon name="insert-drive-file" color="#E57A58" size={16} />
@@ -1687,6 +1705,12 @@ const styles = StyleSheet.create({
     color: "#70605A",
     fontSize: 14,
     fontWeight: "600"
+  },
+  pendingErrorText: {
+    color: "#B42318",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 12
   },
   pendingChwCard: {
     backgroundColor: "#FCFAF9",

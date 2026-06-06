@@ -67,7 +67,7 @@ export default function PatientVisitScreen() {
           : activeFilter === "EMERGENCY"
             ? patient.last_risk_level === "HIGH"
             : activeFilter === "HIGH"
-              ? patient.last_risk_level === "MODERATE"
+              ? patient.last_risk_level === "HIGH"
               : patient.last_risk_level === "LOW";
 
       return matchesSearch && matchesFilter;

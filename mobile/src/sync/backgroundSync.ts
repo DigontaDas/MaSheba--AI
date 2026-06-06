@@ -20,6 +20,11 @@ export async function runOutboxSync(): Promise<{ processed: number; skipped: boo
     return { processed: 0, skipped: true };
   }
 
+  // Skip sync for mock admin session (no real Supabase token)
+  if (session.chwId === "admin-chw-id") {
+    return { processed: 0, skipped: true };
+  }
+
   // Defensively check if the accessToken is expired or close to expiry, and refresh it
   if (isTokenExpired(session.accessToken)) {
     const refreshed = await refreshAndSaveSession(session.refreshToken);

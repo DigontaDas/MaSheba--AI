@@ -20,5 +20,15 @@ allprojects {
   }
 }
 
+def nodeModulesDir = new File(rootDir.parentFile, "node_modules").canonicalFile
+
+subprojects { subproject ->
+  if (subproject.projectDir.canonicalPath.startsWith(nodeModulesDir.path + File.separator)) {
+    tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+      enabled = false
+    }
+  }
+}
+
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"

@@ -42,6 +42,8 @@ const DEMO_MOTHER_EMAIL = process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL || "mother-r
 const DEMO_MOTHER_PASSWORD = process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD || "Mother_B_demo_password";
 const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-live-a@maasheba.local";
 const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_demo_password";
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
+const ALLOW_LOCAL_ADMIN_SHORTCUT = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(API_BASE);
 
 const demoCredentials: Record<UserRole, DemoCredential> = {
   CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
@@ -376,10 +378,13 @@ export default function LoginScreen() {
 
       // Admin shortcut — must match before any role-specific logic
       if (emailLower === "admin" && passwordTrimmed === "admin123") {
+        if (!ALLOW_LOCAL_ADMIN_SHORTCUT) {
+          throw new Error(lang === "bn" ? "à¦²à§‹à¦•à¦¾à¦² à¦¡à§‡à¦®à§‹ à¦›à¦¾à¦¡à¦¼à¦¾ à¦…à§à¦¯à¦¾à¦¡à¦®à¦¿à¦¨ à¦¶à¦°à§à¦Ÿà¦•à¦¾à¦Ÿ à¦¬à¦¨à§à¦§ à¦†à¦›à§‡" : "Admin shortcut is disabled outside local demo mode.");
+        }
         await saveUserRole("ADMIN");
         await saveSession({
-          accessToken: "mock-admin-token",
-          refreshToken: "mock-admin-token",
+          accessToken: "local-admin-dev-token",
+          refreshToken: "local-admin-dev-token",
           chwId: "admin-chw-id"
         });
         setModalVisible(false);

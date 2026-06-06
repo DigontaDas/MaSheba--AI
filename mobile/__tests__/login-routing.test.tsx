@@ -138,6 +138,11 @@ describe("LoginScreen routing", () => {
     await act(async () => {
       tree.root.findByProps({ placeholder: "আপনার নাম" }).props.onChangeText("CHW Name");
       tree.root.findByProps({ placeholder: "ক্লিনিক কোড / আইডি" }).props.onChangeText("Palash");
+      tree.root.findByProps({ placeholder: "প্রতিষ্ঠানের নাম" }).props.onChangeText("Palash Clinic");
+      tree.root.findByProps({ placeholder: "কর্মী ধরন (যেমন: HA, FWA, NGO)" }).props.onChangeText("HA");
+      tree.root.findByProps({ placeholder: "অভিজ্ঞতা (বছর)" }).props.onChangeText("3");
+      tree.root.findByProps({ placeholder: "কর্ম এলাকা (ইউনিয়ন/উপজেলা)" }).props.onChangeText("Palash Union");
+      tree.root.findByProps({ placeholder: "সার্টিফিকেট লিংক (ঐচ্ছিক)" }).props.onChangeText("https://example.com/certificate.png");
       tree.root.findByProps({ accessibilityLabel: "ইমেইল বা মোবাইল" }).props.onChangeText("newchw@example.com");
       tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
     });
@@ -154,7 +159,14 @@ describe("LoginScreen routing", () => {
       "secret123",
       "chw",
       "CHW Name",
-      { clinic_code: "Palash" }
+      {
+        certificate_url: "https://example.com/certificate.png",
+        clinic_code: "Palash",
+        organization_name: "Palash Clinic",
+        worker_type: "HA",
+        years_of_experience: 3,
+        working_area: "Palash Union"
+      }
     );
   });
 });

@@ -87,7 +87,21 @@ jest.mock("@/auth/supabaseAuth", () => ({
     from: () => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: async () => ({ data: { id: "chw-1", name: "রাহেলা বেগম" }, error: null })
+          maybeSingle: async () => ({
+            data: {
+              id: "chw-1",
+              name: "রাহেলা বেগম",
+              verification_status: "APPROVED",
+              is_active: true,
+              rejection_reason: null,
+              organization_name: "Palash Clinic",
+              worker_type: "HA",
+              years_of_experience: 3,
+              union_name: "Palash Union",
+              certificate_url: null
+            },
+            error: null
+          })
         })
       })
     })
@@ -130,7 +144,9 @@ async function renderTree(node: React.ReactElement) {
   let tree: ReactTestRenderer | null = null;
   await act(async () => {
     tree = create(node);
-    await Promise.resolve();
+    for (let index = 0; index < 5; index += 1) {
+      await Promise.resolve();
+    }
   });
   return tree as unknown as ReactTestRenderer;
 }

@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, UTC
-from typing import Any
 import httpx
 from fastapi import APIRouter, Depends, Header, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from urllib.parse import quote
 
 from app.core.config import Settings, get_settings
