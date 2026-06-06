@@ -4,6 +4,7 @@ import { ConsoleControls } from "@/components/ConsoleControls";
 import { SidebarNav } from "@/components/SidebarNav";
 import { getTranslation } from "@/utils/translations";
 import { getServerLanguage } from "@/utils/translations-server";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 export async function AdminShell({ children }: { children: React.ReactNode }) {
   const lang = await getServerLanguage();
@@ -73,10 +74,10 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                   {t.operations_workspace}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                  {t.offline}
-                </span>
+                <ConnectionStatus
+                  onlineLabel={t.online}
+                  offlineLabel={t.offline}
+                />
               </div>
               <span className="hidden sm:inline text-xs text-on-surface-variant">
                 {t.ops_subtitle}

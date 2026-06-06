@@ -447,9 +447,28 @@ export default function LoginScreen() {
             setModalVisible(false);
             router.replace("/(tabs)/home");
           } else {
-            const msg = _bootstrapError instanceof Error
-              ? _bootstrapError.message
-              : (lang === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed");
+            let msg = "";
+            if (_bootstrapError instanceof Error) {
+              const errMsg = _bootstrapError.message;
+              if (errMsg === "YOUR_REGISTRATION_PENDING") {
+                msg = lang === "bn"
+                  ? "আপনার অ্যাকাউন্টটি অ্যাডমিন অনুমোদনের জন্য অপেক্ষমাণ রয়েছে। অনুমোদিত না হওয়া পর্যন্ত আপনি লগইন করতে পারবেন না।"
+                  : "Your account is pending administrator approval. You cannot log in until approved.";
+              } else if (errMsg.startsWith("YOUR_REGISTRATION_DENIED|")) {
+                const reason = errMsg.split("|")[1] || "";
+                msg = lang === "bn"
+                  ? `আপনার অ্যাকাউন্টটি অ্যাডমিন দ্বারা প্রত্যাখ্যাত হয়েছে। কারণ: ${reason || "কোনো কারণ উল্লেখ করা হয়নি।"}`
+                  : `Your registration was denied by the administrator. Reason: ${reason || "No reason specified."}`;
+              } else if (errMsg === "YOUR_ACCOUNT_INACTIVE") {
+                msg = lang === "bn"
+                  ? "আপনার অ্যাকাউন্টটি বর্তমানে নিষ্ক্রিয় রয়েছে। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন।"
+                  : "Your account is currently inactive. Please contact the administrator.";
+              } else {
+                msg = errMsg;
+              }
+            } else {
+              msg = lang === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed";
+            }
             setError(msg);
           }
         }
@@ -613,22 +632,36 @@ export default function LoginScreen() {
           }
         }
 
-        setError(null);
-        const successMsg = role === "CHW"
-          ? (lang === "bn" ? "নিবন্ধন সফল! আপনার অ্যাকাউন্টটি অ্যাডমিন অনুমোদনের অপেক্ষায় রয়েছে।" : "Registration successful! Your account is pending admin approval.")
-          : (lang === "bn" ? t.signupSuccessAuto : t.signupSuccessAuto);
+        if (role === "CHW") {
+          await supabase.auth.signOut().catch(() => undefined);
+          setError(null);
+          const successMsg = lang === "bn"
+            ? "আপনার নিবন্ধন অনুরোধটি অ্যাডমিনের কাছে অনুমোদনের জন্য পাঠানো হয়েছে। অনুমোদিত না হওয়া পর্যন্ত আপনি লগইন করতে পারবেন না।"
+            : "Your request has been sent to the admin for approval. You cannot log in until approved.";
 
+          Alert.alert(
+            lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
+            successMsg,
+            [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
+          );
+          setModalVisible(false);
+          return;
+        }
+
+        setError(null);
         Alert.alert(
           lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
-          successMsg,
+          t.signupSuccessAuto,
           [{ text: lang === "bn" ? "ঠিক আছে" : "OK" }]
         );
         setModalVisible(false);
-        router.replace(role === "CHW" ? "/(tabs)/home" : "/(mother-tabs)/home");
+        router.replace("/(mother-tabs)/home");
       } else {
         setError(null);
         const successMsg = role === "CHW"
-          ? (lang === "bn" ? "নিবন্ধন সফল! আপনার অ্যাকাউন্টটি অ্যাডমিন অনুমোদনের অপেক্ষায় রয়েছে।" : "Registration successful! Your account is pending admin approval.")
+          ? (lang === "bn"
+              ? "আপনার নিবন্ধন অনুরোধটি অ্যাডমিনের কাছে অনুমোদনের জন্য পাঠানো হয়েছে। অনুমোদিত না হওয়া পর্যন্ত আপনি লগইন করতে পারবেন না।"
+              : "Your request has been sent to the admin for approval. You cannot log in until approved.")
           : (lang === "bn" ? t.signupSuccess : t.signupSuccess);
 
         Alert.alert(

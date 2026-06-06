@@ -9,6 +9,7 @@ import { colors } from "@/theme";
 type ActiveRoleRow = {
   id: string;
   is_active: boolean;
+  verification_status?: string;
 };
 
 async function clearAuthState() {
@@ -54,11 +55,16 @@ async function routeFromStoredSession() {
 
   const { data: chw } = await supabase
     .from("chws")
-    .select("id,is_active")
+    .select("id,is_active,verification_status")
     .eq("auth_user_id", user.id)
     .maybeSingle<ActiveRoleRow>();
 
   if (chw) {
+    if (chw.verification_status !== "APPROVED" || !chw.is_active) {
+      await clearAuthState();
+      router.replace("/(auth)/login");
+      return;
+    }
     await saveUserRole("CHW");
     router.replace("/(tabs)/home");
     return;

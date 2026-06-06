@@ -44,6 +44,7 @@ export const translations = {
     // Subtext
     tap_row_details: "Tap row to view profile details",
     offline: "Offline",
+    online: "Online",
     management_dashboard: "MaSheba AI Management Dashboard",
     operations_workspace: "Operations workspace",
     ops_subtitle: "Maternal health supervision, sync review, and compliance logs",
@@ -92,6 +93,7 @@ export const translations = {
     // Subtext
     tap_row_details: "বিস্তারিত প্রোফাইল দেখতে ক্লিক করুন",
     offline: "অফলাইন",
+    online: "অনলাইন",
     management_dashboard: "মাশীবা এআই ম্যানেজমেন্ট ড্যাশবোর্ড",
     operations_workspace: "অপারেশনস ওয়ার্কস্পেস",
     ops_subtitle: "মাতৃস্বাস্থ্য তত্ত্বাবধান, সিঙ্ক পর্যালোচনা এবং কমপ্লায়েন্স লগ",

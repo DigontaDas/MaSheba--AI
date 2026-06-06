@@ -27,6 +27,8 @@ export const supabase = createClient(
 type ChwRow = {
   id: string;
   is_active: boolean;
+  verification_status: string;
+  rejection_reason: string | null;
 };
 
 type PatientRow = {
@@ -109,12 +111,27 @@ export async function loginAndBootstrap(identifier: string, password: string): P
 
   const { data: chw, error: chwError } = await supabase
     .from("chws")
-    .select("id,is_active")
+    .select("id,is_active,verification_status,rejection_reason")
     .eq("auth_user_id", data.session.user.id)
     .single<ChwRow>();
 
   if (chwError || !chw) {
     throw new Error(chwError?.message ?? "Authenticated user has no health worker profile");
+  }
+
+  // Enforce status checks at login
+  if (chw.verification_status !== "APPROVED") {
+    await supabase.auth.signOut().catch(() => undefined);
+    if (chw.verification_status === "REJECTED") {
+      throw new Error(`YOUR_REGISTRATION_DENIED|${chw.rejection_reason || ""}`);
+    } else {
+      throw new Error("YOUR_REGISTRATION_PENDING");
+    }
+  }
+
+  if (!chw.is_active) {
+    await supabase.auth.signOut().catch(() => undefined);
+    throw new Error("YOUR_ACCOUNT_INACTIVE");
   }
 
   const { data: patients, error: patientsError } = await supabase
@@ -200,11 +217,13 @@ export async function signUpAndBootstrap(
       });
 
       const profileId = await getProfileIdForSession(data.session.user.id, role);
-      await saveSession({
-        accessToken: data.session.access_token,
-        refreshToken: data.session.refresh_token,
-        chwId: profileId
-      });
+      if (role !== "chw") {
+        await saveSession({
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          chwId: profileId
+        });
+      }
 
       return { sessionEstablished: true };
     }
@@ -256,11 +275,13 @@ export async function signUpAndBootstrap(
           });
 
           const profileId = await getProfileIdForSession(fbData.session.user.id, role);
-          await saveSession({
-            accessToken: fbData.session.access_token,
-            refreshToken: fbData.session.refresh_token,
-            chwId: profileId
-          });
+          if (role !== "chw") {
+            await saveSession({
+              accessToken: fbData.session.access_token,
+              refreshToken: fbData.session.refresh_token,
+              chwId: profileId
+            });
+          }
 
           return { sessionEstablished: true };
         }
@@ -274,11 +295,13 @@ export async function signUpAndBootstrap(
         });
 
         const profileId = await getProfileIdForSession(data.session.user.id, role);
-        await saveSession({
-          accessToken: data.session.access_token,
-          refreshToken: data.session.refresh_token,
-          chwId: profileId
-        });
+        if (role !== "chw") {
+          await saveSession({
+            accessToken: data.session.access_token,
+            refreshToken: data.session.refresh_token,
+            chwId: profileId
+          });
+        }
 
         return { sessionEstablished: true };
       }
