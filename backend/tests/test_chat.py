@@ -242,7 +242,7 @@ def test_voice_chat_success_returns_structured_response(monkeypatch: Any) -> Non
                         "content": {
                             "parts": [
                                 {
-                                    "text": '{"transcription": "আমার তীব্র মাথাব্যথা করছে", "symptoms": ["headache"], "answer": "তীব্র মাথাব্যথা প্রিক্ল্যাম্পসিয়ার লক্ষণ হতে পারে।", "is_emergency": true}'
+                                    "text": '{"transcription": "আমার কি গর্ভাবস্থায় ডিম খাওয়া উচিত?", "symptoms": [], "answer": "গর্ভাবস্থায় ডিম খাওয়া ভালো এবং পুষ্টিকর।", "is_emergency": false}'
                                 }
                             ]
                         }
@@ -264,10 +264,10 @@ def test_voice_chat_success_returns_structured_response(monkeypatch: Any) -> Non
 
     assert response.status_code == 200
     body = response.json()
-    assert body["transcription"] == "আমার তীব্র মাথাব্যথা করছে"
-    assert "headache" in body["symptoms"]
-    assert "তীব্র মাথাব্যথা" in body["answer"]
-    assert body["is_emergency"] is True
+    assert body["transcription"] == "আমার কি গর্ভাবস্থায় ডিম খাওয়া উচিত?"
+    assert body["symptoms"] == []
+    assert "ডিম খাওয়া ভালো" in body["answer"]
+    assert body["is_emergency"] is False
     assert body["source"] == "gemini-voice"
 
 
@@ -348,7 +348,7 @@ def test_voice_chat_english_success(monkeypatch: Any) -> None:
                         "content": {
                             "parts": [
                                 {
-                                    "text": '{"transcription": "I have severe headache", "symptoms": ["headache"], "answer": "Severe headache during pregnancy is dangerous.", "is_emergency": true}'
+                                    "text": '{"transcription": "Can I eat eggs during pregnancy?", "symptoms": [], "answer": "Eating eggs during pregnancy is safe and nutritious.", "is_emergency": false}'
                                 }
                             ]
                         }
@@ -370,8 +370,74 @@ def test_voice_chat_english_success(monkeypatch: Any) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["transcription"] == "I have severe headache"
-    assert "headache" in body["symptoms"]
-    assert "Severe headache" in body["answer"]
-    assert body["is_emergency"] is True
+    assert body["transcription"] == "Can I eat eggs during pregnancy?"
+    assert body["symptoms"] == []
+    assert "Eating eggs" in body["answer"]
+    assert body["is_emergency"] is False
     assert body["source"] == "gemini-voice"
+
+
+def test_chat_banglish_interpretation_original_interpreted_llm_call(monkeypatch: Any) -> None:
+    seen_question = None
+
+    async def fake_groq(question: str, api_key: str, system_prompt: str) -> str:
+        nonlocal seen_question
+        seen_question = question
+        return "গর্ভাবস্থায় পেটের ব্যথা হলে বিশ্রাম নিন।"
+
+    monkeypatch.setattr("app.services.chat_service.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("app.services.chat_service._call_groq", fake_groq)
+
+    client = TestClient(app)
+    response = client.post("/chat", json={"question": "pet betha hocche"})
+
+    assert response.status_code == 200
+    assert seen_question == "Original: pet betha hocche\nInterpreted: পেট ব্যথা হচ্ছে / abdominal_pain"
+
+
+def test_chat_plain_headache_triage_does_not_say_hospital_now() -> None:
+    client = TestClient(app)
+    # Testing "Amar Matha Betha korche"
+    response = client.post("/chat", json={"question": "Amar Matha Betha korche"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "safety-rules"
+    assert body["matched_risk"] == "plain_headache"
+    assert body["risk_level"] == "self_care_with_warning"
+    assert body["is_emergency"] is False
+    assert "তীব্র" in body["answer"] or "ঝাপসা" in body["answer"]
+    assert "হাসপাতালে" not in body["recommended_action"]
+
+    # Testing "amar matha batha"
+    response2 = client.post("/chat", json={"question": "amar matha batha"})
+    assert response2.status_code == 200
+    body2 = response2.json()
+    assert body2["matched_risk"] == "plain_headache"
+    assert body2["is_emergency"] is False
+
+    # Testing "matha betha chokh jhapsha" -> severe_headache_or_vision (emergency_now)
+    response3 = client.post("/chat", json={"question": "matha betha chokh jhapsha"})
+    assert response3.status_code == 200
+    body3 = response3.json()
+    assert body3["matched_risk"] == "severe_headache_or_vision"
+    assert body3["risk_level"] == "emergency_now"
+    assert body3["is_emergency"] is True
+    assert "হাসপাতালে" in body3["answer"]
+
+
+def test_chat_jor_ar_bomi_hocche_interpretation(monkeypatch: Any) -> None:
+    seen_question = None
+
+    async def fake_groq(question: str, api_key: str, system_prompt: str) -> str:
+        nonlocal seen_question
+        seen_question = question
+        return "জ্বর ও বমি হলে পর্যাপ্ত তরল খাবার খান।"
+
+    monkeypatch.setattr("app.services.chat_service.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("app.services.chat_service._call_groq", fake_groq)
+
+    client = TestClient(app)
+    response = client.post("/chat", json={"question": "jor ar bomi hocche"})
+
+    assert response.status_code == 200
+    assert seen_question == "Original: jor ar bomi hocche\nInterpreted: জ্বর আর বমি হচ্ছে / fever, vomiting"

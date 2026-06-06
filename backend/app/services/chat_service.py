@@ -38,6 +38,7 @@ EMERGENCY_KEYWORDS = [
     "রক্তপাত",
     "খিঁচুনি",
     "মাথাব্যথা",
+    "মাথা ব্যথা",
     "ঝাপসা",
     "নড়াচড়া বন্ধ",
     "জ্ঞান হারা",
@@ -138,6 +139,45 @@ def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
 
 
+def interpret_banglish(text: str) -> tuple[str, list[str]]:
+    phrase_maps = [
+        (r"\bmatha\s+(?:betha|batha|byatha)\b", "মাথা ব্যথা", "headache"),
+        (r"\bmatha\s*(?:betha|batha|byatha)\b", "মাথা ব্যথা", "headache"),
+        (r"\bpet\s+betha\b", "পেট ব্যথা", "abdominal_pain"),
+        (r"\bchokh\s+jhapsha\b", "চোখে ঝাপসা", "blurred_vision"),
+        (r"\bhat\s+pa\s+fula\b", "হাত পা ফুলা", "swelling"),
+        (r"\brokto\s+jacche\b", "রক্ত যাচ্ছে", "bleeding"),
+    ]
+    
+    word_maps = [
+        (r"\bjor\b", "জ্বর", "fever"),
+        (r"\bjhor\b", "জ্বর", "fever"),
+        (r"\bbomi\b", "বমি", "vomiting"),
+        (r"\bamar\b", "আমার", None),
+        (r"\bkorche\b", "করছে", None),
+        (r"\bhocche\b", "হচ্ছে", None),
+        (r"\bhoche\b", "হচ্ছে", None),
+        (r"\bar\b", "আর", None),
+    ]
+    
+    interpreted_words = text
+    detected_symptoms = []
+    
+    for pattern, bangla_rep, eng_sym in phrase_maps:
+        if re.search(pattern, interpreted_words, re.IGNORECASE):
+            interpreted_words = re.sub(pattern, bangla_rep, interpreted_words, flags=re.IGNORECASE)
+            if eng_sym and eng_sym not in detected_symptoms:
+                detected_symptoms.append(eng_sym)
+                
+    for pattern, bangla_rep, eng_sym in word_maps:
+        if re.search(pattern, interpreted_words, re.IGNORECASE):
+            interpreted_words = re.sub(pattern, bangla_rep, interpreted_words, flags=re.IGNORECASE)
+            if eng_sym and eng_sym not in detected_symptoms:
+                detected_symptoms.append(eng_sym)
+                
+    return interpreted_words, detected_symptoms
+
+
 def _normalize_question_for_triage(question: str) -> str:
     normalized = question.casefold()
     normalized = re.sub(r"[\u09E6-\u09EF]", lambda match: str(ord(match.group(0)) - ord("০")), normalized)
@@ -171,7 +211,7 @@ def _detect_maternal_triage(question: str, language: str = "bn") -> MaternalTria
         " দুর্গন্ধ ", " গন্ধ ", " bad smell ", " foul ", " gondho ", " durgondho ", " discharge ",
         " স্রাব ", " srab ",
     )
-    headache_terms = (" মাথাব্যথা ", " মাথা ব্যথা ", " headache ", " matha betha ", " mathabetha ")
+    headache_terms = (" মাথাব্যথা ", " মাথা ব্যথা ", " headache ", " matha betha ", " mathabetha ", " matha batha ", " matha byatha ")
     vision_terms = (" ঝাপসা ", " চোখে ", " blurred ", " vision ", " chokh ", " jhapsha ")
     seizure_terms = (" খিঁচুনি ", " seizure ", " convulsion ", " khichuni ")
     breathing_terms = (" শ্বাস ", " বুক ব্যথা ", " chest pain ", " breathing ", " shash ", " bk betha ", " buk betha ")
@@ -277,7 +317,10 @@ def _detect_maternal_triage(question: str, language: str = "bn") -> MaternalTria
                 answer="এই লক্ষণটি বিপদের হতে পারে। দেরি না করে এখনই নিকটস্থ হাসপাতাল বা স্বাস্থ্যকেন্দ্রে যান।",
             )
 
-    if _contains_any(text, headache_terms) and (_contains_any(text, vision_terms) or has_dizziness):
+    has_headache = _contains_any(text, headache_terms)
+    has_severe = _contains_any(text, (" তীব্র ", " severe ", " tivro ", " tibro "))
+
+    if has_headache and (has_severe or _contains_any(text, vision_terms) or has_dizziness):
         if language == "en":
             return MaternalTriage(
                 risk_level="emergency_now",
@@ -293,6 +336,34 @@ def _detect_maternal_triage(question: str, language: str = "bn") -> MaternalTria
                 red_flags=["তীব্র মাথাব্যথা", "চোখে ঝাপসা দেখা", "মাথা ঘোরা বা অজ্ঞান লাগা"],
                 recommended_action="এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।",
                 answer=SEVERE_HEADACHE_ANSWER,
+            )
+
+    if _contains_any(text, headache_terms):
+        if language == "en":
+            return MaternalTriage(
+                risk_level="self_care_with_warning",
+                matched_risk="plain_headache",
+                red_flags=["Severe pain", "Blurred vision", "Swelling", "High BP", "Dizziness", "Pregnancy/postpartum status"],
+                recommended_action="Rest, drink water, and check danger signs.",
+                answer=(
+                    "Sister, a plain headache often improves with rest or drinking enough water. "
+                    "However, to make sure it is not a sign of a serious condition, please check if you have: "
+                    "severe pain, blurred vision, swelling, high blood pressure, dizziness, or if you are pregnant or postpartum. "
+                    "If any of these danger signs are present, go to the hospital immediately."
+                )
+            )
+        else:
+            return MaternalTriage(
+                risk_level="self_care_with_warning",
+                matched_risk="plain_headache",
+                red_flags=["তীব্র মাথাব্যথা", "চোখে ঝাপসা দেখা", "হাত-পা ফুলা", "উচ্চ রক্তচাপ", "মাথা ঘোরা", "গর্ভবতী বা প্রসব-পরবর্তী অবস্থা"],
+                recommended_action="বিশ্রাম নিন, পানি পান করুন এবং বিপদের লক্ষণগুলো পরীক্ষা করুন।",
+                answer=(
+                    "আপা, সাধারণ মাথাব্যথা অনেক সময় বিশ্রাম নিলে বা পর্যাপ্ত পানি পান করলে ঠিক হয়ে যায়। "
+                    "তবে এটি কোনো গুরুতর সমস্যার লক্ষণ কি না তা নিশ্চিত করতে দয়া করে খেয়াল করুন আপনার: "
+                    "তীব্র মাথাব্যথা, চোখে ঝাপসা দেখা, মুখ বা হাত-পা ফুলে যাওয়া, উচ্চ রক্তচাপ, মাথা ঘোরা আছে কি না, অথবা আপনি গর্ভবতী বা প্রসব-পরবর্তী সময়ে আছেন কি না। "
+                    "এসব লক্ষণ থাকলে দেরি না করে এখনই হাসপাতালে বা স্বাস্থ্যকেন্দ্রে যান।"
+                )
             )
 
     if has_fever_bad_discharge or (_contains_any(text, fever_terms) and _contains_any(text, belly_pain_terms)):
@@ -323,16 +394,28 @@ async def get_chat_response(question: str, system_prompt: str | None = None, lan
     if triage:
         return _build_triage_response(triage)
 
+    interpreted_bangla, detected_symptoms = interpret_banglish(normalized_question)
+    is_banglish = (interpreted_bangla.strip().casefold() != normalized_question.strip().casefold())
+    if is_banglish:
+        symptom_suffix = f" / {', '.join(detected_symptoms)}" if detected_symptoms else ""
+        interpreted_query = f"{interpreted_bangla}{symptom_suffix}"
+        llm_question = f"Original: {normalized_question}\nInterpreted: {interpreted_query}"
+    else:
+        llm_question = normalized_question
+
     is_emergency = False
     if language == "en":
-        is_emergency = any(keyword in normalized_question.lower() for keyword in EMERGENCY_KEYWORDS_EN)
+        is_emergency = any(keyword in normalized_question.lower() for keyword in EMERGENCY_KEYWORDS_EN) or \
+                       any(keyword in interpreted_bangla.lower() for keyword in EMERGENCY_KEYWORDS_EN)
     else:
-        is_emergency = any(keyword in normalized_question for keyword in EMERGENCY_KEYWORDS)
+        is_emergency = any(keyword in normalized_question for keyword in EMERGENCY_KEYWORDS) or \
+                       any(keyword in interpreted_bangla for keyword in EMERGENCY_KEYWORDS)
 
     # 1. Fetch RAG Context from Supabase pgvector using HuggingFace sentence-transformers
     rag_context = ""
     try:
-        embedding = await _get_hf_embedding(normalized_question, settings.hf_api_key)
+        emb_text = interpreted_bangla if is_banglish else normalized_question
+        embedding = await _get_hf_embedding(emb_text, settings.hf_api_key)
         if embedding:
             chunks = await _fetch_rag_guidelines(
                 embedding, 
@@ -349,21 +432,23 @@ async def get_chat_response(question: str, system_prompt: str | None = None, lan
 
     default_prompt = SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT
     prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else default_prompt
+    if language == "bn" and not (system_prompt and system_prompt.strip()):
+        prompt = f"{prompt}\n\nIMPORTANT: Respond ONLY in Bengali script (বাংলা). Do not use English or Latin script in your response under any circumstances."
     if rag_context:
         prompt = f"{prompt}{rag_context}"
 
     if settings.groq_api_key:
         try:
-            response = await _call_groq(normalized_question, settings.groq_api_key, prompt)
-            if response and _is_provider_answer_acceptable(response, normalized_question, is_emergency, language=language):
+            response = await _call_groq(llm_question, settings.groq_api_key, prompt)
+            if response and _is_provider_answer_acceptable(response, llm_question, is_emergency, language=language):
                 return _build_response(response, is_emergency, "groq", language=language)
         except Exception as exc:  # pragma: no cover - provider instability is tested via fallback
             logger.warning("Groq chat failed: %s", exc)
 
     if settings.gemini_api_key:
         try:
-            response = await _call_gemini(normalized_question, settings.gemini_api_key, prompt)
-            if response and _is_provider_answer_acceptable(response, normalized_question, is_emergency, language=language):
+            response = await _call_gemini(llm_question, settings.gemini_api_key, prompt)
+            if response and _is_provider_answer_acceptable(response, llm_question, is_emergency, language=language):
                 return _build_response(response, is_emergency, "gemini", language=language)
         except Exception as exc:  # pragma: no cover - provider instability is tested via fallback
             logger.warning("Gemini chat failed: %s", exc)

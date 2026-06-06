@@ -372,6 +372,30 @@ export default function AdminDashboardScreen() {
   const [activeTab, setActiveTab] = useState<"chws" | "patients" | "verifications">("chws");
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
+
+  // Restore Supabase admin session on mount
+  useEffect(() => {
+    async function initSession() {
+      try {
+        const session = await getSession();
+        if (session?.accessToken && session?.refreshToken) {
+          const { error: sessionErr } = await supabase.auth.setSession({
+            access_token: session.accessToken,
+            refresh_token: session.refreshToken
+          });
+          if (sessionErr) {
+            console.warn("Failed to set admin session:", sessionErr.message);
+          }
+        }
+      } catch (err) {
+        console.error("Error setting session:", err);
+      } finally {
+        setIsSessionReady(true);
+      }
+    }
+    initSession();
+  }, []);
 
   // Advanced search & filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -392,6 +416,7 @@ export default function AdminDashboardScreen() {
   const t = translations[lang];
 
   const loadDashboard = useCallback(async () => {
+    if (!isSessionReady) return;
     try {
       setLoading(true);
       // Attempt to fetch from Supabase
@@ -435,7 +460,7 @@ export default function AdminDashboardScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isSessionReady]);
 
   const refreshPendingChws = async () => {
     try {
@@ -450,10 +475,11 @@ export default function AdminDashboardScreen() {
 
   useEffect(() => {
     loadDashboard();
-  }, [loadDashboard]);
+  }, [loadDashboard, isSessionReady]);
 
   // Real-time Postgres insert subscription
   useEffect(() => {
+    if (!isSessionReady) return;
     const channel = supabase
       .channel("public-chws-inserts")
       .on(
@@ -486,7 +512,7 @@ export default function AdminDashboardScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [lang, loadDashboard]);
+  }, [lang, loadDashboard, isSessionReady]);
 
   const handleApproveChw = async (chwId: string) => {
     try {

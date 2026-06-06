@@ -68,6 +68,30 @@ export async function getQaByTopic(params: {
   }
 }
 
+function normalizeBanglishToBangla(question: string): string {
+  let text = question.toLowerCase();
+  
+  // Mirror phrase maps
+  text = text.replace(/\bmatha\s+(?:betha|batha|byatha)\b/g, "মাথা ব্যথা");
+  text = text.replace(/\bmatha\s*(?:betha|batha|byatha)\b/g, "মাথা ব্যথা");
+  text = text.replace(/\bpet\s+betha\b/g, "পেট ব্যথা");
+  text = text.replace(/\bchokh\s+jhapsha\b/g, "চোখে ঝাপসা");
+  text = text.replace(/\bhat\s+pa\s+fula\b/g, "হাত পা ফুলা");
+  text = text.replace(/\brokto\s+jacche\b/g, "রক্ত যাচ্ছে");
+  
+  // Mirror word maps
+  text = text.replace(/\bjor\b/g, "জ্বর");
+  text = text.replace(/\bjhor\b/g, "জ্বর");
+  text = text.replace(/\bbomi\b/g, "বমি");
+  text = text.replace(/\bamar\b/g, "আমার");
+  text = text.replace(/\bkorche\b/g, "করছে");
+  text = text.replace(/\bhocche\b/g, "হচ্ছে");
+  text = text.replace(/\bhoche\b/g, "হচ্ছে");
+  text = text.replace(/\bar\b/g, "আর");
+  
+  return text;
+}
+
 function normalizeKeywords(question: string): string[] {
   return question
     .trim()
@@ -77,7 +101,8 @@ function normalizeKeywords(question: string): string[] {
 }
 
 export async function searchQa(question: string, trimester: OfflineQaTrimester, language: Language = "bn"): Promise<OfflineQa[]> {
-  const keywords = normalizeKeywords(question);
+  const normalizedQuestion = language === "bn" ? normalizeBanglishToBangla(question) : question;
+  const keywords = normalizeKeywords(normalizedQuestion);
   if (!keywords.length) {
     return [];
   }

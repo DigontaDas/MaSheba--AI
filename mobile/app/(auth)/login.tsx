@@ -43,7 +43,9 @@ const DEMO_MOTHER_PASSWORD = process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD || "Mo
 const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-live-a@maasheba.local";
 const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_demo_password";
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
-const ALLOW_LOCAL_ADMIN_SHORTCUT = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(API_BASE);
+const ALLOW_LOCAL_ADMIN_SHORTCUT =
+  __DEV__ ||
+  /^https?:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?$/i.test(API_BASE);
 
 const demoCredentials: Record<UserRole, DemoCredential> = {
   CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
@@ -378,14 +380,30 @@ export default function LoginScreen() {
 
       // Admin shortcut — must match before any role-specific logic
       if (emailLower === "admin" && passwordTrimmed === "admin123") {
-        if (!ALLOW_LOCAL_ADMIN_SHORTCUT) {
-          throw new Error(lang === "bn" ? "à¦²à§‹à¦•à¦¾à¦² à¦¡à§‡à¦®à§‹ à¦›à¦¾à¦¡à¦¼à¦¾ à¦…à§à¦¯à¦¾à¦¡à¦®à¦¿à¦¨ à¦¶à¦°à§à¦Ÿà¦•à¦¾à¦Ÿ à¦¬à¦¨à§à¦§ à¦†à¦›à§‡" : "Admin shortcut is disabled outside local demo mode.");
+        const adminEmail = process.env.EXPO_PUBLIC_ADMIN_EMAIL;
+        const adminPassword = process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+        if (!adminEmail || !adminPassword) {
+          throw new Error(
+            lang === "bn"
+              ? "অ্যাডমিন ক্রেডেনশিয়াল কনফিগার করা নেই (EXPO_PUBLIC_ADMIN_EMAIL এবং EXPO_PUBLIC_ADMIN_PASSWORD সেট করুন)।"
+              : "Admin credentials not configured (set EXPO_PUBLIC_ADMIN_EMAIL and EXPO_PUBLIC_ADMIN_PASSWORD)."
+          );
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: adminEmail,
+          password: adminPassword
+        });
+        if (error || !data.session) {
+          throw new Error(
+            error?.message ??
+              (lang === "bn" ? "অ্যাডমিন লগইন ব্যর্থ হয়েছে।" : "Admin login failed.")
+          );
         }
         await saveUserRole("ADMIN");
         await saveSession({
-          accessToken: "local-admin-dev-token",
-          refreshToken: "local-admin-dev-token",
-          chwId: "admin-chw-id"
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          chwId: data.session.user.id
         });
         setModalVisible(false);
         router.replace("/admin-dashboard");

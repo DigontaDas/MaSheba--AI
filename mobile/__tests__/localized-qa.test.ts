@@ -40,4 +40,24 @@ describe("localized offline QA", () => {
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].answer_bn).toMatch(/danger|emergency|urgent/i);
   });
+
+  it("translates Banglish query to Bengali script before searching the local database", async () => {
+    const mockGetAllAsync = jest.fn().mockResolvedValue([]);
+    const mockDb = { getAllAsync: mockGetAllAsync };
+    const { getDB } = require("@/db/database");
+    const { runLocalDb } = require("@/db/localDbAccess");
+    
+    getDB.mockResolvedValue(mockDb);
+    runLocalDb.mockImplementation(async (cb: any) => cb());
+    
+    await searchQa("matha betha", "T3", "bn");
+    
+    expect(mockGetAllAsync).toHaveBeenCalled();
+    const sqlQuery = mockGetAllAsync.mock.calls[0][0];
+    const bindings = mockGetAllAsync.mock.calls[0].slice(2); // First is topic/trimester, then bindings
+    
+    expect(sqlQuery).toContain("question_bn LIKE ?");
+    expect(bindings).toContain("%মাথা%");
+    expect(bindings).toContain("%ব্যথা%");
+  });
 });
