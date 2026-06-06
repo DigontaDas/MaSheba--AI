@@ -153,6 +153,11 @@ def test_live_admin_can_approve_and_reject_chw_verifications() -> None:
         approve_user_id = supabase.create_auth_user(approve_email, password, {"role": "chw", "name": "CI CHW Approve"})
         reject_user_id = supabase.create_auth_user(reject_email, password, {"role": "chw", "name": "CI CHW Reject"})
 
+        # Clean up any trigger-created rows to avoid unique constraint violations on auth_user_id
+        supabase.delete_rows("chws", f"auth_user_id=eq.{approve_user_id}")
+        supabase.delete_rows("chws", f"auth_user_id=eq.{reject_user_id}")
+        supabase.delete_rows("mothers", f"auth_user_id=eq.{admin_user_id}")
+
         supabase.insert_row("admin_users", {"auth_user_id": admin_user_id, "role": "super_admin", "is_active": True})
         supabase.insert_row(
             "chws",
@@ -238,8 +243,10 @@ def test_live_admin_can_approve_and_reject_chw_verifications() -> None:
             if admin_user_id:
                 supabase.delete_rows("admin_audit_events", f"actor_user_id=eq.{admin_user_id}")
             supabase.delete_rows("chws", f"id=in.({approve_chw_id},{reject_chw_id})")
+            supabase.delete_rows("chws", f"auth_user_id=in.({approve_user_id},{reject_user_id})")
             if admin_user_id:
                 supabase.delete_rows("admin_users", f"auth_user_id=eq.{admin_user_id}")
+                supabase.delete_rows("mothers", f"auth_user_id=eq.{admin_user_id}")
             for user_id in (approve_user_id, reject_user_id, admin_user_id):
                 if user_id:
                     supabase.delete_auth_user(user_id)
