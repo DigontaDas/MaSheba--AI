@@ -114,3 +114,10 @@ export async function getAuditEvents(): Promise<AuditEvent[]> {
 export function exportUrl(format: "csv" | "pdf"): string {
   return `/api/admin/export?format=${format}`;
 }
+
+export async function assignChw(motherId: string, chwId: string, age?: number): Promise<MotherRegistryRow> {
+  return adminFetch<MotherRegistryRow>(`/api/v1/admin/mothers/${encodeURIComponent(motherId)}/chw-assignment`, {
+    method: "PATCH",
+    body: JSON.stringify({ chw_id: chwId, age }),
+  });
+}

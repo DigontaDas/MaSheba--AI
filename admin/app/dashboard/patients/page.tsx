@@ -1,12 +1,15 @@
 import { PatientsRegistryClient } from "@/components/PatientsRegistryClient";
-import { getPatients } from "@/utils/admin-api";
+import { getPatients, getChws } from "@/utils/admin-api";
 import { getTranslation } from "@/utils/translations";
 import { getServerLanguage } from "@/utils/translations-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
-  const patients = await getPatients();
+  const [patients, chws] = await Promise.all([
+    getPatients(),
+    getChws(),
+  ]);
   const lang = await getServerLanguage();
   const t = getTranslation(lang);
 
@@ -16,7 +19,7 @@ export default async function PatientsPage() {
         <h2 className="font-headline-lg text-headline-lg text-on-background">{t.tracked_mothers}</h2>
         <p className="mt-1 font-body-md text-body-md text-on-surface-variant">{t.tracked_mothers_desc}</p>
       </div>
-      <PatientsRegistryClient patients={patients} lang={lang} t={t} />
+      <PatientsRegistryClient patients={patients} chws={chws} lang={lang} t={t} />
     </div>
   );
 }

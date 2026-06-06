@@ -69,6 +69,11 @@ class SmsReviewRequest(BaseModel):
     review_notes: str | None = Field(default=None, max_length=2000)
 
 
+class ChwAssignmentRequest(BaseModel):
+    chw_id: str
+    age: int | None = Field(default=None, ge=10, le=60)
+
+
 class CursorPage(NamedTuple):
     query: str
     order: str
@@ -219,6 +224,8 @@ def _decode_cursor(cursor: str | None) -> dict[str, str] | None:
         raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.") from exc
     if not isinstance(payload, dict) or not all(isinstance(value, str) for value in payload.values()):
         raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.")
+    if "chw_id" in payload and "id" not in payload:
+        payload["id"] = payload["chw_id"]
     return payload
 
 
@@ -346,10 +353,47 @@ async def get_chws(
     admin: AdminContext = Depends(require_admin),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        page = _cursor_page(order="name.asc,chw_id.asc", fields=("name", "chw_id"), direction="asc", limit=limit, cursor=cursor)
-        chws = await _supabase_get(settings, "v_chw_list", select="chw_id,name,union_name,upazila,is_active,patient_count", query=page.query)
+        page = _cursor_page(order="name.asc,id.asc", fields=("name", "id"), direction="asc", limit=limit, cursor=cursor)
+        chws = await _supabase_get(
+            settings,
+            "chws",
+            select="id,name,union_name,upazila,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+            query=page.query,
+        )
+        chw_ids = [c["id"] for c in chws if c.get("id")]
+        patient_counts = {}
+        if chw_ids:
+            patients = await _supabase_get(
+                settings,
+                "patients",
+                select="chw_id",
+                query=f"&chw_id=in.({_in_filter(chw_ids)})",
+            )
+            for p in patients:
+                c_id = p.get("chw_id")
+                if c_id:
+                    patient_counts[c_id] = patient_counts.get(c_id, 0) + 1
+        
+        mapped_chws = []
+        for c in chws:
+            mapped_chws.append({
+                "id": c["id"],
+                "chw_id": c["id"],
+                "name": c["name"],
+                "union_name": c["union_name"],
+                "upazila": c["upazila"],
+                "is_active": c["is_active"],
+                "verification_status": c.get("verification_status"),
+                "rejection_reason": c.get("rejection_reason"),
+                "created_at": c.get("created_at"),
+                "organization_name": c.get("organization_name"),
+                "worker_type": c.get("worker_type"),
+                "years_of_experience": c.get("years_of_experience"),
+                "certificate_url": c.get("certificate_url"),
+                "patient_count": patient_counts.get(c["id"], 0),
+            })
         await audit(settings, admin, "admin.chws.read", "chw")
-        return {"chws": chws, "page": _page(chws, page)}
+        return {"chws": mapped_chws, "page": _page(mapped_chws, page)}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -435,6 +479,87 @@ async def get_patients(
         mothers = await _load_mother_registry(settings, page)
         await audit(settings, admin, "admin.patients.read", "mother")
         return {"patients": mothers, "page": _page(mothers, page)}
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/mothers/{mother_id}/chw-assignment", response_model=None)
+async def assign_chw_to_mother(
+    mother_id: str,
+    request: ChwAssignmentRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "assign or reassign CHWs to mothers")
+        
+        # 1. Fetch mother
+        mothers = await _supabase_get(settings, "mothers", query=f"&id=eq.{quote(mother_id)}")
+        if not mothers:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Mother not found.")
+        mother = mothers[0]
+        
+        # 2. Fetch CHW
+        chws = await _supabase_get(settings, "chws", query=f"&id=eq.{quote(request.chw_id)}")
+        if not chws:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "CHW not found.")
+        chw = chws[0]
+        
+        # 3. Validate CHW is approved (verified) and active
+        if chw.get("verification_status") != "APPROVED" or not chw.get("is_active"):
+            return error_response(status.HTTP_400_BAD_REQUEST, "INVALID_CHW", "Assignment requires a verified and active CHW.")
+            
+        old_chw_id = None
+        patient_id = mother.get("patient_id")
+        
+        # 4. Handle Patient record creation or update
+        if not patient_id:
+            if request.age is None:
+                return error_response(status.HTTP_400_BAD_REQUEST, "AGE_REQUIRED", "Age is required to create a patient record.")
+            
+            # Create a new patient record
+            patient_payload = {
+                "chw_id": request.chw_id,
+                "name": mother["name"],
+                "age": request.age,
+                "gestational_age_weeks": mother.get("gestational_age_weeks") or 12,
+                "last_risk_level": "LOW",
+            }
+            patient = await _supabase_post(settings, "patients", patient_payload)
+            patient_id = patient.get("id")
+            if not patient_id:
+                return error_response(status.HTTP_502_BAD_GATEWAY, "DATABASE_WRITE_FAILED", "Failed to create patient record.")
+            
+            # Update mothers table with patient_id
+            await _supabase_patch(settings, "mothers", mother_id, {"patient_id": patient_id})
+        else:
+            # Fetch existing patient to get old CHW ID for audit log
+            patients = await _supabase_get(settings, "patients", query=f"&id=eq.{quote(patient_id)}")
+            if patients:
+                old_chw_id = patients[0].get("chw_id")
+            
+            # Update existing patient record with new CHW ID
+            await _supabase_patch(settings, "patients", patient_id, {"chw_id": request.chw_id})
+            
+        # 5. Audit the assignment
+        await audit(
+            settings,
+            admin,
+            action="admin.mother.chw_assignment",
+            entity_type="mother",
+            entity_id=mother_id,
+            metadata={
+                "patient_id": patient_id,
+                "old_chw_id": old_chw_id,
+                "new_chw_id": request.chw_id,
+            },
+        )
+        
+        # 6. Load and return updated mother registry row
+        page = _cursor_page(order="id.asc", fields=("id", "id"), direction="asc", limit=1, cursor=None, extra_query=f"&id=eq.{quote(mother_id)}")
+        rows = await _load_mother_registry(settings, page)
+        return rows[0] if rows else {}
+        
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -597,7 +722,45 @@ async def get_audit_events(
 
 
 async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    chws = await _supabase_get(settings, "v_chw_list", select="chw_id,name,union_name,upazila,is_active,patient_count", query="&order=name.asc")
+    chws_raw = await _supabase_get(
+        settings,
+        "chws",
+        select="id,name,union_name,upazila,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+        query="&order=name.asc",
+    )
+    chw_ids = [c["id"] for c in chws_raw if c.get("id")]
+    patient_counts = {}
+    if chw_ids:
+        patients = await _supabase_get(
+            settings,
+            "patients",
+            select="chw_id",
+            query=f"&chw_id=in.({_in_filter(chw_ids)})",
+        )
+        for p in patients:
+            c_id = p.get("chw_id")
+            if c_id:
+                patient_counts[c_id] = patient_counts.get(c_id, 0) + 1
+    
+    chws = []
+    for c in chws_raw:
+        chws.append({
+            "id": c["id"],
+            "chw_id": c["id"],
+            "name": c["name"],
+            "union_name": c["union_name"],
+            "upazila": c["upazila"],
+            "is_active": c["is_active"],
+            "verification_status": c.get("verification_status"),
+            "rejection_reason": c.get("rejection_reason"),
+            "created_at": c.get("created_at"),
+            "organization_name": c.get("organization_name"),
+            "worker_type": c.get("worker_type"),
+            "years_of_experience": c.get("years_of_experience"),
+            "certificate_url": c.get("certificate_url"),
+            "patient_count": patient_counts.get(c["id"], 0),
+        })
+
     risk_summary = await _supabase_get(settings, "v_risk_summary", select="chw_id,chw_name,low_count,moderate_count,high_count", query="&order=chw_name.asc")
     try:
         heatmap = await _supabase_get(settings, "v_upazila_risk_heatmap", select="upazila,low_count,moderate_count,high_count,total_patients", query="&order=upazila.asc")

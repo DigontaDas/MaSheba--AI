@@ -293,20 +293,33 @@ export function ChwDirectoryClient({
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                              row.is_active
-                                ? "bg-primary-container/20 text-primary border-primary-container/50"
-                                : "bg-error-container/20 text-error border-error-container/50"
-                            }`}
-                          >
+                          <div className="flex flex-wrap gap-1.5 items-center">
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                row.is_active ? "bg-primary" : "bg-error"
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                row.is_active
+                                  ? "bg-primary-container/20 text-primary border-primary-container/50"
+                                  : "bg-error-container/20 text-error border-error-container/50"
                               }`}
-                            ></span>
-                            {row.is_active ? t.status_active : t.status_inactive}
-                          </span>
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  row.is_active ? "bg-primary" : "bg-error"
+                                }`}
+                              ></span>
+                              {row.is_active ? t.status_active : t.status_inactive}
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                row.verification_status === "APPROVED"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : row.verification_status === "PENDING"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-red-50 text-red-700 border-red-200"
+                              }`}
+                            >
+                              {row.verification_status}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-3.5 text-right font-bold text-primary tabular-nums">
                           {toLocalNum(row.patient_count)}
@@ -402,7 +415,7 @@ export function ChwDirectoryClient({
                 <p className="font-body-md text-body-md text-on-surface-variant text-sm mt-0.5">
                   {selectedChw.chw_id} • {selectedChw.union_name}
                 </p>
-                <div className="mt-3">
+                <div className="mt-3 flex gap-2">
                   <span
                     className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
                       selectedChw.is_active
@@ -415,10 +428,84 @@ export function ChwDirectoryClient({
                     </span>
                     {selectedChw.is_active ? t.status_active : t.status_inactive}
                   </span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                      selectedChw.verification_status === "APPROVED"
+                        ? "bg-emerald-500 text-white border-emerald-500"
+                        : selectedChw.verification_status === "PENDING"
+                        ? "bg-amber-500 text-white border-amber-500 animate-pulse"
+                        : "bg-red-500 text-white border-red-500"
+                    }`}
+                  >
+                    {selectedChw.verification_status}
+                  </span>
                 </div>
               </div>
 
               <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
+                {selectedChw.verification_status === "REJECTED" && selectedChw.rejection_reason && (
+                  <div className="bg-error-container/20 border border-error-container text-error rounded-xl p-4 text-xs font-semibold">
+                    <p className="font-bold uppercase tracking-wider mb-1">Rejection Reason</p>
+                    <p>{selectedChw.rejection_reason}</p>
+                  </div>
+                )}
+
+                <section>
+                  <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">badge</span>
+                    {lang === "bn" ? "পেশাদার বিবরণ" : "Professional Credentials"}
+                  </h4>
+                  <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "কর্মী ধরন" : "Worker Type"}</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedChw.worker_type || "HA (Health Assistant)"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "প্রতিষ্ঠান" : "Organization"}</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedChw.organization_name || "MaaSheba Field Team"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "অভিজ্ঞতা" : "Experience"}</p>
+                      <p className="font-bold text-on-surface mt-0.5">
+                        {toLocalNum(selectedChw.years_of_experience || 0)} {lang === "bn" ? "বছর" : "years"}
+                      </p>
+                    </div>
+                    {selectedChw.created_at && (
+                      <>
+                        <div className="h-px w-full bg-outline-variant/50"></div>
+                        <div className="text-sm">
+                          <p className="text-xs text-on-surface-variant">{lang === "bn" ? "নিবন্ধন তারিখ" : "Registration Date"}</p>
+                          <p className="font-bold text-on-surface mt-0.5">{formatDate(selectedChw.created_at)}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">assignment</span>
+                    {lang === "bn" ? "ভেরিফিকেশন সার্টিফিকেট" : "Verification Certificate"}
+                  </h4>
+                  {selectedChw.certificate_url ? (
+                    <a
+                      href={selectedChw.certificate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 bg-primary-container/20 hover:bg-primary-container/35 text-primary border border-primary-container/50 rounded-lg p-3 font-semibold text-sm transition-colors text-center justify-center cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                      {lang === "bn" ? "সার্টিফিকেট ফাইল দেখুন" : "View Uploaded Certificate"}
+                    </a>
+                  ) : (
+                    <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center font-bold text-xs text-on-surface-variant">
+                      {lang === "bn" ? "সার্টিফিকেট আপলোড করা হয়নি" : "No certificate file provided."}
+                    </div>
+                  )}
+                </section>
+
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">security</span>

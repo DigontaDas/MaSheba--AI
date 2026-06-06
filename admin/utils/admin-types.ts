@@ -7,6 +7,13 @@ export type ChwRow = {
   upazila: string;
   is_active: boolean;
   patient_count: number;
+  verification_status: "PENDING" | "APPROVED" | "REJECTED";
+  rejection_reason?: string | null;
+  created_at?: string;
+  organization_name?: string | null;
+  worker_type?: string | null;
+  years_of_experience?: number;
+  certificate_url?: string | null;
 };
 
 export type PendingChwRow = {

@@ -66,12 +66,59 @@ def install_admin_httpx(
                 if not active_admin:
                     return httpx.Response(200, json=[])
                 return httpx.Response(200, json=[{"auth_user_id": "00000000-0000-0000-0000-00000000ad01", "role": role, "is_active": True}])
-            if "/rest/v1/v_chw_list" in url:
-                return httpx.Response(200, json=[{"chw_id": "chw-a", "name": "CHW A", "union_name": "Shibpur", "upazila": "Narsingdi", "is_active": True, "patient_count": 2}])
             if "/rest/v1/chws" in url:
                 if "id=in." in url:
-                    return httpx.Response(200, json=[{"id": "chw-a", "name": "CHW A"}])
-                return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "union_name": "Shibpur", "upazila": "Narsingdi", "organization_name": "Clinic", "worker_type": "HA", "years_of_experience": 3, "certificate_url": "https://example.com/cert.png", "verification_status": "PENDING", "created_at": "2026-06-02T00:00:00Z"}])
+                    rows = []
+                    if "chw-a" in url:
+                        rows.append({"id": "chw-a", "name": "CHW A"})
+                    if "chw-pending" in url:
+                        rows.append({"id": "chw-pending", "name": "Pending CHW"})
+                    return httpx.Response(200, json=rows)
+                if "id=eq." in url:
+                    chw_id = url.split("id=eq.")[1].split("&")[0]
+                    if chw_id == "chw-a":
+                        return httpx.Response(200, json=[{"id": "chw-a", "name": "CHW A", "is_active": True, "verification_status": "APPROVED", "union_name": "Shibpur", "upazila": "Narsingdi"}])
+                    elif chw_id == "chw-pending":
+                        return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "is_active": False, "verification_status": "PENDING", "union_name": "Shibpur", "upazila": "Narsingdi"}])
+                    elif chw_id == "chw-rejected":
+                        return httpx.Response(200, json=[{"id": "chw-rejected", "name": "Rejected CHW", "is_active": False, "verification_status": "REJECTED", "union_name": "Shibpur", "upazila": "Narsingdi"}])
+                    elif chw_id == "chw-inactive":
+                        return httpx.Response(200, json=[{"id": "chw-inactive", "name": "Inactive CHW", "is_active": False, "verification_status": "APPROVED", "union_name": "Shibpur", "upazila": "Narsingdi"}])
+                    else:
+                        return httpx.Response(200, json=[])
+                if "verification_status=eq.PENDING" in url:
+                    return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "union_name": "Shibpur", "upazila": "Narsingdi", "organization_name": "Clinic", "worker_type": "HA", "years_of_experience": 3, "certificate_url": "https://example.com/cert.png", "verification_status": "PENDING", "created_at": "2026-06-02T00:00:00Z"}])
+                return httpx.Response(
+                    200,
+                    json=[
+                        {
+                            "id": "chw-a",
+                            "name": "CHW A",
+                            "union_name": "Shibpur",
+                            "upazila": "Narsingdi",
+                            "organization_name": "Clinic A",
+                            "worker_type": "HA",
+                            "years_of_experience": 5,
+                            "certificate_url": "https://example.com/cert-a.png",
+                            "verification_status": "APPROVED",
+                            "is_active": True,
+                            "created_at": "2026-06-01T00:00:00Z",
+                        },
+                        {
+                            "id": "chw-pending",
+                            "name": "Pending CHW",
+                            "union_name": "Shibpur",
+                            "upazila": "Narsingdi",
+                            "organization_name": "Clinic",
+                            "worker_type": "HA",
+                            "years_of_experience": 3,
+                            "certificate_url": "https://example.com/cert.png",
+                            "verification_status": "PENDING",
+                            "is_active": False,
+                            "created_at": "2026-06-02T00:00:00Z",
+                        },
+                    ],
+                )
             if "/rest/v1/v_risk_summary" in url:
                 return httpx.Response(200, json=[{"chw_id": "chw-a", "chw_name": "CHW A", "low_count": 1, "moderate_count": 0, "high_count": 1}])
             if "/rest/v1/v_upazila_risk_heatmap" in url:
@@ -79,6 +126,38 @@ def install_admin_httpx(
                     return httpx.Response(404, json={"message": "relation v_upazila_risk_heatmap does not exist"})
                 return httpx.Response(200, json=[{"upazila": "Narsingdi", "low_count": 1, "moderate_count": 0, "high_count": 1, "total_patients": 2}])
             if "/rest/v1/mothers" in url:
+                if "id=eq." in url:
+                    m_id = url.split("id=eq.")[1].split("&")[0]
+                    if m_id == "mother-linked":
+                        return httpx.Response(200, json=[{
+                            "id": "mother-linked",
+                            "auth_user_id": "auth-linked",
+                            "name": "Seed Mother",
+                            "phone": "+8801700000001",
+                            "verification_status": "PENDING",
+                            "patient_id": "patient-a",
+                            "gestational_age_weeks": 28,
+                            "created_at": "2026-06-03T00:00:00Z",
+                            "updated_at": "2026-06-03T00:00:00Z",
+                        }])
+                    elif m_id == "mother-real":
+                        pat_id = None
+                        for patch in state["patches"]:
+                            if "/rest/v1/mothers" in patch["url"] and "id=eq.mother-real" in patch["url"]:
+                                pat_id = patch["json"].get("patient_id")
+                        return httpx.Response(200, json=[{
+                            "id": "mother-real",
+                            "auth_user_id": "auth-real",
+                            "name": "Real Phone Mother",
+                            "phone": "+8801712345678",
+                            "verification_status": "VERIFIED",
+                            "patient_id": pat_id,
+                            "gestational_age_weeks": 12,
+                            "created_at": "2026-06-04T00:00:00Z",
+                            "updated_at": "2026-06-04T00:00:00Z",
+                        }])
+                    else:
+                        return httpx.Response(200, json=[])
                 return httpx.Response(
                     200,
                     json=[
@@ -107,7 +186,34 @@ def install_admin_httpx(
                     ],
                 )
             if "/rest/v1/patients" in url:
-                return httpx.Response(200, json=[{"id": "patient-a", "chw_id": "chw-a", "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
+                if "id=eq." in url:
+                    p_id = url.split("id=eq.")[1].split("&")[0]
+                    if p_id == "patient-a":
+                        chw_id = "chw-a"
+                        for patch in state["patches"]:
+                            if "/rest/v1/patients" in patch["url"] and "id=eq.patient-a" in patch["url"]:
+                                chw_id = patch["json"].get("chw_id", chw_id)
+                        return httpx.Response(200, json=[{"id": "patient-a", "chw_id": chw_id, "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
+                if "id=in." in url or "id=eq." in url or "patient-a" in url or "patient-new" in url:
+                    rows = []
+                    if "patient-a" in url:
+                        chw_id = "chw-a"
+                        for patch in state["patches"]:
+                            if "/rest/v1/patients" in patch["url"] and "id=eq.patient-a" in patch["url"]:
+                                chw_id = patch["json"].get("chw_id", chw_id)
+                        rows.append({"id": "patient-a", "chw_id": chw_id, "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"})
+                    if "patient-new" in url:
+                        rows.append({"id": "patient-new", "chw_id": "chw-a", "name": "Real Phone Mother", "age": 25, "gestational_age_weeks": 12, "last_risk_level": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"})
+                    if not rows:
+                        rows = [
+                            {"id": "patient-a", "chw_id": "chw-a", "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"},
+                            {"id": "patient-b", "chw_id": "chw-a", "name": "Fatema Begum", "age": 28, "gestational_age_weeks": 20, "last_risk_level": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}
+                        ]
+                    return httpx.Response(200, json=rows)
+                return httpx.Response(200, json=[
+                    {"id": "patient-a", "chw_id": "chw-a", "name": "Marium Begum", "age": 24, "gestational_age_weeks": 32, "last_risk_level": "HIGH", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"},
+                    {"id": "patient-b", "chw_id": "chw-a", "name": "Fatema Begum", "age": 28, "gestational_age_weeks": 20, "last_risk_level": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}
+                ])
             if "/rest/v1/master_qa" in url:
                 return httpx.Response(200, json=[{"id": "qa-a", "trimester": "T1", "topic": "Nutrition", "question_bn": "প্রশ্ন", "answer_bn": "উত্তর", "question_en": "Question", "answer_en": "Answer", "severity": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/sms_failures" in url:
@@ -122,6 +228,8 @@ def install_admin_httpx(
 
         async def post(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
             state["posts"].append({"url": url, "headers": headers, "json": json})
+            if "/rest/v1/patients" in url:
+                return httpx.Response(201, json=[json | {"id": "patient-new", "created_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/master_qa" in url:
                 body = json | {"id": "qa-new", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}
                 return httpx.Response(201, json=[body])
@@ -133,6 +241,10 @@ def install_admin_httpx(
 
         async def patch(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
             state["patches"].append({"url": url, "headers": headers, "json": json})
+            if "/rest/v1/patients" in url:
+                return httpx.Response(200, json=[{"id": "patient-a", **json}])
+            if "/rest/v1/mothers" in url:
+                return httpx.Response(200, json=[{"id": "mother-real", **json}])
             if "/rest/v1/chws" in url:
                 return httpx.Response(200, json=[{"id": "chw-a", **json}])
             if "/rest/v1/master_qa" in url:
@@ -318,7 +430,7 @@ def test_admin_list_endpoints_apply_cursor_pagination(client: TestClient, monkey
     assert all(response.status_code == 200 for response in responses)
     assert all(response.json()["page"]["limit"] == 1 for response in responses)
     urls = [item["url"] for item in state["gets"]]
-    assert any("or=(name.gt.CHW%20A,and(name.eq.CHW%20A,chw_id.gt.chw-a))" in url for url in urls)
+    assert any("or=(name.gt.CHW%20A,and(name.eq.CHW%20A,id.gt.chw-a))" in url for url in urls)
     assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.patient-a))" in url and "/rest/v1/mothers" in url for url in urls)
     assert any("or=(updated_at.lt.2026-06-02T00%3A00%3A00Z,and(updated_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.qa-a))" in url for url in urls)
     assert any("or=(created_at.lt.2026-06-02T00%3A00%3A00Z,and(created_at.eq.2026-06-02T00%3A00%3A00Z,id.lt.sms-a))" in url for url in urls)
@@ -556,3 +668,117 @@ def test_admin_audit_endpoint_returns_empty_list_when_table_is_missing(
 
     assert response.status_code == 200
     assert response.json() == {"events": [], "page": {"limit": 50, "count": 0, "next_cursor": None}}
+
+
+def test_assign_chw_unlinked_mother_success(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="super_admin")
+    
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-a", "age": 25},
+    )
+    
+    assert response.status_code == 200
+    body = response.json()
+    assert body["patient_id"] == "patient-new"
+    assert body["chw_id"] == "chw-a"
+    assert body["link_status"] == "LINKED"
+    
+    # Verify patient post
+    patient_post = next(p for p in state["posts"] if "/rest/v1/patients" in p["url"])
+    assert patient_post["json"]["chw_id"] == "chw-a"
+    assert patient_post["json"]["name"] == "Real Phone Mother"
+    assert patient_post["json"]["age"] == 25
+    
+    # Verify mother patch
+    mother_patch = next(p for p in state["patches"] if "/rest/v1/mothers" in p["url"])
+    assert mother_patch["json"]["patient_id"] == "patient-new"
+    
+    # Verify audit event
+    audit_event = next(p for p in state["posts"] if "/rest/v1/admin_audit_events" in p["url"])
+    assert audit_event["json"]["action"] == "admin.mother.chw_assignment"
+    assert audit_event["json"]["entity_id"] == "mother-real"
+    assert audit_event["json"]["metadata"]["new_chw_id"] == "chw-a"
+    assert audit_event["json"]["metadata"]["old_chw_id"] is None
+
+
+def test_assign_chw_linked_mother_success(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="super_admin")
+    
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-linked/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-a"},
+    )
+    
+    assert response.status_code == 200
+    body = response.json()
+    assert body["patient_id"] == "patient-a"
+    assert body["chw_id"] == "chw-a"
+    
+    # Verify patient patch (not post)
+    patient_patch = next(p for p in state["patches"] if "/rest/v1/patients" in p["url"])
+    assert patient_patch["json"]["chw_id"] == "chw-a"
+    
+    # Verify audit event
+    audit_event = next(p for p in state["posts"] if "/rest/v1/admin_audit_events" in p["url"])
+    assert audit_event["json"]["action"] == "admin.mother.chw_assignment"
+    assert audit_event["json"]["metadata"]["old_chw_id"] == "chw-a"  # chw-a in patient-a mock
+    assert audit_event["json"]["metadata"]["new_chw_id"] == "chw-a"
+
+
+def test_assign_chw_unlinked_mother_missing_age(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_admin_httpx(monkeypatch, role="super_admin")
+    
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-a"},
+    )
+    
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "AGE_REQUIRED"
+
+
+def test_assign_chw_non_super_admin_fails(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_admin_httpx(monkeypatch, role="admin")
+    
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-a", "age": 25},
+    )
+    
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_assign_chw_unapproved_or_inactive_chw_fails(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_admin_httpx(monkeypatch, role="super_admin")
+    
+    # Pending
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-pending", "age": 25},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "INVALID_CHW"
+    
+    # Rejected
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-rejected", "age": 25},
+    )
+    assert response.status_code == 400
+    
+    # Inactive
+    response = client.patch(
+        "/api/v1/admin/mothers/mother-real/chw-assignment",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"chw_id": "chw-inactive", "age": 25},
+    )
+    assert response.status_code == 400
+

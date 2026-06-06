@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { MotherRegistryRow, RiskLevel } from "@/utils/admin-types";
+import { useRouter } from "next/navigation";
+import type { MotherRegistryRow, RiskLevel, ChwRow } from "@/utils/admin-types";
 import type { Language } from "@/utils/translations";
+import { AssignChwModal } from "@/components/AssignChwModal";
 
 type RiskFilter = "ALL" | RiskLevel | "UNASSESSED";
 
 type PatientsRegistryClientProps = {
   patients: MotherRegistryRow[];
+  chws: ChwRow[];
   lang: Language;
   t: any;
 };
@@ -24,13 +27,23 @@ const statusStyles: Record<MotherRegistryRow["verification_status"], string> = {
   REJECTED: "bg-error-container text-on-error-container border-error-container",
 };
 
-export function PatientsRegistryClient({ patients, t }: PatientsRegistryClientProps) {
+export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryClientProps) {
+  const router = useRouter();
+  const [patientList, setPatientList] = useState(patients);
+  const [prevPatients, setPrevPatients] = useState(patients);
   const [selectedRisk, setSelectedRisk] = useState<RiskFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [targetMother, setTargetMother] = useState<MotherRegistryRow | null>(null);
+
+  if (patients !== prevPatients) {
+    setPatientList(patients);
+    setPrevPatients(patients);
+  }
 
   const filteredPatients = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return patients.filter((mother) => {
+    return patientList.filter((mother) => {
       if (selectedRisk === "UNASSESSED" && mother.last_risk_level) return false;
       if (selectedRisk !== "ALL" && selectedRisk !== "UNASSESSED" && mother.last_risk_level !== selectedRisk) return false;
       if (!q) return true;
@@ -48,7 +61,7 @@ export function PatientsRegistryClient({ patients, t }: PatientsRegistryClientPr
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q));
     });
-  }, [patients, searchQuery, selectedRisk]);
+  }, [patientList, searchQuery, selectedRisk]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,13 +104,14 @@ export function PatientsRegistryClient({ patients, t }: PatientsRegistryClientPr
                 <th className="px-6 py-3.5 font-medium">{t.col_chw}</th>
                 <th className="px-6 py-3.5 font-medium">{t.col_weeks}</th>
                 <th className="px-6 py-3.5 font-medium">{t.col_risk}</th>
+                <th className="px-6 py-3.5 font-medium">Actions</th>
                 <th className="px-6 py-3.5 font-medium text-right">{t.col_updated}</th>
               </tr>
             </thead>
             <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant bg-surface">
               {filteredPatients.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center font-bold text-on-surface-variant">
+                  <td colSpan={8} className="px-6 py-12 text-center font-bold text-on-surface-variant">
                     {t.empty_patients}
                   </td>
                 </tr>
@@ -132,6 +146,21 @@ export function PatientsRegistryClient({ patients, t }: PatientsRegistryClientPr
                         <Badge className="bg-surface-container-low text-on-surface-variant border-outline-variant" label="Not assessed" />
                       )}
                     </td>
+                    <td className="whitespace-nowrap px-6 py-3.5">
+                      <button
+                        onClick={() => {
+                          setTargetMother(row);
+                          setAssignModalOpen(true);
+                        }}
+                        className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
+                          row.link_status === "LINKED"
+                            ? "bg-surface text-on-surface border-outline hover:bg-surface-container-high"
+                            : "bg-primary text-on-primary border-primary hover:bg-surface-tint"
+                        }`}
+                      >
+                        {row.link_status === "LINKED" ? "Reassign" : "Assign CHW"}
+                      </button>
+                    </td>
                     <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-label-sm">
                       {new Date(row.updated_at || row.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
                     </td>
@@ -142,6 +171,24 @@ export function PatientsRegistryClient({ patients, t }: PatientsRegistryClientPr
           </table>
         </div>
       </div>
+
+      {targetMother && (
+        <AssignChwModal
+          isOpen={assignModalOpen}
+          onClose={() => {
+            setAssignModalOpen(false);
+            setTargetMother(null);
+          }}
+          mother={targetMother}
+          chws={chws}
+          onSuccess={(updatedRow) => {
+            setPatientList((prev) =>
+              prev.map((p) => (p.id === updatedRow.id ? updatedRow : p))
+            );
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
