@@ -80,7 +80,7 @@ describe("LoginScreen routing", () => {
     });
 
     await act(async () => {
-      tree.root.findByProps({ accessibilityLabel: "ইমেইল" }).props.onChangeText("chw@example.com");
+      tree.root.findByProps({ accessibilityLabel: "ইমেইল বা মোবাইল" }).props.onChangeText("chw@example.com");
       tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
     });
 
@@ -103,7 +103,7 @@ describe("LoginScreen routing", () => {
     });
 
     await act(async () => {
-      tree.root.findByProps({ accessibilityLabel: "ইমেইল" }).props.onChangeText("mother@example.com");
+      tree.root.findByProps({ accessibilityLabel: "ইমেইল বা মোবাইল" }).props.onChangeText("mother@example.com");
       tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
     });
 
@@ -138,7 +138,7 @@ describe("LoginScreen routing", () => {
     await act(async () => {
       tree.root.findByProps({ placeholder: "আপনার নাম" }).props.onChangeText("CHW Name");
       tree.root.findByProps({ placeholder: "ক্লিনিক কোড / আইডি" }).props.onChangeText("Palash");
-      tree.root.findByProps({ accessibilityLabel: "ইমেইল" }).props.onChangeText("newchw@example.com");
+      tree.root.findByProps({ accessibilityLabel: "ইমেইল বা মোবাইল" }).props.onChangeText("newchw@example.com");
       tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
     });
 

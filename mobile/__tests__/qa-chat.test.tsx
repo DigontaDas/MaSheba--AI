@@ -169,12 +169,12 @@ jest.mock("@/features/qa/offlineQaStore", () => ({
 }));
 
 jest.mock("@/api/chatClient", () => ({
-  askOnline: (...args: any[]) => mockAskOnline(...args)
+  askOnline: (...args: any[]) => (mockAskOnline as any)(...args)
 }));
 
 jest.mock("@/api/voiceChat", () => ({
   VOICE_RECORDING_OPTIONS: {},
-  askVoiceClinicalOnline: (...args: any[]) => mockAskVoiceClinicalOnline(...args)
+  askVoiceClinicalOnline: (...args: any[]) => (mockAskVoiceClinicalOnline as any)(...args)
 }));
 
 jest.mock("expo-network", () => ({

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  BackHandler,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -187,6 +188,20 @@ export default function LoginScreen() {
 
   const t = translations[lang];
   const loading = loadingAction !== null;
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (modalVisible) {
+        setModalVisible(false);
+        return true;
+      }
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => subscription.remove();
+  }, [modalVisible]);
 
   const openMotherModal = () => {
     setModalRole("MOTHER");
