@@ -221,9 +221,9 @@ def _decode_cursor(cursor: str | None) -> dict[str, str] | None:
         decoded = base64.urlsafe_b64decode(f"{cursor}{padding}".encode()).decode()
         payload = json.loads(decoded)
     except (ValueError, json.JSONDecodeError) as exc:
-        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Invalid pagination cursor.") from exc
+        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.") from exc
     if not isinstance(payload, dict) or not all(isinstance(value, str) for value in payload.values()):
-        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Invalid pagination cursor.")
+        raise AdminAuthError(status.HTTP_422_UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Invalid pagination cursor.")
     if "chw_id" in payload and "id" not in payload:
         payload["id"] = payload["chw_id"]
     return payload

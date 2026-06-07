@@ -1,7 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,28 @@ class Settings(BaseSettings):
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
     hf_api_key: str = Field(default="", alias="HF_API_KEY")
+
+    @field_validator("supabase_url", mode="before")
+    @classmethod
+    def strip_url(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().strip("'\"")
+        return v
+
+    @field_validator(
+        "supabase_anon_key",
+        "supabase_service_role_key",
+        "admin_dev_token",
+        "groq_api_key",
+        "gemini_api_key",
+        "hf_api_key",
+        mode="before",
+    )
+    @classmethod
+    def strip_keys(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().strip("'\"")
+        return v
 
     model_config = SettingsConfigDict(
         env_file=ROOT_ENV_FILE,

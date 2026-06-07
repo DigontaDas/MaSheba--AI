@@ -34,9 +34,9 @@ def _live_settings() -> LiveSettings:
     if missing:
         pytest.skip(f"Missing live Supabase environment variables: {', '.join(missing)}")
     return LiveSettings(
-        supabase_url=str(values["CI_SUPABASE_URL"]).rstrip("/"),
-        supabase_anon_key=str(values["CI_SUPABASE_ANON_KEY"]),
-        supabase_service_role_key=str(values["CI_SUPABASE_SERVICE_ROLE_KEY"]),
+        supabase_url=str(values["CI_SUPABASE_URL"]).strip().strip("'\"").rstrip("/"),
+        supabase_anon_key=str(values["CI_SUPABASE_ANON_KEY"]).strip().strip("'\""),
+        supabase_service_role_key=str(values["CI_SUPABASE_SERVICE_ROLE_KEY"]).strip().strip("'\""),
     )
 
 
