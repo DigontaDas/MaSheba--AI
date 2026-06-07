@@ -148,16 +148,16 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     return null;
   }
 
-  if (motherId === "mother-demo-id") {
+  if (motherId === "mother-demo-id" || motherId === "60000000-0000-0000-0000-000000000002") {
     return {
-      id: "mother-demo-id",
+      id: motherId,
       name: "রহিমা বেগম",
-      patientId: null,
-      phone: null,
-      gestationalAgeWeeks: 28,
+      patientId: "11111111-1111-1111-1111-111111111102",
+      phone: "+8801700000002",
+      gestationalAgeWeeks: 32,
       verificationStatus: "VERIFIED",
-      lmpDate: new Date(Date.now() - 28 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      chwEmail: null,
+      lmpDate: new Date(Date.now() - 32 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      chwEmail: "chw-a@maasheba.local",
       chwPhone: null,
       rejectionReason: null
     };
@@ -173,15 +173,16 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     if (error || !mother?.is_active) {
       if (error && (error.message.includes("verification_status") || error.message.includes("column") || error.code === "PGRST204")) {
         const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+        const isDemo = motherId === "mother-demo-id" || motherId === "60000000-0000-0000-0000-000000000002";
         return {
           id: motherId,
           name: user?.user_metadata?.name || "রহিমা বেগম",
-          patientId: null,
-          phone: user?.phone || null,
-          gestationalAgeWeeks: 28,
+          patientId: isDemo ? "11111111-1111-1111-1111-111111111102" : null,
+          phone: user?.phone || (isDemo ? "+8801700000002" : null),
+          gestationalAgeWeeks: isDemo ? 32 : 28,
           verificationStatus: "VERIFIED",
-          lmpDate: new Date(Date.now() - 28 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          chwEmail: null,
+          lmpDate: new Date(Date.now() - (isDemo ? 32 : 28) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          chwEmail: isDemo ? "chw-a@maasheba.local" : null,
           chwPhone: null,
           rejectionReason: null
         };
@@ -205,15 +206,16 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     const errMsg = err?.message || "";
     if (errMsg.includes("verification_status") || errMsg.includes("column")) {
       const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+      const isDemo = motherId === "mother-demo-id" || motherId === "60000000-0000-0000-0000-000000000002";
       return {
         id: motherId,
         name: user?.user_metadata?.name || "রহিমা বেগম",
-        patientId: null,
-        phone: user?.phone || null,
-        gestationalAgeWeeks: 28,
+        patientId: isDemo ? "11111111-1111-1111-1111-111111111102" : null,
+        phone: user?.phone || (isDemo ? "+8801700000002" : null),
+        gestationalAgeWeeks: isDemo ? 32 : 28,
         verificationStatus: "VERIFIED",
-        lmpDate: new Date(Date.now() - 28 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        chwEmail: null,
+        lmpDate: new Date(Date.now() - (isDemo ? 32 : 28) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        chwEmail: isDemo ? "chw-a@maasheba.local" : null,
         chwPhone: null,
         rejectionReason: null
       };

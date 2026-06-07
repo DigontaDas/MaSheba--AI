@@ -62,6 +62,9 @@ def install_admin_httpx(
             state.setdefault("gets", []).append({"url": url, "headers": headers})
             if url.endswith("/auth/v1/user"):
                 return httpx.Response(200, json={"id": "00000000-0000-0000-0000-00000000ad01", "email": "admin@maasheba.local"})
+            if "/auth/v1/admin/users/" in url:
+                user_id = url.split("/auth/v1/admin/users/")[1].split("?")[0]
+                return httpx.Response(200, json={"id": user_id, "email": "chw-a@maasheba.local", "phone": "+8801700000001"})
             if "/rest/v1/admin_users" in url:
                 if not active_admin:
                     return httpx.Response(200, json=[])
@@ -77,7 +80,7 @@ def install_admin_httpx(
                 if "id=eq." in url:
                     chw_id = url.split("id=eq.")[1].split("&")[0]
                     if chw_id == "chw-a":
-                        return httpx.Response(200, json=[{"id": "chw-a", "name": "CHW A", "is_active": True, "verification_status": "APPROVED", "union_name": "Shibpur", "upazila": "Narsingdi"}])
+                        return httpx.Response(200, json=[{"id": "chw-a", "name": "CHW A", "is_active": True, "verification_status": "APPROVED", "union_name": "Shibpur", "upazila": "Narsingdi", "auth_user_id": "auth-chw-a"}])
                     elif chw_id == "chw-pending":
                         return httpx.Response(200, json=[{"id": "chw-pending", "name": "Pending CHW", "is_active": False, "verification_status": "PENDING", "union_name": "Shibpur", "upazila": "Narsingdi"}])
                     elif chw_id == "chw-rejected":
@@ -102,6 +105,7 @@ def install_admin_httpx(
                             "certificate_url": "https://example.com/cert-a.png",
                             "verification_status": "APPROVED",
                             "is_active": True,
+                            "auth_user_id": "auth-chw-a",
                             "created_at": "2026-06-01T00:00:00Z",
                         },
                         {
@@ -693,7 +697,11 @@ def test_assign_chw_unlinked_mother_success(client: TestClient, monkeypatch: pyt
     
     # Verify mother patch
     mother_patch = next(p for p in state["patches"] if "/rest/v1/mothers" in p["url"])
-    assert mother_patch["json"]["patient_id"] == "patient-new"
+    assert mother_patch["json"] == {
+        "patient_id": "patient-new",
+        "chw_email": "chw-a@maasheba.local",
+        "chw_phone": "+8801700000001",
+    }
     
     # Verify audit event
     audit_event = next(p for p in state["posts"] if "/rest/v1/admin_audit_events" in p["url"])
@@ -720,6 +728,13 @@ def test_assign_chw_linked_mother_success(client: TestClient, monkeypatch: pytes
     # Verify patient patch (not post)
     patient_patch = next(p for p in state["patches"] if "/rest/v1/patients" in p["url"])
     assert patient_patch["json"]["chw_id"] == "chw-a"
+    
+    # Verify mother patch (for chw_email/chw_phone synchronization)
+    mother_patch = next(p for p in state["patches"] if "/rest/v1/mothers" in p["url"])
+    assert mother_patch["json"] == {
+        "chw_email": "chw-a@maasheba.local",
+        "chw_phone": "+8801700000001",
+    }
     
     # Verify audit event
     audit_event = next(p for p in state["posts"] if "/rest/v1/admin_audit_events" in p["url"])

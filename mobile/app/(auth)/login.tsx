@@ -40,7 +40,7 @@ type DemoCredential = {
 // works even if the EXPO_PUBLIC_* env vars are not loaded in Expo Go.
 const DEMO_MOTHER_EMAIL = process.env.EXPO_PUBLIC_DEMO_MOTHER_EMAIL || "mother-rahima@maasheba.local";
 const DEMO_MOTHER_PASSWORD = process.env.EXPO_PUBLIC_DEMO_MOTHER_PASSWORD || "Mother_B_demo_password";
-const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-live-a@maasheba.local";
+const DEMO_CHW_EMAIL = process.env.EXPO_PUBLIC_DEMO_CHW_EMAIL || "chw-a@maasheba.local";
 const DEMO_CHW_PASSWORD = process.env.EXPO_PUBLIC_DEMO_CHW_PASSWORD || "CHW_A_demo_password";
 const demoCredentials: Record<UserRole, DemoCredential> = {
   CHW: { email: DEMO_CHW_EMAIL, password: DEMO_CHW_PASSWORD },
@@ -139,10 +139,10 @@ async function seedLocalMotherDemoData() {
   await saveSession({
     accessToken: "mock-access-token",
     refreshToken: "mock-refresh-token",
-    chwId: "mother-demo-id"
+    chwId: "60000000-0000-0000-0000-000000000002"
   });
   await saveUserRole("MOTHER");
-  await saveMotherId("mother-demo-id");
+  await saveMotherId("60000000-0000-0000-0000-000000000002");
 }
 
 const translations = {

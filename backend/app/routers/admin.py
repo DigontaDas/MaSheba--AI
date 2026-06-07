@@ -512,6 +512,21 @@ async def assign_chw_to_mother(
         old_chw_id = None
         patient_id = mother.get("patient_id")
         
+        # Get CHW's email and phone from Supabase Auth
+        chw_email = None
+        chw_phone = None
+        if chw.get("auth_user_id"):
+            try:
+                auth_url = f"{_base_url(settings)}/auth/v1/admin/users/{chw['auth_user_id']}"
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    auth_resp = await client.get(auth_url, headers=_service_headers(settings))
+                if auth_resp.status_code == 200:
+                    auth_data = auth_resp.json()
+                    chw_email = auth_data.get("email")
+                    chw_phone = auth_data.get("phone")
+            except Exception:
+                pass
+
         # 4. Handle Patient record creation or update
         if not patient_id:
             if request.age is None:
@@ -530,8 +545,17 @@ async def assign_chw_to_mother(
             if not patient_id:
                 return error_response(status.HTTP_502_BAD_GATEWAY, "DATABASE_WRITE_FAILED", "Failed to create patient record.")
             
-            # Update mothers table with patient_id
-            await _supabase_patch(settings, "mothers", mother_id, {"patient_id": patient_id})
+            # Update mothers table with patient_id, chw_email, and chw_phone
+            await _supabase_patch(
+                settings,
+                "mothers",
+                mother_id,
+                {
+                    "patient_id": patient_id,
+                    "chw_email": chw_email,
+                    "chw_phone": chw_phone,
+                },
+            )
         else:
             # Fetch existing patient to get old CHW ID for audit log
             patients = await _supabase_get(settings, "patients", query=f"&id=eq.{quote(patient_id)}")
@@ -540,6 +564,17 @@ async def assign_chw_to_mother(
             
             # Update existing patient record with new CHW ID
             await _supabase_patch(settings, "patients", patient_id, {"chw_id": request.chw_id})
+            
+            # Update mothers table with chw_email and chw_phone to synchronize
+            await _supabase_patch(
+                settings,
+                "mothers",
+                mother_id,
+                {
+                    "chw_email": chw_email,
+                    "chw_phone": chw_phone,
+                },
+            )
             
         # 5. Audit the assignment
         await audit(
