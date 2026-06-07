@@ -148,9 +148,9 @@ jobs:
           python -m pip install -r requirements-dev.txt
       - name: Validate live Supabase secrets
         env:
-          CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-          CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
-          CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
+          CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL || secrets.SUPABASE_URL }}
+          CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+          CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python - <<'PY'
           import os
@@ -166,10 +166,10 @@ jobs:
         working-directory: backend
         env:
           MAASHEBA_RUN_LIVE_SUPABASE: "1"
-          CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-          CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
-          CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY }}
+          CI_SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL || secrets.SUPABASE_URL }}
+          CI_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+          CI_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.CI_SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m pytest -m live_supabase
