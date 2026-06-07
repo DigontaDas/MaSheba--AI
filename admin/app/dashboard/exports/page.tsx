@@ -1,6 +1,9 @@
 import { exportUrl } from "@/utils/admin-api";
 
-export default function ExportsPage() {
+export default async function ExportsPage() {
+  const csvUrl = await exportUrl("csv");
+  const pdfUrl = await exportUrl("pdf");
+
   return (
     <div className="flex flex-col gap-6">
       {/* Page Header */}
@@ -15,7 +18,7 @@ export default function ExportsPage() {
       <div className="grid gap-gutter md:grid-cols-2">
         <a
           className="rounded-xl border border-outline-variant bg-surface p-card-padding hover:border-primary flex flex-col gap-2 transition-colors cursor-pointer shadow-sm"
-          href={exportUrl("csv")}
+          href={csvUrl}
         >
           <h3 className="font-headline-md text-[18px] font-bold text-on-surface flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">description</span>
@@ -28,7 +31,7 @@ export default function ExportsPage() {
 
         <a
           className="rounded-xl border border-outline-variant bg-surface p-card-padding hover:border-primary flex flex-col gap-2 transition-colors cursor-pointer shadow-sm"
-          href={exportUrl("pdf")}
+          href={pdfUrl}
         >
           <h3 className="font-headline-md text-[18px] font-bold text-on-surface flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">picture_as_pdf</span>

@@ -1,6 +1,9 @@
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Network from "expo-network";
 import { saveSession, getSession } from "./secureSession";
 import { supabase, normalizePhone } from "./supabaseAuth";
+
 
 const USER_ROLE_KEY = "maasheba.user_role";
 const MOTHER_ID_KEY = "maasheba.mother_id";
@@ -128,7 +131,7 @@ export async function loginMother(identifier: string, password: string): Promise
   await saveUserRole("MOTHER");
   await saveMotherId(mother.id);
 
-  return {
+  const motherProfile: MotherProfile = {
     id: mother.id,
     name: mother.name,
     patientId: mother.patient_id,
@@ -140,6 +143,10 @@ export async function loginMother(identifier: string, password: string): Promise
     chwPhone: mother.chw_phone,
     rejectionReason: mother.rejection_reason
   };
+
+  await AsyncStorage.setItem("maasheba.mother_profile_cache", JSON.stringify(motherProfile)).catch(() => undefined);
+
+  return motherProfile;
 }
 
 export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
@@ -163,6 +170,21 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     };
   }
 
+  // Check network state for offline fallback
+  const networkState = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
+  const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false;
+
+  if (isOffline) {
+    const cachedProfileStr = await AsyncStorage.getItem("maasheba.mother_profile_cache").catch(() => null);
+    if (cachedProfileStr) {
+      try {
+        return JSON.parse(cachedProfileStr);
+      } catch {
+        // fallback
+      }
+    }
+  }
+
   try {
     const { data: mother, error } = await supabase
       .from("mothers")
@@ -171,6 +193,15 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       .maybeSingle<MotherRow>();
 
     if (error || !mother?.is_active) {
+      if (error) {
+        // network failure or other DB error - try cache
+        const cachedProfileStr = await AsyncStorage.getItem("maasheba.mother_profile_cache").catch(() => null);
+        if (cachedProfileStr) {
+          try {
+            return JSON.parse(cachedProfileStr);
+          } catch {}
+        }
+      }
       if (error && (error.message.includes("verification_status") || error.message.includes("column") || error.code === "PGRST204")) {
         const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
         const isDemo = motherId === "mother-demo-id" || motherId === "60000000-0000-0000-0000-000000000002";
@@ -190,7 +221,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       return null;
     }
 
-    return {
+    const profile: MotherProfile = {
       id: mother.id,
       name: mother.name,
       patientId: mother.patient_id,
@@ -202,7 +233,17 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       chwPhone: mother.chw_phone,
       rejectionReason: mother.rejection_reason
     };
+
+    await AsyncStorage.setItem("maasheba.mother_profile_cache", JSON.stringify(profile)).catch(() => undefined);
+    return profile;
   } catch (err: any) {
+    const cachedProfileStr = await AsyncStorage.getItem("maasheba.mother_profile_cache").catch(() => null);
+    if (cachedProfileStr) {
+      try {
+        return JSON.parse(cachedProfileStr);
+      } catch {}
+    }
+
     const errMsg = err?.message || "";
     if (errMsg.includes("verification_status") || errMsg.includes("column")) {
       const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));

@@ -117,7 +117,14 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                 </tr>
               ) : (
                 filteredPatients.map((row) => (
-                  <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors">
+                  <tr
+                    key={row.id}
+                    onClick={() => {
+                      setTargetMother(row);
+                      setAssignModalOpen(true);
+                    }}
+                    className="hover:bg-surface-container-low/60 transition-colors cursor-pointer"
+                  >
                     <td className="whitespace-nowrap px-6 py-3.5">
                       <div className="font-bold text-on-surface">{row.name}</div>
                       <div className="text-[11px] font-semibold text-on-surface-variant">{row.patient_id ? `Patient ${row.patient_id}` : "No patient record yet"}</div>
@@ -148,7 +155,8 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                     </td>
                     <td className="whitespace-nowrap px-6 py-3.5">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setTargetMother(row);
                           setAssignModalOpen(true);
                         }}

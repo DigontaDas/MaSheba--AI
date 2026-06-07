@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Patient, RiskLevel } from "@/types/schema";
 import { saveSession } from "./secureSession";
 import { upsertPatients } from "@/db/patients";
@@ -18,8 +19,10 @@ export const supabase = createClient(
   requireEnv(supabaseAnonKey, "EXPO_PUBLIC_SUPABASE_ANON_KEY"),
   {
     auth: {
-      autoRefreshToken: false,
-      persistSession: false
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false
     }
   }
 );

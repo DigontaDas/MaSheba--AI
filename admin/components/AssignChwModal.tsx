@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { ChwRow, MotherRegistryRow } from "@/utils/admin-types";
 import { formatBilingualChw } from "@/utils/translations";
 
@@ -8,7 +8,7 @@ type AssignChwModalProps = {
   isOpen: boolean;
   onClose: () => void;
   mother: MotherRegistryRow;
-  chws: ChwRow[];
+  chws?: ChwRow[]; // Keep optional for backwards compatibility
   onSuccess: (updatedRow: MotherRegistryRow) => void;
 };
 
@@ -16,37 +16,55 @@ export function AssignChwModal({
   isOpen,
   onClose,
   mother,
-  chws,
   onSuccess,
 }: AssignChwModalProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [fetchedChws, setFetchedChws] = useState<ChwRow[]>([]);
+  const [isLoadingChws, setIsLoadingChws] = useState(false);
   const [selectedChwId, setSelectedChwId] = useState("");
   const [age, setAge] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch CHWs client-side from the API endpoint
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingChws(true);
+      setError("");
+      fetch("/dashboard/patients/chws")
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load CHWs.");
+          return res.json();
+        })
+        .then((data) => {
+          setFetchedChws(data.chws || []);
+        })
+        .catch((err) => {
+          setError(err.message || "Could not retrieve CHW list.");
+        })
+        .finally(() => {
+          setIsLoadingChws(false);
+        });
+    }
+  }, [isOpen]);
+
+  // Sync modal input state with the active mother
+  useEffect(() => {
+    if (isOpen && mother) {
+      setSelectedChwId(mother.chw_id || "");
+      setAge(mother.age?.toString() || "");
+    }
+  }, [isOpen, mother]);
+
   // Filter for approved and active CHWs
   const approvedActiveChws = useMemo(() => {
-    return chws.filter(
+    return fetchedChws.filter(
       (c) => c.is_active && c.verification_status === "APPROVED"
     );
-  }, [chws]);
-
-  // Search filter
-  const filteredChws = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return approvedActiveChws;
-    return approvedActiveChws.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.union_name.toLowerCase().includes(q) ||
-        c.upazila.toLowerCase().includes(q)
-    );
-  }, [approvedActiveChws, searchQuery]);
+  }, [fetchedChws]);
 
   const selectedChw = useMemo(() => {
-    return approvedActiveChws.find((c) => c.chw_id === selectedChwId);
-  }, [approvedActiveChws, selectedChwId]);
+    return fetchedChws.find((c) => c.chw_id === selectedChwId);
+  }, [fetchedChws, selectedChwId]);
 
   if (!isOpen) return null;
 
@@ -115,11 +133,56 @@ export function AssignChwModal({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors cursor-pointer text-on-surface-variant"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
+        </div>
+
+        {/* Mother Details Card */}
+        <div className="px-6 py-4 bg-surface-container-low border-b border-outline-variant grid grid-cols-2 gap-4 text-xs">
+          <div>
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Phone Number</p>
+            <p className="font-semibold text-on-surface mt-0.5">{mother.phone || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Verification Status</p>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-bold border mt-0.5 ${
+              mother.verification_status === "VERIFIED"
+                ? "bg-primary-container text-on-primary-container border-primary-container"
+                : mother.verification_status === "PENDING"
+                ? "bg-secondary-container text-on-secondary-container border-secondary-container"
+                : "bg-error-container text-on-error-container border-error-container"
+            }`}>
+              {mother.verification_status || "PENDING"}
+            </span>
+          </div>
+          <div>
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Gestational Age</p>
+            <p className="font-bold text-on-surface mt-0.5">{mother.gestational_age_weeks !== null && mother.gestational_age_weeks !== undefined ? `${mother.gestational_age_weeks} weeks` : "Not set"}</p>
+          </div>
+          <div>
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Pregnancy Risk Level</p>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-bold border mt-0.5 ${
+              mother.last_risk_level === "HIGH"
+                ? "bg-error text-on-error border-error"
+                : mother.last_risk_level === "MODERATE"
+                ? "bg-secondary-container text-on-secondary-container border-secondary-container"
+                : mother.last_risk_level === "LOW"
+                ? "bg-primary-container text-on-primary-container border-primary-container"
+                : "bg-surface-container-low text-on-surface-variant border-outline-variant"
+            }`}>
+              {mother.last_risk_level || "Not assessed"}
+            </span>
+          </div>
+          <div className="col-span-2">
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Currently Assigned CHW</p>
+            <p className="font-bold text-primary mt-0.5">
+              {mother.chw_name ? `${mother.chw_name} (${mother.chw_id})` : "No CHW currently assigned"}
+            </p>
+          </div>
         </div>
 
         {/* Form */}
@@ -131,64 +194,31 @@ export function AssignChwModal({
             </div>
           )}
 
-          {/* CHW Search and Select */}
+          {/* CHW Dropdown Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+            <label htmlFor="chw-select" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
               Select Community Health Worker
             </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
-                search
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search CHW name, union..."
-                className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl font-body-md text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-on-surface-variant/50"
-              />
-            </div>
-
-            {/* CHW List */}
-            <div className="border border-outline-variant rounded-xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-outline-variant bg-surface-container-lowest mt-1">
-              {filteredChws.length === 0 ? (
-                <div className="p-4 text-center text-xs text-on-surface-variant font-medium">
-                  No approved and active CHWs found.
-                </div>
-              ) : (
-                filteredChws.map((chw) => {
-                  const isSelected = selectedChwId === chw.chw_id;
-                  return (
-                    <button
-                      key={chw.chw_id}
-                      type="button"
-                      onClick={() => setSelectedChwId(chw.chw_id)}
-                      className={`w-full px-4 py-3 flex items-center justify-between text-left transition-all hover:bg-surface-container-low cursor-pointer ${
-                        isSelected ? "bg-primary-container/25 border-l-4 border-l-primary" : ""
-                      }`}
-                    >
-                      <div>
-                        <p className="font-bold text-sm text-on-surface">
-                          {formatBilingualChw(chw.name)}
-                        </p>
-                        <p className="text-[11px] text-on-surface-variant">
-                          Union: {chw.union_name} • {chw.upazila}
-                        </p>
-                      </div>
-                      {isSelected ? (
-                        <span className="material-symbols-outlined text-primary text-[20px]">
-                          check_circle
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-on-surface-variant font-bold uppercase tabular-nums">
-                          {chw.patient_count} patients
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            {isLoadingChws ? (
+              <div className="text-sm text-on-surface-variant py-2.5 flex items-center gap-2">
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></span>
+                Loading CHWs...
+              </div>
+            ) : (
+              <select
+                id="chw-select"
+                value={selectedChwId}
+                onChange={(e) => setSelectedChwId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl font-body-md text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer text-on-surface bg-no-repeat"
+              >
+                <option value="" className="text-on-surface-variant">-- Select a CHW --</option>
+                {approvedActiveChws.map((chw) => (
+                  <option key={chw.chw_id} value={chw.chw_id} className="text-on-surface">
+                    {formatBilingualChw(chw.name)} ({chw.union_name} Union, {chw.upazila}) — {chw.patient_count} patients
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Age Input (Unlinked Mothers Only) */}
@@ -242,7 +272,7 @@ export function AssignChwModal({
               disabled={isSubmitting}
               className="flex-1 py-2.5 rounded-full bg-primary text-on-primary font-label-lg text-sm text-center font-bold hover:bg-surface-tint transition disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? "Assigning..." : "Confirm"}
+              {isSubmitting ? "Assigning..." : "Assign CHW"}
             </button>
           </div>
         </form>

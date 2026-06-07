@@ -1,3 +1,5 @@
+"use server";
+
 import { requireAdminBearerToken } from "@/utils/admin-auth";
 import type { AuditEvent, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest } from "@/utils/admin-types";
 
@@ -111,7 +113,7 @@ export async function getAuditEvents(): Promise<AuditEvent[]> {
   return payload.events;
 }
 
-export function exportUrl(format: "csv" | "pdf"): string {
+export async function exportUrl(format: "csv" | "pdf"): Promise<string> {
   return `/api/admin/export?format=${format}`;
 }
 

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { clearRoleSession, saveMotherId, saveUserRole } from "@/auth/roleSession";
+import * as Network from "expo-network";
+import { clearRoleSession, saveMotherId, saveUserRole, getUserRole, getMotherId } from "@/auth/roleSession";
 import { clearSession, getSession } from "@/auth/secureSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { colors } from "@/theme";
@@ -22,6 +23,22 @@ async function routeFromStoredSession() {
   if (!storedSession) {
     router.replace("/(auth)/login");
     return;
+  }
+
+  // On app launch, if network is unreachable, attempt offline bypass for Mother users
+  const networkState = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
+  const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false;
+
+  if (isOffline) {
+    const role = await getUserRole();
+    if (role === "MOTHER") {
+      const motherId = await getMotherId();
+      if (motherId) {
+        await saveUserRole("MOTHER");
+        router.replace("/(mother-tabs)/home");
+        return;
+      }
+    }
   }
 
   const { error: sessionError } = await supabase.auth.setSession({
