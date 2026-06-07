@@ -1,13 +1,10 @@
 import { NativeModules, LogBox } from "react-native";
 
 // Ignore developer bridge and duplicate autolinking logs
-LogBox.ignoreAllLogs(true);
 LogBox.ignoreLogs([
   "Tried to insert a NativeModule into the bridge's",
   "Open debugger to view warnings."
 ]);
-
-
 
 import "@/sync/backgroundSync";
 import { useEffect } from "react";

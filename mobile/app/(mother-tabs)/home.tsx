@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { MotherDashboard } from "@/features/mother/MotherDashboard";
 import { getCurrentMotherProfile, type MotherProfile } from "@/auth/roleSession";
@@ -23,15 +24,20 @@ export default function MotherHomeScreen() {
         const p = await getCurrentMotherProfile();
         setProfile(p);
         
-        if (!p || !p.lmpDate || p.verificationStatus === "") {
+        if (!p || !p.lmpDate) {
           // No profile configured yet, redirect to setup
           router.replace("/mother-setup");
           return;
         }
 
         if (p.verificationStatus === "VERIFIED") {
-          // Schedule visit reminder
-          scheduleReminder("📅 পরিদর্শন আজ", "আজ আপনার স্বাস্থ্যকর্মী আসবেন", 8, 0, false, "maasheba-reminders");
+          const todayStr = new Date().toISOString().split("T")[0];
+          const lastScheduledDate = await AsyncStorage.getItem("maasheba.last_scheduled_visit_reminder_date");
+          if (lastScheduledDate !== todayStr) {
+            // Schedule visit reminder
+            await scheduleReminder("📅 পরিদর্শন আজ", "আজ আপনার স্বাস্থ্যকর্মী আসবেন", 8, 0, false, "maasheba-reminders");
+            await AsyncStorage.setItem("maasheba.last_scheduled_visit_reminder_date", todayStr);
+          }
         }
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : copy.common.loadFailed);
