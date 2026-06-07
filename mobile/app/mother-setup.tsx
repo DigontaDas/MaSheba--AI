@@ -21,9 +21,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 import { getLmpDateFromWeeks } from "@/utils/pregnancy";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
+import { base64ToBlob } from "@/utils/base64";
 import * as ImagePicker from "expo-image-picker";
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
 
 export default function MotherSetupScreen() {
   const { language: lang } = useLanguage();
@@ -58,25 +60,6 @@ export default function MotherSetupScreen() {
     }).catch(() => undefined);
   }, []);
 
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-function base64ToBlob(base64: string, mimeType: string): Blob {
-  const str = base64.replace(/=+$/, '');
-  const len = str.length;
-  const bytes = new Uint8Array(((len * 3) / 4) | 0);
-  let p = 0;
-  for (let i = 0; i < len; i += 4) {
-    const encoded1 = chars.indexOf(str[i]);
-    const encoded2 = chars.indexOf(str[i + 1]);
-    const encoded3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
-    const encoded4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
-
-    const value = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
-    bytes[p++] = (value >> 16) & 255;
-    if (i + 2 < len) bytes[p++] = (value >> 8) & 255;
-    if (i + 3 < len) bytes[p++] = value & 255;
-  }
-  return new Blob([bytes], { type: mimeType });
-}
 
   const handleSelectMockCertificate = (type: string) => {
     setLoading(true);
@@ -184,7 +167,7 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
           chw_phone: hasChw && !isEmail ? cleanChwVal : null,
           lmp_date: lmpDate,
           gestational_age_weeks: weeks,
-          verification_status: "VERIFIED"
+          verification_status: "PENDING"
         })
         .eq("auth_user_id", user.id);
 

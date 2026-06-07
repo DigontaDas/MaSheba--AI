@@ -1,6 +1,7 @@
 import { OFFLINE_QA_CATEGORIES } from "@/data/offlineQaCategories";
 import type { OfflineQa, OfflineQaTrimester } from "@/types/schema";
-import { getDB, initDB } from "./database";
+import { getDB } from "./database";
+import { ensureLocalDbReady } from "./localDbAccess";
 
 type OfflineQaRow = Omit<OfflineQa, "see_doctor" | "emergency"> & {
   see_doctor: number;
@@ -36,7 +37,7 @@ export async function getOfflineQaByTopic(params: {
   topic: string;
   trimester: OfflineQaTrimester;
 }): Promise<OfflineQa[]> {
-  await initDB();
+  await ensureLocalDbReady();
   const db = await getDB();
   const rows = await db.getAllAsync<OfflineQaRow>(
     `SELECT * FROM offline_qa
@@ -49,7 +50,7 @@ export async function getOfflineQaByTopic(params: {
 }
 
 export async function getEmergencyOfflineQa(): Promise<OfflineQa[]> {
-  await initDB();
+  await ensureLocalDbReady();
   const db = await getDB();
   const rows = await db.getAllAsync<OfflineQaRow>(
     "SELECT * FROM offline_qa WHERE emergency = 1 ORDER BY topic ASC, id ASC"

@@ -31,20 +31,64 @@ export interface ChatMother {
 }
 
 export async function listAssignedMothers(chwId: string): Promise<ChatMother[]> {
+  // Query mothers that have a patient row assigned to this CHW.
+  // The foreign key is mothers.patient_id → patients.id.
+  // Using !inner ensures only mothers with a matching patient row are returned.
   const { data, error } = await supabase
     .from("mothers")
-    .select("id,name,phone,patient_id,gestational_age_weeks,patient:patients(id,name,gestational_age_weeks,last_risk_level,chw_id)")
-    .eq("is_active", true);
+    .select("id,name,phone,patient_id,gestational_age_weeks,is_active,patient:patients!patient_id(id,name,gestational_age_weeks,last_risk_level,chw_id)")
+    .eq("is_active", true)
+    .eq("patients.chw_id", chwId);
 
-  if (error) throw error;
+  if (error) {
+    // Supabase PostgREST may not support filtering via joined table alias this way on all versions.
+    // Fallback: fetch all patients for this CHW, then fetch matching mothers.
+    const { data: patientData, error: patientErr } = await supabase
+      .from("patients")
+      .select("id,chw_id,name,gestational_age_weeks,last_risk_level")
+      .eq("chw_id", chwId);
+
+    if (patientErr) throw patientErr;
+
+    if (!patientData || patientData.length === 0) return [];
+
+    const patientIds = patientData.map((p: any) => p.id);
+    const { data: motherData, error: motherErr } = await supabase
+      .from("mothers")
+      .select("id,name,phone,patient_id,gestational_age_weeks")
+      .eq("is_active", true)
+      .in("patient_id", patientIds);
+
+    if (motherErr) throw motherErr;
+
+    return ((motherData ?? []) as any[]).map((mother: any) => {
+      const patientRow = patientData.find((p: any) => p.id === mother.patient_id);
+      return {
+        id: mother.id,
+        name: mother.name,
+        phone: mother.phone,
+        patient_id: mother.patient_id,
+        gestational_age_weeks: mother.gestational_age_weeks ?? patientRow?.gestational_age_weeks ?? null,
+        patient: patientRow
+          ? {
+              id: patientRow.id,
+              name: patientRow.name,
+              gestational_age_weeks: patientRow.gestational_age_weeks,
+              last_risk_level: patientRow.last_risk_level as "LOW" | "MODERATE" | "HIGH"
+            }
+          : null
+      };
+    });
+  }
 
   return ((data ?? []) as unknown as ChatMother[])
-    .filter((mother) => mother.patient && (mother.patient as ChatMother["patient"] & { chw_id?: string })?.chw_id === chwId)
+    .filter((m) => (m.patient as any)?.chw_id === chwId)
     .map((mother) => ({
       ...mother,
       gestational_age_weeks: mother.gestational_age_weeks ?? mother.patient?.gestational_age_weeks ?? null
     }));
 }
+
 
 export async function getMessages(chwId: string, motherId: string): Promise<ChatMessage[]> {
   const { data, error } = await supabase

@@ -28,6 +28,14 @@ export default function MotherChatScreen() {
     if (!profile) return;
     setMotherId(profile.id);
     if (profile.patientId) {
+      // For demo mothers with mock tokens, the Supabase query would fail (401).
+      // Short-circuit using the known demo patient -> CHW mapping.
+      const DEMO_PATIENT_ID = "11111111-1111-1111-1111-111111111102";
+      const DEMO_CHW_ID = "00000000-0000-0000-0000-0000000000a1";
+      if (profile.patientId === DEMO_PATIENT_ID) {
+        setChwId(DEMO_CHW_ID);
+        return;
+      }
       const { data } = await supabase
         .from("patients")
         .select("chw_id")

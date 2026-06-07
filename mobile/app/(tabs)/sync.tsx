@@ -13,6 +13,7 @@ import { runOutboxSync } from "@/sync/backgroundSync";
 import { notifyNow } from "@/notifications/notify";
 import { colors, radius, spacing, typography } from "@/theme";
 import { minutesSince } from "@/utils/time";
+import { useLanguage } from "@/context/LanguageContext";
 
 type Summary = {
   pending: number;
@@ -22,6 +23,7 @@ type Summary = {
 
 export default function SyncScreen() {
   const network = useNetworkState();
+  const { language } = useLanguage();
   const [summary, setSummary] = useState<Summary>({ pending: 0, failed: 0, lastSyncedAt: null });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function SyncScreen() {
       <OfflineStatusPanel
         isOffline={offline}
         pendingCount={summary.pending}
-        lastSyncedAt={minutesSince(summary.lastSyncedAt)}
+        lastSyncedAt={minutesSince(summary.lastSyncedAt, language)}
         onSync={syncNow}
       />
       <View style={styles.card}>

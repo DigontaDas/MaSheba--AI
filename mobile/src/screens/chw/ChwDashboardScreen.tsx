@@ -3,6 +3,8 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, TextInp
 import { router, useFocusEffect } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { getSession } from "@/auth/secureSession";
+import { clearSession } from "@/auth/secureSession";
+import { clearRoleSession } from "@/auth/roleSession";
 import { getLocalDbErrorMessage } from "@/db/localDbAccess";
 import { getOutboxSummary } from "@/db/outbox";
 import { getPatients } from "@/db/patients";
@@ -15,29 +17,10 @@ import type { Patient } from "@/types/schema";
 import { formatNumber } from "@/utils/localizedFormat";
 import { getInitials, getRiskBorderColor } from "./helpers";
 import { supabase } from "@/auth/supabaseAuth";
+import { base64ToBlob } from "@/utils/base64";
 import * as ImagePicker from "expo-image-picker";
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-function base64ToBlob(base64: string, mimeType: string): Blob {
-  const str = base64.replace(/=+$/, '');
-  const len = str.length;
-  const bytes = new Uint8Array(((len * 3) / 4) | 0);
-  let p = 0;
-  for (let i = 0; i < len; i += 4) {
-    const encoded1 = chars.indexOf(str[i]);
-    const encoded2 = chars.indexOf(str[i + 1]);
-    const encoded3 = i + 2 < len ? chars.indexOf(str[i + 2]) : 0;
-    const encoded4 = i + 3 < len ? chars.indexOf(str[i + 3]) : 0;
-
-    const value = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
-    bytes[p++] = (value >> 16) & 255;
-    if (i + 2 < len) bytes[p++] = (value >> 8) & 255;
-    if (i + 3 < len) bytes[p++] = value & 255;
-  }
-  return new Blob([bytes], { type: mimeType });
-}
 
 type Summary = {
   pending: number;
@@ -454,8 +437,6 @@ export default function ChwDashboardScreen() {
           <Pressable
             onPress={async () => {
               try {
-                const { clearRoleSession } = require("@/auth/roleSession");
-                const { clearSession } = require("@/auth/secureSession");
                 await supabase.auth.signOut().catch(() => undefined);
                 await Promise.all([clearSession(), clearRoleSession()]).catch(() => undefined);
               } catch (e) {

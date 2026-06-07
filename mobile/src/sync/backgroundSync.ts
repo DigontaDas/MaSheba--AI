@@ -20,6 +20,11 @@ export async function runOutboxSync(): Promise<{ processed: number; skipped: boo
     return { processed: 0, skipped: true };
   }
 
+  // Skip sync entirely for demo/offline mode — mock tokens are rejected by the backend with 401
+  if (session.accessToken === "mock-access-token") {
+    return { processed: 0, skipped: true };
+  }
+
   // Defensively check if the accessToken is expired or close to expiry, and refresh it
   if (isTokenExpired(session.accessToken)) {
     const refreshed = await refreshAndSaveSession(session.refreshToken);
