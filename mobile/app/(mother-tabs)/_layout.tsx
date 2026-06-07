@@ -16,6 +16,7 @@ export default function MotherTabsLayout() {
       <Tabs.Screen name="home" options={{ title: copy.common.home }} />
       <Tabs.Screen name="shotorkota" options={{ title: t("nav.shotorkota") }} />
       <Tabs.Screen name="nutrition" options={{ title: copy.common.nutrition }} />
+      <Tabs.Screen name="find-chw" options={{ title: t("nav.find-chw") }} />
       <Tabs.Screen name="chat" options={{ title: copy.common.chat }} />
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
       <Tabs.Screen name="alerts" options={{ href: null }} />

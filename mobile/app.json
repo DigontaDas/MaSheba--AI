@@ -20,7 +20,9 @@
         "backgroundColor": "#fcf6f2"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
 
@@ -28,7 +30,8 @@
       "bundleIdentifier": "com.maasheba.mobile",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "MaSheba uses speech recognition for optional voice input.",
-        "NSMicrophoneUsageDescription": "MaSheba uses the microphone for optional voice input."
+        "NSMicrophoneUsageDescription": "MaSheba uses the microphone for optional voice input.",
+        "NSLocationWhenInUseUsageDescription": "MaaSheba needs location access to find nearby health workers."
       }
     },
     "plugins": [

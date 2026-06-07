@@ -1,5 +1,5 @@
 import { requireAdminBearerToken } from "@/utils/admin-auth";
-import type { AuditEvent, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload } from "@/utils/admin-types";
+import type { AuditEvent, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest } from "@/utils/admin-types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localhost:8000";
 
@@ -119,5 +119,16 @@ export async function assignChw(motherId: string, chwId: string, age?: number): 
   return adminFetch<MotherRegistryRow>(`/api/v1/admin/mothers/${encodeURIComponent(motherId)}/chw-assignment`, {
     method: "PATCH",
     body: JSON.stringify({ chw_id: chwId, age }),
+  });
+}
+
+export async function getPendingRequests(): Promise<ConnectionRequest[]> {
+  return adminFetch<ConnectionRequest[]>("/api/v1/admin/connection-requests/pending");
+}
+
+export async function assignRequestChw(requestId: string, chwId: string): Promise<void> {
+  await adminFetch(`/api/v1/admin/connection-requests/${encodeURIComponent(requestId)}/assign`, {
+    method: "PATCH",
+    body: JSON.stringify({ chw_id: chwId }),
   });
 }

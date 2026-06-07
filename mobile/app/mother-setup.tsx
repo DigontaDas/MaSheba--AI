@@ -23,6 +23,7 @@ import { getLmpDateFromWeeks } from "@/utils/pregnancy";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { base64ToBlob } from "@/utils/base64";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
@@ -158,6 +159,20 @@ export default function MotherSetupScreen() {
       const hasChw = cleanChwVal.length > 0;
       const isEmail = hasChw && cleanChwVal.includes("@");
 
+      // Capture GPS location
+      let locationPoint: string | null = null;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced
+          });
+          locationPoint = `POINT(${loc.coords.longitude} ${loc.coords.latitude})`;
+        }
+      } catch (locErr) {
+        console.warn("Failed to capture location:", locErr);
+      }
+
       // 2. Update the mother's record (verified instantly)
       const { error: dbErr } = await supabase
         .from("mothers")
@@ -167,7 +182,8 @@ export default function MotherSetupScreen() {
           chw_phone: hasChw && !isEmail ? cleanChwVal : null,
           lmp_date: lmpDate,
           gestational_age_weeks: weeks,
-          verification_status: "PENDING"
+          verification_status: "PENDING",
+          location: locationPoint
         })
         .eq("auth_user_id", user.id);
 

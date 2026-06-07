@@ -13,7 +13,8 @@ const iconByRoute: Record<string, IconName> = {
   shotorkota: "warning",
   nutrition: "restaurant-menu",
   chat: "chat-bubble",
-  profile: "person"
+  profile: "person",
+  "find-chw": "location-on"
 };
 
 export function BottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {

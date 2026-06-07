@@ -889,3 +889,203 @@ def _simple_pdf(lines: list[str]) -> bytes:
         output.write(f"{offset:010d} 00000 n \n".encode())
     output.write(f"trailer << /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode())
     return output.getvalue()
+
+
+class ChwAssignBody(BaseModel):
+    chw_id: str
+
+
+@router.get("/connection-requests/pending", response_model=None)
+async def get_pending_connection_requests(
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> list[dict[str, Any]] | JSONResponse:
+    try:
+        # Fetch pending requests
+        requests = await _supabase_get(
+            settings,
+            "connection_requests",
+            select="id,mother_id,status,notes,created_at,mother_location",
+            query="&status=eq.pending&order=created_at.asc"
+        )
+        
+        if not requests:
+            return []
+            
+        mother_ids = sorted({r["mother_id"] for r in requests if r.get("mother_id")})
+        mothers_by_id = {}
+        if mother_ids:
+            mothers = await _supabase_get(
+                settings,
+                "mothers",
+                select="id,name",
+                query=f"&id=in.({_in_filter(mother_ids)})"
+            )
+            mothers_by_id = {m["id"]: m for m in mothers if m.get("id")}
+            
+        result = []
+        for r in requests:
+            mother = mothers_by_id.get(r.get("mother_id"), {})
+            # Parse geography point to lat/lng
+            lat, lng = None, None
+            loc = r.get("mother_location")
+            if loc and isinstance(loc, dict) and loc.get("type") == "Point" and isinstance(loc.get("coordinates"), list):
+                coords = loc["coordinates"]
+                if len(coords) >= 2:
+                    lng, lat = coords[0], coords[1]
+            elif isinstance(loc, str):
+                try:
+                    # Standard WKT fallback
+                    content = loc.replace("POINT(", "").replace(")", "").strip()
+                    parts = content.split()
+                    if len(parts) >= 2:
+                        lng = float(parts[0])
+                        lat = float(parts[1])
+                except Exception:
+                    pass
+
+            result.append({
+                "id": r["id"],
+                "mother_id": r["mother_id"],
+                "mother_name": mother.get("name") or "Unknown Mother",
+                "status": r["status"],
+                "notes": r.get("notes"),
+                "created_at": r["created_at"],
+                "lat": lat,
+                "lng": lng
+            })
+            
+        await audit(settings, admin, "admin.connection_requests.pending.read", "connection_requests")
+        return result
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/connection-requests/{request_id}/assign", response_model=None)
+async def assign_connection_request(
+    request_id: str,
+    body: ChwAssignBody,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "assign connection requests to CHWs")
+        
+        # 1. Fetch connection request
+        requests = await _supabase_get(
+            settings,
+            "connection_requests",
+            query=f"&id=eq.{quote(request_id)}"
+        )
+        if not requests:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Connection request not found.")
+        req = requests[0]
+        
+        if req.get("status") != "pending":
+            return error_response(status.HTTP_400_BAD_REQUEST, "INVALID_STATUS", "Connection request is not pending.")
+            
+        # 2. Fetch CHW
+        chw_id = body.chw_id
+        chws = await _supabase_get(settings, "chws", query=f"&id=eq.{quote(chw_id)}")
+        if not chws:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "CHW not found.")
+        chw = chws[0]
+        
+        # 3. Validate CHW is approved and active
+        if chw.get("verification_status") != "APPROVED" or not chw.get("is_active"):
+            return error_response(status.HTTP_400_BAD_REQUEST, "INVALID_CHW", "Assignment requires a verified and active CHW.")
+            
+        # 4. Fetch mother to see if she already has a patient record
+        mother_id = req["mother_id"]
+        mothers = await _supabase_get(settings, "mothers", query=f"&id=eq.{quote(mother_id)}")
+        if not mothers:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Mother not found.")
+        mother = mothers[0]
+        
+        patient_id = mother.get("patient_id")
+        
+        chw_email = None
+        chw_phone = None
+        if chw.get("auth_user_id"):
+            try:
+                auth_url = f"{_base_url(settings)}/auth/v1/admin/users/{chw['auth_user_id']}"
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    auth_resp = await client.get(auth_url, headers=_service_headers(settings))
+                if auth_resp.status_code == 200:
+                    auth_data = auth_resp.json()
+                    chw_email = auth_data.get("email")
+                    chw_phone = auth_data.get("phone")
+            except Exception:
+                pass
+                
+        # Link or create Patient
+        if not patient_id:
+            patient_payload = {
+                "chw_id": chw_id,
+                "name": mother["name"],
+                "age": 25,
+                "gestational_age_weeks": mother.get("gestational_age_weeks") or 12,
+                "last_risk_level": "LOW",
+            }
+            patient = await _supabase_post(settings, "patients", patient_payload)
+            patient_id = patient.get("id")
+            if not patient_id:
+                return error_response(status.HTTP_502_BAD_GATEWAY, "DATABASE_WRITE_FAILED", "Failed to create patient record.")
+            
+            # Update mothers table
+            await _supabase_patch(
+                settings,
+                "mothers",
+                mother_id,
+                {
+                    "patient_id": patient_id,
+                    "chw_email": chw_email,
+                    "chw_phone": chw_phone,
+                },
+            )
+        else:
+            # Update patient record with new CHW ID
+            await _supabase_patch(settings, "patients", patient_id, {"chw_id": chw_id})
+            
+            # Sync mothers table
+            await _supabase_patch(
+                settings,
+                "mothers",
+                mother_id,
+                {
+                    "chw_email": chw_email,
+                    "chw_phone": chw_phone,
+                },
+            )
+            
+        # 5. Update connection_requests status to assigned
+        now_str = datetime.now(UTC).isoformat()
+        updated_request = await _supabase_patch(
+            settings,
+            "connection_requests",
+            request_id,
+            {
+                "chw_id": chw_id,
+                "status": "assigned",
+                "assigned_at": now_str,
+                "updated_at": now_str
+            }
+        )
+        
+        # 6. Audit
+        await audit(
+            settings,
+            admin,
+            action="admin.connection_request.assign",
+            entity_type="connection_requests",
+            entity_id=request_id,
+            metadata={
+                "mother_id": mother_id,
+                "chw_id": chw_id,
+                "patient_id": patient_id
+            }
+        )
+        
+        return updated_request
+    except AdminAuthError as error:
+        return _handle_admin_error(error)

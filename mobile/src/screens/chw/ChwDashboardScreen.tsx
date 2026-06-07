@@ -19,6 +19,7 @@ import { getInitials, getRiskBorderColor } from "./helpers";
 import { supabase } from "@/auth/supabaseAuth";
 import { base64ToBlob } from "@/utils/base64";
 import * as ImagePicker from "expo-image-picker";
+import { updateChwLocation } from "@/api/locationService";
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
@@ -88,6 +89,12 @@ export default function ChwDashboardScreen() {
           working_area: chw.union_name,
           certificate_url: chw.certificate_url
         });
+
+        if (chw.is_active && chw.verification_status === "APPROVED") {
+          updateChwLocation(session.chwId).catch((err) => {
+            console.warn("Failed to update CHW location:", err);
+          });
+        }
       }
     } catch (err) {
       console.warn("Failed to fetch live CHW verification status", err);

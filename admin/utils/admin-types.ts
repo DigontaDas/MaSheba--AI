@@ -110,3 +110,14 @@ export type SummaryPayload = {
   risk_summary: RiskSummaryRow[];
   heatmap: HeatmapRow[];
 };
+
+export type ConnectionRequest = {
+  id: string;
+  mother_id: string;
+  mother_name: string;
+  status: "pending" | "assigned" | "active" | "completed" | "cancelled";
+  notes: string | null;
+  created_at: string;
+  lat: number | null;
+  lng: number | null;
+};
