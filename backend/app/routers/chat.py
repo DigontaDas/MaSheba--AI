@@ -4,8 +4,7 @@ import base64
 import os
 import sys
 import uuid
-from typing import Any
-from fastapi import APIRouter, HTTPException, File, UploadFile, Request, Depends, Header, status
+from fastapi import APIRouter, HTTPException, File, UploadFile, Request, Depends, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import httpx

@@ -35,36 +35,86 @@ export function LoginForm() {
       aria-label="Admin login form"
       onSubmit={handleSubmit}
     >
-      <div>
-        <label className="font-label-lg text-label-lg text-on-surface-variant" htmlFor="email">
+      {/* Username or Email */}
+      <div className="flex flex-col gap-2">
+        <label
+          className="text-sm font-medium"
+          htmlFor="email"
+          style={{ color: "rgba(195, 220, 220, 0.85)", fontFamily: "var(--font-work-sans)" }}
+        >
           Username or Email
         </label>
         <input
           autoComplete="username"
-          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] duration-150 ease-out"
+          className="h-11 w-full rounded-lg px-4 text-sm outline-none transition-all duration-150"
           id="email"
           name="email"
           required
+          style={{
+            background: "#0d1818",
+            border: "1px solid rgba(78, 205, 196, 0.2)",
+            color: "#e8f5f5",
+            fontFamily: "var(--font-hind-siliguri)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.65)";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(78, 205, 196, 0.1)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.2)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         />
       </div>
-      <div>
-        <label className="font-label-lg text-label-lg text-on-surface-variant" htmlFor="password">
+
+      {/* Password */}
+      <div className="flex flex-col gap-2">
+        <label
+          className="text-sm font-medium"
+          htmlFor="password"
+          style={{ color: "rgba(195, 220, 220, 0.85)", fontFamily: "var(--font-work-sans)" }}
+        >
           Password
         </label>
         <input
           autoComplete="current-password"
-          className="mt-1.5 h-11 w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-3 font-body-md text-body-md text-on-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] duration-150 ease-out"
+          className="h-11 w-full rounded-lg px-4 text-sm outline-none transition-all duration-150"
           id="password"
           name="password"
           required
           type="password"
+          style={{
+            background: "#0d1818",
+            border: "1px solid rgba(78, 205, 196, 0.2)",
+            color: "#e8f5f5",
+            fontFamily: "var(--font-hind-siliguri)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.65)";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(78, 205, 196, 0.1)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.2)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         />
       </div>
+
+      {/* Error message */}
       {clientError || state.error ? (
-        <p className="rounded-lg border border-error-container bg-error-container/20 px-3 py-2 font-body-md text-body-md text-error">
+        <p
+          className="rounded-lg px-4 py-2.5 text-sm"
+          style={{
+            background: "rgba(186, 26, 26, 0.12)",
+            border: "1px solid rgba(186, 26, 26, 0.3)",
+            color: "#ff8a80",
+            fontFamily: "var(--font-hind-siliguri)",
+          }}
+        >
           {clientError || state.error}
         </p>
       ) : null}
+
       <SubmitButton />
     </form>
   );
@@ -74,11 +124,43 @@ function SubmitButton() {
   const status = useFormStatus();
   return (
     <button
-      className="h-11 rounded-full bg-primary px-4 font-label-lg text-label-lg text-on-primary transition-all duration-150 ease-out hover:bg-surface-tint active:scale-[0.96] hover:shadow-md hover:shadow-primary/10 disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+      className="h-11 w-full rounded-full text-sm font-semibold tracking-wide transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 mt-1"
       disabled={status.pending}
       type="submit"
+      style={{
+        background: status.pending
+          ? "rgba(78, 205, 196, 0.6)"
+          : "linear-gradient(90deg, #3ec9c0 0%, #4ecdc4 100%)",
+        color: "#051414",
+        fontFamily: "var(--font-work-sans)",
+        boxShadow: status.pending
+          ? "none"
+          : "0 0 20px rgba(78, 205, 196, 0.35), 0 4px 12px rgba(78, 205, 196, 0.2)",
+      }}
+      onMouseEnter={(e) => {
+        if (!status.pending) {
+          e.currentTarget.style.boxShadow = "0 0 32px rgba(78, 205, 196, 0.55), 0 8px 20px rgba(78, 205, 196, 0.3)";
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!status.pending) {
+          e.currentTarget.style.boxShadow = "0 0 20px rgba(78, 205, 196, 0.35), 0 4px 12px rgba(78, 205, 196, 0.2)";
+          e.currentTarget.style.transform = "translateY(0)";
+        }
+      }}
     >
-      {status.pending ? "Signing in..." : "Sign in"}
+      {status.pending ? (
+        <>
+          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Signing in...
+        </>
+      ) : (
+        "Sign in"
+      )}
     </button>
   );
 }
