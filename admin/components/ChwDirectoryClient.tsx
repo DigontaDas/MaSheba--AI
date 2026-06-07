@@ -85,10 +85,7 @@ export function ChwDirectoryClient({
   const selectedChw = chws.find((c) => c.chw_id === selectedChwId) || chws[0];
   const selectedPending = pendingChws.find((c) => c.id === selectedPendingId) || pendingChws[0];
 
-  // Access toggles (client-side state)
-  const [clinicalAccess, setClinicalAccess] = useState(true);
-  const [referralAuth, setReferralAuth] = useState(true);
-  const [offlineExport, setOfflineExport] = useState(false);
+
 
   // Status toggle handler
   function handleToggleStatus(chwId: string, isActive: boolean) {
@@ -517,16 +514,18 @@ export function ChwDirectoryClient({
                         <p className="font-bold text-on-surface">MFA Status</p>
                         <p className="text-xs text-on-surface-variant">App Authenticator</p>
                       </div>
-                      <span className="text-primary font-bold flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">verified</span>
-                        {lang === "bn" ? "সক্রিয়" : "Active"}
+                      <span className="text-on-surface-variant font-bold flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">gpp_maybe</span>
+                        {lang === "bn" ? "কনফিগার করা হয়নি" : "Not configured"}
                       </span>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
                     <div className="flex justify-between items-center text-sm">
                       <div>
                         <p className="font-bold text-on-surface">Device Registered</p>
-                        <p className="text-xs text-on-surface-variant">Xiaomi Redmi Note 12</p>
+                        <p className="text-xs text-on-surface-variant">
+                          — ({lang === "bn" ? "নিবন্ধিত নয়" : "Not captured"})
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -537,68 +536,8 @@ export function ChwDirectoryClient({
                     <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
                     {lang === "bn" ? "অ্যাক্সেস অনুমতি" : "Access Permissions"}
                   </h4>
-                  <div className="flex flex-col gap-4">
-                    <label className="flex items-start justify-between cursor-pointer group">
-                      <div className="pr-4">
-                        <p className="font-bold text-on-surface group-hover:text-primary transition-colors text-sm">
-                          Clinical Access
-                        </p>
-                        <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">
-                          Can view detailed maternal medical history.
-                        </p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={clinicalAccess}
-                          onChange={(e) => setClinicalAccess(e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-5 bg-surface-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                      </div>
-                    </label>
-                    <div className="h-px w-full bg-outline-variant/30"></div>
-
-                    <label className="flex items-start justify-between cursor-pointer group">
-                      <div className="pr-4">
-                        <p className="font-bold text-on-surface group-hover:text-primary transition-colors text-sm">
-                          Referral Authority
-                        </p>
-                        <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">
-                          Can initiate direct clinic referrals.
-                        </p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={referralAuth}
-                          onChange={(e) => setReferralAuth(e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-5 bg-surface-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                      </div>
-                    </label>
-                    <div className="h-px w-full bg-outline-variant/30"></div>
-
-                    <label className="flex items-start justify-between cursor-pointer group">
-                      <div className="pr-4">
-                        <p className="font-bold text-on-surface group-hover:text-primary transition-colors text-sm">
-                          Data Export Auth
-                        </p>
-                        <p className="text-xs text-on-surface-variant mt-0.5 leading-tight">
-                          Can download reports offline.
-                        </p>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={offlineExport}
-                          onChange={(e) => setOfflineExport(e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-10 h-5 bg-surface-variant rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                      </div>
-                    </label>
+                  <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center font-bold text-xs text-on-surface-variant">
+                    {lang === "bn" ? "অনুমোদনের পরে অ্যাক্সেস দেওয়া হবে।" : "Permissions are granted on approval."}
                   </div>
                 </section>
               </div>
