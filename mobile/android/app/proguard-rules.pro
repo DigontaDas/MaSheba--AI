@@ -7,20 +7,28 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# react-native-reanimated
+# ---- Output optimisation ----
+# Move all obfuscated classes into the root package → smaller DEX
+-repackageclasses ''
+# Preserve source file names and line numbers for readable crash stack traces
+-keepattributes SourceFile,LineNumberTable
+# Suppress note spam that can mask real errors
+-dontnote **
+
+# ---- React Native / Expo core ----
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 -keep class com.facebook.react.bridge.** { *; }
 -keep class com.facebook.react.uimanager.** { *; }
 -keep class expo.modules.** { *; }
--keep class ai.onnxruntime.** { *; }
--keep class com.microsoft.onnxruntime.** { *; }
--keep class com.reactnativeonnxruntime.** { *; }
 -keep class com.swmansion.worklets.** { *; }
 -keep class kotlin.Metadata { *; }
 
-# Add any project specific keep options here:
+# ---- ONNX Runtime (public API only — internal debug methods stripped by R8) ----
+-keep class ai.onnxruntime.** { public *; }
+-keep class com.microsoft.onnxruntime.** { public *; }
+-keep class com.reactnativeonnxruntime.** { *; }
 
-# Avoid treatment of missing optional references as fatal by R8
+# ---- Suppress known missing optional references ----
 -dontwarn expo.modules.core.interfaces.services.KeepAwakeManager
 -dontwarn expo.modules.kotlin.**
