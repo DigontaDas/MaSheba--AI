@@ -1,7 +1,6 @@
 import { ChwDirectoryClient } from "@/components/ChwDirectoryClient";
 import { getChws, getPendingChws } from "@/utils/admin-api";
 import { getTranslation } from "@/utils/translations";
-import { getServerLanguage } from "@/utils/translations-server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +9,12 @@ export default async function ChwsPage() {
     getChws(),
     getPendingChws().catch(() => []),
   ]);
-  const lang = await getServerLanguage();
-  const t = getTranslation(lang);
+  const t = getTranslation();
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={t.chw_directory} description={t.chw_directory_desc} />
-      <ChwDirectoryClient chws={chws} pendingChws={pendingChws} lang={lang} t={t} />
+      <ChwDirectoryClient chws={chws} pendingChws={pendingChws} t={t} />
     </div>
   );
 }

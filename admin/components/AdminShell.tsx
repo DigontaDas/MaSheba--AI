@@ -3,12 +3,11 @@ import { logoutAction } from "@/app/login/actions";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { ConsoleControls } from "@/components/ConsoleControls";
 import { SidebarNav } from "@/components/SidebarNav";
+import { MobileNav } from "@/components/MobileNav";
 import { getTranslation } from "@/utils/translations";
-import { getServerLanguage } from "@/utils/translations-server";
 
 export async function AdminShell({ children }: { children: React.ReactNode }) {
-  const lang = await getServerLanguage();
-  const t = getTranslation(lang);
+  const t = getTranslation();
 
   const navItems = [
     { href: "/dashboard", label: t.overview, icon: "map" },
@@ -25,6 +24,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-on-background font-body-md flex overflow-hidden">
+      {/* Sidebar - Desktop Only */}
       <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface border-r border-outline-variant py-6 z-20">
         <div className="px-6 mb-8">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -56,8 +56,12 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col md:ml-64 h-screen overflow-hidden">
-        <header className="flex justify-between items-center w-full px-6 h-16 bg-surface border-b border-outline-variant sticky top-0 z-10">
-          <div className="flex items-center gap-4">
+        {/* Sticky Header */}
+        <header className="flex justify-between items-center w-full px-4 md:px-6 h-16 bg-surface border-b border-outline-variant sticky top-0 z-10 gap-3">
+          <div className="flex items-center gap-3">
+            {/* Hamburger Button for Mobile Viewports */}
+            <MobileNav items={navItems} />
+
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">

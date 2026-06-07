@@ -3,19 +3,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ChwRow, PendingChwRow } from "@/utils/admin-types";
-import { formatBilingualChw, getTranslation, type Language } from "@/utils/translations";
+import { formatBilingualChw, getTranslation } from "@/utils/translations";
 
 type Translation = ReturnType<typeof getTranslation>;
 
 export function ChwDirectoryClient({
   chws,
   pendingChws = [],
-  lang,
   t,
 }: {
   chws: ChwRow[];
   pendingChws: PendingChwRow[];
-  lang: Language;
   t: Translation;
 }) {
   const router = useRouter();
@@ -36,19 +34,11 @@ export function ChwDirectoryClient({
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [isSubmittingVerification, setIsSubmittingVerification] = useState(false);
 
-  const toLocalNum = (num: number) => {
-    if (lang !== "bn") return num.toString();
-    const bnNums = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-    return num
-      .toString()
-      .split("")
-      .map((char) => bnNums[Number.parseInt(char, 10)] || char)
-      .join("");
-  };
+  const formatCount = (num: number) => num.toString();
 
   const formatDate = (isoString: string) => {
     try {
-      return new Date(isoString).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", {
+      return new Date(isoString).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -84,8 +74,6 @@ export function ChwDirectoryClient({
   // Find currently selected CHW
   const selectedChw = chws.find((c) => c.chw_id === selectedChwId) || chws[0];
   const selectedPending = pendingChws.find((c) => c.id === selectedPendingId) || pendingChws[0];
-
-
 
   // Status toggle handler
   function handleToggleStatus(chwId: string, isActive: boolean) {
@@ -139,11 +127,11 @@ export function ChwDirectoryClient({
               groups
             </span>
             <span className="font-label-sm text-label-sm uppercase tracking-wider">
-              {lang === "bn" ? "সক্রিয় স্বাস্থ্যকর্মী" : "Active Staff"}
+              Active Staff
             </span>
           </div>
           <span className="font-headline-lg text-headline-lg text-on-surface tabular-nums">
-            {toLocalNum(chws.filter((c) => c.is_active).length)}
+            {formatCount(chws.filter((c) => c.is_active).length)}
           </span>
         </div>
 
@@ -153,11 +141,11 @@ export function ChwDirectoryClient({
               pending_actions
             </span>
             <span className="font-label-sm text-label-sm uppercase tracking-wider">
-              {lang === "bn" ? "নিষ্ক্রিয় কর্মী" : "Inactive Staff"}
+              Inactive Staff
             </span>
           </div>
           <span className="font-headline-lg text-headline-lg text-on-surface tabular-nums">
-            {toLocalNum(chws.filter((c) => !c.is_active).length)}
+            {formatCount(chws.filter((c) => !c.is_active).length)}
           </span>
         </div>
 
@@ -167,11 +155,11 @@ export function ChwDirectoryClient({
               gpp_maybe
             </span>
             <span className="font-label-sm text-label-sm uppercase tracking-wider">
-              {lang === "bn" ? "অনুমোদন অপেক্ষমাণ" : "Pending Approvals"}
+              Pending Approvals
             </span>
           </div>
           <span className="font-headline-lg text-headline-lg text-error tabular-nums">
-            {toLocalNum(pendingChws.length)}
+            {formatCount(pendingChws.length)}
           </span>
         </div>
 
@@ -181,10 +169,10 @@ export function ChwDirectoryClient({
               cloud_sync
             </span>
             <span className="font-label-sm text-label-sm uppercase tracking-wider">
-              {lang === "bn" ? "সিঙ্ক সমস্যা" : "Sync Issues"}
+              Sync Issues
             </span>
           </div>
-          <span className="font-headline-lg text-headline-lg text-on-surface">০</span>
+          <span className="font-headline-lg text-headline-lg text-on-surface tabular-nums">0</span>
         </div>
       </section>
 
@@ -205,7 +193,7 @@ export function ChwDirectoryClient({
                   : "border-transparent text-on-surface-variant hover:text-primary"
               }`}
             >
-              {lang === "bn" ? "নিবন্ধিত কর্মীদল" : "CHW Directory"}
+              CHW Directory
             </button>
             <button
               onClick={() => {
@@ -218,10 +206,10 @@ export function ChwDirectoryClient({
                   : "border-transparent text-on-surface-variant hover:text-primary"
               }`}
             >
-              {lang === "bn" ? "অনুমোদনের অপেক্ষায়" : "Pending Verifications"}
+              Pending Verifications
               {pendingChws.length > 0 && (
-                <span className="bg-primary text-on-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {toLocalNum(pendingChws.length)}
+                <span className="bg-primary text-on-primary text-[10px] font-bold px-2 py-0.5 rounded-full tabular-nums">
+                  {formatCount(pendingChws.length)}
                 </span>
               )}
             </button>
@@ -230,8 +218,8 @@ export function ChwDirectoryClient({
           <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex flex-wrap justify-between items-center gap-3">
             <h3 className="font-headline-md text-[18px] font-bold text-on-surface">
               {activeTab === "directory"
-                ? (lang === "bn" ? "নিবন্ধিত স্বাস্থ্যকর্মী কর্মীদল" : "Registered Personnel")
-                : (lang === "bn" ? "নিবন্ধন ও যাচাইয়ের অপেক্ষমাণ কর্মী" : "Pending CHW Verification Requests")}
+                ? "Registered Personnel"
+                : "Pending CHW Verification Requests"}
             </h3>
             {/* Search inputs */}
             <div className="relative w-full sm:w-64">
@@ -279,7 +267,7 @@ export function ChwDirectoryClient({
                               <p className="font-bold text-on-surface">
                                 {formatBilingualChw(row.name)}
                               </p>
-                              <p className="text-xs text-on-surface-variant font-label-sm">{row.chw_id}</p>
+                              <p className="text-xs text-on-surface-variant font-label-sm font-mono tabular-nums">{row.chw_id}</p>
                             </div>
                           </div>
                         </td>
@@ -319,7 +307,7 @@ export function ChwDirectoryClient({
                           </div>
                         </td>
                         <td className="px-4 py-3.5 text-right font-bold text-primary tabular-nums">
-                          {toLocalNum(row.patient_count)}
+                          {formatCount(row.patient_count)}
                         </td>
                       </tr>
                     );
@@ -337,8 +325,8 @@ export function ChwDirectoryClient({
                   <tr>
                     <th className="px-4 py-3 font-medium">{t.col_name}</th>
                     <th className="px-4 py-3 font-medium">{t.col_union}</th>
-                    <th className="px-4 py-3 font-medium">{lang === "bn" ? "ভেরিফিকেশন স্ট্যাটাস" : "Status"}</th>
-                    <th className="px-4 py-3 font-medium text-right">{lang === "bn" ? "নিবন্ধন তারিখ" : "Registered"}</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium text-right">Registered</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant font-body-md text-body-md text-on-surface bg-surface">
@@ -364,7 +352,7 @@ export function ChwDirectoryClient({
                               <p className="font-bold text-on-surface">
                                 {formatBilingualChw(row.name)}
                               </p>
-                              <p className="text-xs text-on-surface-variant font-label-sm">{row.id}</p>
+                              <p className="text-xs text-on-surface-variant font-label-sm font-mono tabular-nums">{row.id}</p>
                             </div>
                           </div>
                         </td>
@@ -380,7 +368,7 @@ export function ChwDirectoryClient({
                             {row.verification_status}
                           </span>
                         </td>
-                        <td suppressHydrationWarning className="px-4 py-3.5 text-right text-on-surface-variant font-semibold text-sm">
+                        <td suppressHydrationWarning className="px-4 py-3.5 text-right text-on-surface-variant font-semibold text-xs font-mono tabular-nums">
                           {formatDate(row.created_at)}
                         </td>
                       </tr>
@@ -390,7 +378,7 @@ export function ChwDirectoryClient({
               </table>
               {filteredPending.length === 0 && (
                 <p className="px-6 py-12 text-center font-bold text-on-surface-variant">
-                  {lang === "bn" ? "কোনো পেন্ডিং ভেরিফিকেশন অনুরোধ পাওয়া যায়নি।" : "No pending verification requests."}
+                  No pending verification requests.
                 </p>
               )}
             </div>
@@ -450,31 +438,31 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">badge</span>
-                    {lang === "bn" ? "পেশাদার বিবরণ" : "Professional Credentials"}
+                    Professional Credentials
                   </h4>
                   <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "কর্মী ধরন" : "Worker Type"}</p>
+                      <p className="text-xs text-on-surface-variant">Worker Type</p>
                       <p className="font-bold text-on-surface mt-0.5">{selectedChw.worker_type || "HA (Health Assistant)"}</p>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "প্রতিষ্ঠান" : "Organization"}</p>
+                      <p className="text-xs text-on-surface-variant">Organization</p>
                       <p className="font-bold text-on-surface mt-0.5">{selectedChw.organization_name || "MaaSheba Field Team"}</p>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "অভিজ্ঞতা" : "Experience"}</p>
-                      <p className="font-bold text-on-surface mt-0.5">
-                        {toLocalNum(selectedChw.years_of_experience || 0)} {lang === "bn" ? "বছর" : "years"}
+                      <p className="text-xs text-on-surface-variant">Experience</p>
+                      <p className="font-bold text-on-surface mt-0.5 tabular-nums">
+                        {formatCount(selectedChw.years_of_experience || 0)} years
                       </p>
                     </div>
                     {selectedChw.created_at && (
                       <>
                         <div className="h-px w-full bg-outline-variant/50"></div>
                         <div className="text-sm">
-                          <p className="text-xs text-on-surface-variant">{lang === "bn" ? "নিবন্ধন তারিখ" : "Registration Date"}</p>
-                          <p className="font-bold text-on-surface mt-0.5">{formatDate(selectedChw.created_at)}</p>
+                          <p className="text-xs text-on-surface-variant">Registration Date</p>
+                          <p className="font-bold text-on-surface mt-0.5 tabular-nums">{formatDate(selectedChw.created_at)}</p>
                         </div>
                       </>
                     )}
@@ -484,7 +472,7 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">assignment</span>
-                    {lang === "bn" ? "ভেরিফিকেশন সার্টিফিকেট" : "Verification Certificate"}
+                    Verification Certificate
                   </h4>
                   {selectedChw.certificate_url ? (
                     <a
@@ -494,11 +482,11 @@ export function ChwDirectoryClient({
                       className="flex items-center gap-2.5 bg-primary-container/20 hover:bg-primary-container/35 text-primary border border-primary-container/50 rounded-lg p-3 font-semibold text-sm transition-colors text-center justify-center cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                      {lang === "bn" ? "সার্টিফিকেট ফাইল দেখুন" : "View Uploaded Certificate"}
+                      View Uploaded Certificate
                     </a>
                   ) : (
                     <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center font-bold text-xs text-on-surface-variant">
-                      {lang === "bn" ? "সার্টিফিকেট আপলোড করা হয়নি" : "No certificate file provided."}
+                      No certificate file provided.
                     </div>
                   )}
                 </section>
@@ -506,7 +494,7 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">security</span>
-                    {lang === "bn" ? "নিরাপত্তা বিবরণ" : "Security Status"}
+                    Security Status
                   </h4>
                   <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
                     <div className="flex justify-between items-center text-sm">
@@ -516,7 +504,7 @@ export function ChwDirectoryClient({
                       </div>
                       <span className="text-on-surface-variant font-bold flex items-center gap-1">
                         <span className="material-symbols-outlined text-[16px]">gpp_maybe</span>
-                        {lang === "bn" ? "কনফিগার করা হয়নি" : "Not configured"}
+                        Not configured
                       </span>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
@@ -524,7 +512,7 @@ export function ChwDirectoryClient({
                       <div>
                         <p className="font-bold text-on-surface">Device Registered</p>
                         <p className="text-xs text-on-surface-variant">
-                          — ({lang === "bn" ? "নিবন্ধিত নয়" : "Not captured"})
+                          — (Not captured)
                         </p>
                       </div>
                     </div>
@@ -534,10 +522,10 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-                    {lang === "bn" ? "অ্যাক্সেস অনুমতি" : "Access Permissions"}
+                    Access Permissions
                   </h4>
                   <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center font-bold text-xs text-on-surface-variant">
-                    {lang === "bn" ? "অনুমোদনের পরে অ্যাক্সেস দেওয়া হবে।" : "Permissions are granted on approval."}
+                    Permissions are granted on approval.
                   </div>
                 </section>
               </div>
@@ -583,23 +571,23 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">badge</span>
-                    {lang === "bn" ? "পেশাদার বিবরণ" : "Professional Credentials"}
+                    Professional Credentials
                   </h4>
                   <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "কর্মী ধরন" : "Worker Type"}</p>
+                      <p className="text-xs text-on-surface-variant">Worker Type</p>
                       <p className="font-bold text-on-surface mt-0.5">{selectedPending.worker_type || "HA (Health Assistant)"}</p>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "প্রতিষ্ঠান" : "Organization"}</p>
+                      <p className="text-xs text-on-surface-variant">Organization</p>
                       <p className="font-bold text-on-surface mt-0.5">{selectedPending.organization_name || "MaaSheba Field Team"}</p>
                     </div>
                     <div className="h-px w-full bg-outline-variant/50"></div>
                     <div className="text-sm">
-                      <p className="text-xs text-on-surface-variant">{lang === "bn" ? "অভিজ্ঞতা" : "Experience"}</p>
-                      <p className="font-bold text-on-surface mt-0.5">
-                        {toLocalNum(selectedPending.years_of_experience)} {lang === "bn" ? "বছর" : "years"}
+                      <p className="text-xs text-on-surface-variant">Experience</p>
+                      <p className="font-bold text-on-surface mt-0.5 tabular-nums">
+                        {formatCount(selectedPending.years_of_experience)} years
                       </p>
                     </div>
                   </div>
@@ -608,7 +596,7 @@ export function ChwDirectoryClient({
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">assignment</span>
-                    {lang === "bn" ? "ভেরিফিকেশন সার্টিফিকেট" : "Verification Certificate"}
+                    Verification Certificate
                   </h4>
                   {selectedPending.certificate_url ? (
                     <a
@@ -618,11 +606,11 @@ export function ChwDirectoryClient({
                       className="flex items-center gap-2.5 bg-primary-container/20 hover:bg-primary-container/35 text-primary border border-primary-container/50 rounded-lg p-3 font-semibold text-sm transition-colors text-center justify-center cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                      {lang === "bn" ? "সার্টিফিকেট ফাইল দেখুন" : "View Uploaded Certificate"}
+                      View Uploaded Certificate
                     </a>
                   ) : (
                     <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center font-bold text-xs text-on-surface-variant">
-                      {lang === "bn" ? "সার্টিফিকেট আপলোড করা হয়নি" : "No certificate file provided."}
+                      No certificate file provided.
                     </div>
                   )}
                 </section>
@@ -631,7 +619,7 @@ export function ChwDirectoryClient({
                   <section className="bg-error-container/10 border border-error-container/45 rounded-lg p-4 flex flex-col gap-3 animate-fade-in">
                     <div>
                       <label className="text-xs font-bold text-on-surface-variant block mb-1">
-                        {lang === "bn" ? "প্রত্যাখ্যানের প্রধান কারণ" : "Primary Rejection Reason *"}
+                        Primary Rejection Reason *
                       </label>
                       <select
                         value={rejectionReasonSelect}
@@ -648,13 +636,13 @@ export function ChwDirectoryClient({
 
                     <div>
                       <label className="text-xs font-bold text-on-surface-variant block mb-1">
-                        {lang === "bn" ? "অতিরিক্ত বিবরণ / নোট" : "Additional Context / Notes"}
+                        Additional Context / Notes
                       </label>
                       <textarea
                         rows={2}
                         value={rejectionNotes}
                         onChange={(e) => setRejectionNotes(e.target.value)}
-                        placeholder={lang === "bn" ? "এখানে বিবরণ লিখুন..." : "Enter details for the health worker..."}
+                        placeholder="Enter details for the health worker..."
                         className="w-full bg-surface border border-outline-variant rounded-lg p-2 font-body-md text-xs focus:outline-none focus:border-primary text-on-surface"
                       />
                     </div>
@@ -664,14 +652,14 @@ export function ChwDirectoryClient({
                         onClick={() => setShowRejectionForm(false)}
                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-surface-variant text-on-surface-variant cursor-pointer hover:bg-outline-variant"
                       >
-                        {lang === "bn" ? "বাতিল" : "Cancel"}
+                        Cancel
                       </button>
                       <button
                         disabled={isSubmittingVerification}
                         onClick={() => handleVerification(selectedPending.id, "REJECTED")}
                         className="px-3 py-1.5 rounded-full text-xs font-bold bg-error text-on-error cursor-pointer hover:bg-error/95"
                       >
-                        {isSubmittingVerification ? "Submitting..." : (lang === "bn" ? "নিশ্চিত করুন" : "Confirm Reject")}
+                        {isSubmittingVerification ? "Submitting..." : "Confirm Reject"}
                       </button>
                     </div>
                   </section>
@@ -685,14 +673,14 @@ export function ChwDirectoryClient({
                     onClick={() => handleVerification(selectedPending.id, "APPROVED")}
                     className="w-full py-2.5 px-4 rounded-full font-label-lg text-sm text-center font-bold bg-primary text-on-primary hover:bg-surface-tint transition cursor-pointer select-none"
                   >
-                    {isSubmittingVerification ? "Approving..." : (lang === "bn" ? "স্বাস্থ্যকর্মী অনুমোদন করুন" : "Approve CHW Account")}
+                    {isSubmittingVerification ? "Approving..." : "Approve CHW Account"}
                   </button>
                   <button
                     disabled={isSubmittingVerification}
                     onClick={() => setShowRejectionForm(true)}
                     className="w-full py-2.5 px-4 rounded-full font-label-lg text-sm text-center font-bold bg-error text-on-error hover:bg-error/95 transition cursor-pointer select-none"
                   >
-                    {lang === "bn" ? "নিবন্ধন প্রত্যাখ্যান করুন" : "Reject Application"}
+                    Reject Application
                   </button>
                 </div>
               )}

@@ -1,31 +1,19 @@
-import { Language } from "@/utils/translations";
-
 type PregnancyRiskProps = {
   high: number;
   moderate: number;
   low: number;
-  lang: Language;
 };
 
-export function PregnancyRiskBar({ high, moderate, low, lang }: PregnancyRiskProps) {
+export function PregnancyRiskBar({ high, moderate, low }: PregnancyRiskProps) {
   const total = high + moderate + low;
   const highPct = total > 0 ? (high / total) * 100 : 0;
   const modPct = total > 0 ? (moderate / total) * 100 : 0;
   const lowPct = total > 0 ? (low / total) * 100 : 0;
 
-  // Local helper for localized numbers
-  const toLocalNum = (num: number) => {
-    if (lang === "bn") {
-      const bnNums = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-      return num.toString().split("").map(c => bnNums[parseInt(c)] || c).join("");
-    }
-    return num.toString();
-  };
-
-  const title = lang === "bn" ? "গর্ভকালীন ঝুঁকি বিশ্লেষণ" : "Pregnancy Risk Analysis";
-  const labelHigh = lang === "bn" ? "উচ্চ ঝুঁকি" : "High Risk";
-  const labelMod = lang === "bn" ? "মাঝারি ঝুঁকি" : "Moderate Risk";
-  const labelLow = lang === "bn" ? "নিম্ন ঝুঁকি" : "Low Risk";
+  const title = "Pregnancy Risk Analysis";
+  const labelHigh = "High Risk";
+  const labelMod = "Moderate Risk";
+  const labelLow = "Low Risk";
 
   return (
     <div className="rounded-3xl border border-brand-accent/10 bg-white p-6 shadow-sm">
@@ -66,15 +54,15 @@ export function PregnancyRiskBar({ high, moderate, low, lang }: PregnancyRiskPro
       <div className="flex flex-wrap items-center justify-start gap-x-6 gap-y-2 mt-4 text-xs font-bold">
         <div className="flex items-center gap-1.5 text-slate-600">
           <span className="h-3 w-3 rounded-full bg-risk-high"></span>
-          <span>{labelHigh}: {toLocalNum(high)}</span>
+          <span>{labelHigh}: <span className="tabular-nums">{high}</span></span>
         </div>
         <div className="flex items-center gap-1.5 text-slate-600">
           <span className="h-3 w-3 rounded-full bg-risk-moderate"></span>
-          <span>{labelMod}: {toLocalNum(moderate)}</span>
+          <span>{labelMod}: <span className="tabular-nums">{moderate}</span></span>
         </div>
         <div className="flex items-center gap-1.5 text-slate-600">
           <span className="h-3 w-3 rounded-full bg-risk-low"></span>
-          <span>{labelLow}: {toLocalNum(low)}</span>
+          <span>{labelLow}: <span className="tabular-nums">{low}</span></span>
         </div>
       </div>
     </div>

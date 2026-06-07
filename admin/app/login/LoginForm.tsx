@@ -1,5 +1,4 @@
 "use client";
-
 import { FormEvent, useState, useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { loginAction } from "@/app/login/actions";
@@ -38,79 +37,41 @@ export function LoginForm() {
       {/* Username or Email */}
       <div className="flex flex-col gap-2">
         <label
-          className="text-sm font-medium"
+          className="text-sm font-medium text-on-surface-variant/80 font-label-lg"
           htmlFor="email"
-          style={{ color: "rgba(195, 220, 220, 0.85)", fontFamily: "var(--font-work-sans)" }}
         >
           Username or Email
         </label>
         <input
           autoComplete="username"
-          className="h-11 w-full rounded-lg px-4 text-sm outline-none transition-all duration-150"
+          className="h-11 w-full rounded-lg px-4 text-sm bg-surface-container-lowest border border-outline-variant/60 text-on-surface outline-none transition-all duration-150 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50 font-sans"
           id="email"
           name="email"
           required
-          style={{
-            background: "#0d1818",
-            border: "1px solid rgba(78, 205, 196, 0.2)",
-            color: "#e8f5f5",
-            fontFamily: "var(--font-hind-siliguri)",
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.65)";
-            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(78, 205, 196, 0.1)";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.2)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
         />
       </div>
 
       {/* Password */}
       <div className="flex flex-col gap-2">
         <label
-          className="text-sm font-medium"
+          className="text-sm font-medium text-on-surface-variant/80 font-label-lg"
           htmlFor="password"
-          style={{ color: "rgba(195, 220, 220, 0.85)", fontFamily: "var(--font-work-sans)" }}
         >
           Password
         </label>
         <input
           autoComplete="current-password"
-          className="h-11 w-full rounded-lg px-4 text-sm outline-none transition-all duration-150"
+          className="h-11 w-full rounded-lg px-4 text-sm bg-surface-container-lowest border border-outline-variant/60 text-on-surface outline-none transition-all duration-150 focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50 font-sans"
           id="password"
           name="password"
           required
           type="password"
-          style={{
-            background: "#0d1818",
-            border: "1px solid rgba(78, 205, 196, 0.2)",
-            color: "#e8f5f5",
-            fontFamily: "var(--font-hind-siliguri)",
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.65)";
-            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(78, 205, 196, 0.1)";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = "rgba(78, 205, 196, 0.2)";
-            e.currentTarget.style.boxShadow = "none";
-          }}
         />
       </div>
 
       {/* Error message */}
       {clientError || state.error ? (
-        <p
-          className="rounded-lg px-4 py-2.5 text-sm"
-          style={{
-            background: "rgba(186, 26, 26, 0.12)",
-            border: "1px solid rgba(186, 26, 26, 0.3)",
-            color: "#ff8a80",
-            fontFamily: "var(--font-hind-siliguri)",
-          }}
-        >
+        <p className="rounded-lg px-4 py-2.5 text-sm bg-error/10 border border-error/30 text-error font-sans">
           {clientError || state.error}
         </p>
       ) : null}
@@ -124,31 +85,9 @@ function SubmitButton() {
   const status = useFormStatus();
   return (
     <button
-      className="h-11 w-full rounded-full text-sm font-semibold tracking-wide transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 mt-1"
+      className="h-11 w-full rounded-full text-sm font-semibold tracking-wide transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 mt-1 bg-primary text-on-primary hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-primary outline-none shadow-md hover:shadow-lg disabled:bg-surface-container disabled:text-outline"
       disabled={status.pending}
       type="submit"
-      style={{
-        background: status.pending
-          ? "rgba(78, 205, 196, 0.6)"
-          : "linear-gradient(90deg, #3ec9c0 0%, #4ecdc4 100%)",
-        color: "#051414",
-        fontFamily: "var(--font-work-sans)",
-        boxShadow: status.pending
-          ? "none"
-          : "0 0 20px rgba(78, 205, 196, 0.35), 0 4px 12px rgba(78, 205, 196, 0.2)",
-      }}
-      onMouseEnter={(e) => {
-        if (!status.pending) {
-          e.currentTarget.style.boxShadow = "0 0 32px rgba(78, 205, 196, 0.55), 0 8px 20px rgba(78, 205, 196, 0.3)";
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!status.pending) {
-          e.currentTarget.style.boxShadow = "0 0 20px rgba(78, 205, 196, 0.35), 0 4px 12px rgba(78, 205, 196, 0.2)";
-          e.currentTarget.style.transform = "translateY(0)";
-        }
-      }}
     >
       {status.pending ? (
         <>

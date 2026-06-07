@@ -2,21 +2,19 @@ import { RiskSummaryChart } from "@/components/RiskSummaryChart";
 import { UpazilaRiskMap } from "@/components/UpazilaRiskMap";
 import { getSummary } from "@/utils/admin-api";
 import { getTranslation } from "@/utils/translations";
-import { getServerLanguage } from "@/utils/translations-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const summary = await getSummary();
-  const lang = await getServerLanguage();
-  const t = getTranslation(lang);
+  const t = getTranslation();
 
   return (
     <div className="flex flex-col gap-6">
       {/* Page Header */}
       <div>
         <h2 className="font-headline-lg text-headline-lg text-on-background">
-          {lang === "bn" ? "আঞ্চলিক ওভারভিউ: নরসিংদী জেলা" : "Regional Overview: Narsingdi District"}
+          Regional Overview: Narsingdi District
         </h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">
           {t.overview_subtitle}
@@ -42,7 +40,7 @@ export default async function DashboardPage() {
             </p>
             <p className="font-label-sm text-label-sm text-primary flex items-center gap-1 mt-1">
               <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-              {lang === "bn" ? "লাইভ ট্র্যাকিং" : "Live Triage"}
+              Live Triage
             </p>
           </div>
         </div>
@@ -64,7 +62,7 @@ export default async function DashboardPage() {
             </p>
             <p className="font-label-sm text-label-sm text-error flex items-center gap-1 mt-1">
               <span className="material-symbols-outlined text-[14px]">priority_high</span>
-              {lang === "bn" ? "জরুরী পর্যালোচনা" : "Review Required"}
+              Review Required
             </p>
           </div>
         </div>
@@ -85,7 +83,7 @@ export default async function DashboardPage() {
               {summary.metrics.active_chws}
             </p>
             <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
-              {lang === "bn" ? "মাঠ পর্যায়ে সক্রিয়" : "Active Field Staff"}
+              Active Field Staff
             </p>
           </div>
         </div>
@@ -95,7 +93,7 @@ export default async function DashboardPage() {
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary-fixed/20 rounded-full group-hover:scale-110 transition-transform"></div>
           <div className="flex justify-between items-start">
             <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              {lang === "bn" ? "সক্রিয় উপজেলা" : "Coverage Area"}
+              Coverage Area
             </h3>
             <span className="material-symbols-outlined text-secondary" data-weight="fill">
               location_on
@@ -107,7 +105,7 @@ export default async function DashboardPage() {
             </p>
             <p className="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
               <span className="material-symbols-outlined text-[14px]">explore</span>
-              {lang === "bn" ? "উপজেলা কভারেজ" : "Upazila Units"}
+              Upazila Units
             </p>
           </div>
         </div>
@@ -141,7 +139,7 @@ export default async function DashboardPage() {
               <RiskSummaryChart data={summary.risk_summary} />
             ) : (
               <p className="font-body-md text-body-md text-on-surface-variant p-6 text-center">
-                {lang === "bn" ? "কোনো তথ্য পাওয়া যায়নি।" : "No risk summary data found."}
+                No risk summary data found.
               </p>
             )}
           </div>

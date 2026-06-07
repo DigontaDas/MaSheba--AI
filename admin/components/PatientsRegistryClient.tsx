@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { MotherRegistryRow, RiskLevel, ChwRow } from "@/utils/admin-types";
-import type { Language } from "@/utils/translations";
 import { AssignChwModal } from "@/components/AssignChwModal";
 
 type RiskFilter = "ALL" | RiskLevel | "UNASSESSED";
@@ -11,7 +10,6 @@ type RiskFilter = "ALL" | RiskLevel | "UNASSESSED";
 type PatientsRegistryClientProps = {
   patients: MotherRegistryRow[];
   chws: ChwRow[];
-  lang: Language;
   t: any;
 };
 
@@ -91,7 +89,7 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
       <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
           <h3 className="font-headline-md text-[18px] font-bold text-on-surface">Tracked Mothers</h3>
-          <span className="text-xs font-bold text-on-surface-variant">{filteredPatients.length} shown</span>
+          <span className="text-xs font-bold text-on-surface-variant tabular-nums">{filteredPatients.length} shown</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -127,9 +125,9 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                   >
                     <td className="whitespace-nowrap px-6 py-3.5">
                       <div className="font-bold text-on-surface">{row.name}</div>
-                      <div className="text-[11px] font-semibold text-on-surface-variant">{row.patient_id ? `Patient ${row.patient_id}` : "No patient record yet"}</div>
+                      <div className="text-[11px] font-semibold text-on-surface-variant tabular-nums">{row.patient_id ? `Patient ${row.patient_id}` : "No patient record yet"}</div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold">{row.phone || "Not provided"}</td>
+                    <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold font-mono tabular-nums">{row.phone || "Not provided"}</td>
                     <td className="whitespace-nowrap px-6 py-3.5">
                       <Badge className={statusStyles[row.verification_status] || "bg-surface-container-low text-on-surface-variant border-outline-variant"} label={row.verification_status || "Unknown"} />
                     </td>
@@ -169,7 +167,7 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                         {row.link_status === "LINKED" ? "Reassign" : "Assign CHW"}
                       </button>
                     </td>
-                    <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-label-sm">
+                    <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-mono tabular-nums">
                       {new Date(row.updated_at || row.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
                     </td>
                   </tr>
