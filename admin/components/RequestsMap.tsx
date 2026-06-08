@@ -4,7 +4,34 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { ConnectionRequest, ChwRow } from "@/utils/admin-types";
+import type { ConnectionRequest, ChwRow, MotherRegistryRow } from "@/utils/admin-types";
+
+// Helper to parse database location representation (WKT or GeoJSON) to Leaflet coords
+export const parseLocation = (loc: any): { lat: number; lng: number } | null => {
+  if (!loc) return null;
+  if (typeof loc === "object" && loc.type === "Point" && Array.isArray(loc.coordinates)) {
+    const [lng, lat] = loc.coordinates;
+    if (typeof lat === "number" && typeof lng === "number") {
+      return { lat, lng };
+    }
+  }
+  if (typeof loc === "string") {
+    try {
+      const content = loc.replace("POINT(", "").replace(")", "").trim();
+      const parts = content.split(/\s+/);
+      if (parts.length >= 2) {
+        const lng = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing WKT string location:", e);
+    }
+  }
+  return null;
+};
 
 const districtStyle = {
   color: "#999999",
@@ -113,15 +140,17 @@ function ChangeView({ center }: { center: [number, number] }) {
 }
 
 export function RequestsMap({
-  requests,
+  requests = [],
   chws = [],
-  selectedRequestId,
-  onSelectRequest,
+  mothers = [],
+  selectedRequestId = null,
+  onSelectRequest = () => {},
 }: {
-  requests: ConnectionRequest[];
+  requests?: ConnectionRequest[];
   chws?: ChwRow[];
-  selectedRequestId: string | null;
-  onSelectRequest: (id: string) => void;
+  mothers?: MotherRegistryRow[];
+  selectedRequestId?: string | null;
+  onSelectRequest?: (id: string) => void;
 }) {
   const [districts, setDistricts] = useState<any>(null);
   const [upazilas, setUpazilas] = useState<any>(null);
@@ -247,6 +276,47 @@ export function RequestsMap({
                     <span className="font-bold">Assigned CHW:</span> {chwName}
                   </p>
                   <p className="text-[10px] text-outline italic">Select in sidebar to assign CHW</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+        {/* Mother Registry pins */}
+        {mothers.map((mother) => {
+          const loc = parseLocation(mother.location);
+          if (!loc) return null;
+          
+          const risk = mother.last_risk_level || "UNASSESSED";
+          const isSelected = false;
+          const icon = getMotherIcon(risk, isSelected);
+          const chwName = mother.chw_name || "Not assigned";
+
+          return (
+            <Marker
+              key={mother.id}
+              position={[loc.lat, loc.lng]}
+              icon={icon}
+            >
+              <Popup>
+                <div className="p-1 font-body-md text-xs space-y-1">
+                  <h4 className="font-bold text-sm text-primary mb-1">{mother.name}</h4>
+                  <div className="text-on-surface-variant mb-1 flex items-center gap-1.5">
+                    <span className="font-bold">Risk Level:</span>{" "}
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      risk === "HIGH" ? "bg-red-100 text-red-700" :
+                      risk === "MODERATE" ? "bg-orange-100 text-orange-700" :
+                      risk === "LOW" ? "bg-green-100 text-green-700" :
+                      "bg-gray-100 text-gray-700"
+                    }`}>
+                      {risk}
+                    </span>
+                  </div>
+                  <p className="text-on-surface-variant mb-1">
+                    <span className="font-bold">Gestational Age:</span> {mother.gestational_age_weeks ?? "Not set"} weeks
+                  </p>
+                  <p className="text-on-surface-variant mb-1">
+                    <span className="font-bold">Assigned CHW:</span> {chwName}
+                  </p>
                 </div>
               </Popup>
             </Marker>

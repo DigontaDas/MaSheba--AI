@@ -66,8 +66,9 @@ export async function updateChwVerification(
   });
 }
 
-export async function getPatients(): Promise<MotherRegistryRow[]> {
-  const payload = await adminFetch<{ patients: MotherRegistryRow[] }>("/api/v1/admin/patients");
+export async function getPatients(limit?: number): Promise<MotherRegistryRow[]> {
+  const query = limit ? `?limit=${limit}` : "";
+  const payload = await adminFetch<{ patients: MotherRegistryRow[] }>(`/api/v1/admin/patients${query}`);
   return payload.patients;
 }
 

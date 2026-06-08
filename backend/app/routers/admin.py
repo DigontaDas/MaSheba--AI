@@ -274,7 +274,7 @@ async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[di
     mothers = await _supabase_get(
         settings,
         "mothers",
-        select="id,auth_user_id,name,phone,verification_status,patient_id,gestational_age_weeks,created_at,updated_at",
+        select="id,auth_user_id,name,phone,verification_status,patient_id,gestational_age_weeks,location,created_at,updated_at",
         query=page.query,
     )
     patient_ids = sorted({mother.get("patient_id") for mother in mothers if mother.get("patient_id")})
@@ -319,6 +319,7 @@ async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[di
                 "gestational_age_weeks": patient.get("gestational_age_weeks") if patient and patient.get("gestational_age_weeks") is not None else mother.get("gestational_age_weeks"),
                 "last_risk_level": patient.get("last_risk_level") if patient else None,
                 "link_status": "LINKED" if patient else "UNLINKED",
+                "location": mother.get("location"),
                 "created_at": mother.get("created_at"),
                 "updated_at": mother.get("updated_at") or mother.get("created_at"),
             }
@@ -357,7 +358,7 @@ async def get_chws(
         chws = await _supabase_get(
             settings,
             "chws",
-            select="id,name,union_name,upazila,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+            select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
             query=page.query,
         )
         chw_ids = [c["id"] for c in chws if c.get("id")]
@@ -382,6 +383,7 @@ async def get_chws(
                 "name": c["name"],
                 "union_name": c["union_name"],
                 "upazila": c["upazila"],
+                "district": c.get("district"),
                 "is_active": c["is_active"],
                 "verification_status": c.get("verification_status"),
                 "rejection_reason": c.get("rejection_reason"),
@@ -417,7 +419,7 @@ async def get_pending_chw_verifications(
         pending = await _supabase_get(
             settings,
             "chws",
-            select="id,name,union_name,upazila,organization_name,worker_type,years_of_experience,certificate_url,verification_status,created_at",
+            select="id,name,union_name,upazila,district,organization_name,worker_type,years_of_experience,certificate_url,verification_status,created_at",
             query=page.query,
         )
         await audit(settings, admin, "admin.chw.verifications.read", "chw")
@@ -469,7 +471,7 @@ async def update_chw_verification(
 
 @router.get("/patients", response_model=None)
 async def get_patients(
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=5000),
     cursor: str | None = Query(default=None),
     settings: Settings = Depends(get_settings),
     admin: AdminContext = Depends(require_admin),
@@ -760,7 +762,7 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
     chws_raw = await _supabase_get(
         settings,
         "chws",
-        select="id,name,union_name,upazila,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+        select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
         query="&order=name.asc",
     )
     chw_ids = [c["id"] for c in chws_raw if c.get("id")]
@@ -785,6 +787,7 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
             "name": c["name"],
             "union_name": c["union_name"],
             "upazila": c["upazila"],
+            "district": c.get("district"),
             "is_active": c["is_active"],
             "verification_status": c.get("verification_status"),
             "rejection_reason": c.get("rejection_reason"),

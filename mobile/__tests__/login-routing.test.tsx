@@ -142,6 +142,8 @@ describe("LoginScreen routing", () => {
       tree.root.findByProps({ placeholder: "কর্মী ধরন (যেমন: HA, FWA, NGO)" }).props.onChangeText("HA");
       tree.root.findByProps({ placeholder: "অভিজ্ঞতা (বছর)" }).props.onChangeText("3");
       tree.root.findByProps({ placeholder: "কর্ম এলাকা (ইউনিয়ন/উপজেলা)" }).props.onChangeText("Palash Union");
+      tree.root.findByProps({ placeholder: "উপজেলা" }).props.onChangeText("Palash Upazila");
+      tree.root.findByProps({ placeholder: "জেলা" }).props.onChangeText("Narsingdi");
       tree.root.findByProps({ placeholder: "সার্টিফিকেট লিংক (ঐচ্ছিক)" }).props.onChangeText("https://example.com/certificate.png");
       tree.root.findByProps({ accessibilityLabel: "ইমেইল বা মোবাইল" }).props.onChangeText("newchw@example.com");
       tree.root.findByProps({ accessibilityLabel: "পাসওয়ার্ড" }).props.onChangeText("secret123");
@@ -165,7 +167,9 @@ describe("LoginScreen routing", () => {
         organization_name: "Palash Clinic",
         worker_type: "HA",
         years_of_experience: 3,
-        working_area: "Palash Union"
+        working_area: "Palash Union",
+        district: "Narsingdi",
+        upazila: "Palash Upazila"
       }
     );
   });

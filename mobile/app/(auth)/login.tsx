@@ -237,6 +237,8 @@ export default function LoginScreen() {
   const [workerType, setWorkerType] = useState("");
   const [experience, setExperience] = useState("");
   const [workingArea, setWorkingArea] = useState("");
+  const [district, setDistrict] = useState("");
+  const [upazila, setUpazila] = useState("");
   const [certificateUrlText, setCertificateUrlText] = useState("");
   const [certificateName, setCertificateName] = useState<string | null>(null);
   const [certificateBlob, setCertificateBlob] = useState<Blob | null>(null);
@@ -354,6 +356,8 @@ export default function LoginScreen() {
     setWorkerType("");
     setExperience("");
     setWorkingArea("");
+    setDistrict("");
+    setUpazila("");
     setCertificateUrlText("");
     setCertificateName(null);
     setCertificateBlob(null);
@@ -549,6 +553,14 @@ export default function LoginScreen() {
         setError(lang === "bn" ? "অনুগ্রহ করে কর্ম এলাকা লিখুন" : "Please enter working area");
         return;
       }
+      if (!district.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে জেলা লিখুন" : "Please enter district");
+        return;
+      }
+      if (!upazila.trim()) {
+        setError(lang === "bn" ? "অনুগ্রহ করে উপজেলা লিখুন" : "Please enter upazila");
+        return;
+      }
       if (!experience.trim()) {
         setError(lang === "bn" ? "অনুগ্রহ করে আপনার অভিজ্ঞতা বছর লিখুন" : "Please enter years of experience");
         return;
@@ -572,6 +584,8 @@ export default function LoginScreen() {
       extraMetadata.worker_type = workerType.trim();
       extraMetadata.years_of_experience = expYears;
       extraMetadata.working_area = workingArea.trim();
+      extraMetadata.district = district.trim();
+      extraMetadata.upazila = upazila.trim();
       if (certificateUrlText.trim()) {
         extraMetadata.certificate_url = certificateUrlText.trim();
       }
@@ -1020,12 +1034,26 @@ export default function LoginScreen() {
                         style={styles.modalInput}
                         value={experience}
                       />
-                      <TextInput
+                       <TextInput
                         onChangeText={setWorkingArea}
                         placeholder={lang === "bn" ? "কর্ম এলাকা (ইউনিয়ন/উপজেলা)" : "Working Area (Union/Upazila)"}
                         placeholderTextColor="#A0A0A0"
                         style={styles.modalInput}
                         value={workingArea}
+                      />
+                      <TextInput
+                        onChangeText={setUpazila}
+                        placeholder={lang === "bn" ? "উপজেলা" : "Upazila"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={upazila}
+                      />
+                      <TextInput
+                        onChangeText={setDistrict}
+                        placeholder={lang === "bn" ? "জেলা" : "District"}
+                        placeholderTextColor="#A0A0A0"
+                        style={styles.modalInput}
+                        value={district}
                       />
                       
                       {/* Certificate Upload Interface */}

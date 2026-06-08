@@ -5,6 +5,7 @@ export type ChwRow = {
   name: string;
   union_name: string;
   upazila: string;
+  district?: string | null;
   is_active: boolean;
   patient_count: number;
   verification_status: "PENDING" | "APPROVED" | "REJECTED";
@@ -21,6 +22,7 @@ export type PendingChwRow = {
   name: string;
   union_name: string;
   upazila: string;
+  district?: string | null;
   organization_name: string | null;
   worker_type: string | null;
   years_of_experience: number;
@@ -58,6 +60,7 @@ export type MotherRegistryRow = {
   gestational_age_weeks: number | null;
   last_risk_level: RiskLevel | null;
   link_status: "LINKED" | "UNLINKED";
+  location?: any;
   created_at: string;
   updated_at: string;
 };

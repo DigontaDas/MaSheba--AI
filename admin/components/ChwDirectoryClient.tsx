@@ -437,6 +437,29 @@ export function ChwDirectoryClient({
 
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">location_on</span>
+                    Location Details
+                  </h4>
+                  <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">District</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedChw.district || "Not provided"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">Upazila</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedChw.upazila || "Not provided"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">Union / Working Area</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedChw.union_name || "Not provided"}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">badge</span>
                     Professional Credentials
                   </h4>
@@ -568,6 +591,29 @@ export function ChwDirectoryClient({
               </div>
 
               <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
+                <section>
+                  <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">location_on</span>
+                    Location Details
+                  </h4>
+                  <div className="bg-surface-container-low rounded-lg p-4 border border-outline-variant flex flex-col gap-3">
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">District</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedPending.district || "Not provided"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">Upazila</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedPending.upazila || "Not provided"}</p>
+                    </div>
+                    <div className="h-px w-full bg-outline-variant/50"></div>
+                    <div className="text-sm">
+                      <p className="text-xs text-on-surface-variant">Union / Working Area</p>
+                      <p className="font-bold text-on-surface mt-0.5">{selectedPending.union_name || "Not provided"}</p>
+                    </div>
+                  </div>
+                </section>
+
                 <section>
                   <h4 className="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider mb-3 flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">badge</span>
