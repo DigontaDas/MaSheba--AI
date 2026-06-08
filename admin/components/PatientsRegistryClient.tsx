@@ -19,11 +19,6 @@ const riskStyles: Record<RiskLevel, string> = {
   LOW: "bg-primary-container text-on-primary-container border-primary-container",
 };
 
-const statusStyles: Record<MotherRegistryRow["verification_status"], string> = {
-  VERIFIED: "bg-primary-container text-on-primary-container border-primary-container",
-  PENDING: "bg-secondary-container text-on-secondary-container border-secondary-container",
-  REJECTED: "bg-error-container text-on-error-container border-error-container",
-};
 
 export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryClientProps) {
   const router = useRouter();
@@ -49,7 +44,6 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
       return [
         mother.name,
         mother.phone,
-        mother.verification_status,
         mother.patient_id,
         mother.chw_id,
         mother.chw_name,
@@ -98,7 +92,6 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
               <tr className="bg-surface-container-low border-b border-outline-variant font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
                 <th className="px-6 py-3.5 font-medium">{t.col_mother}</th>
                 <th className="px-6 py-3.5 font-medium">Phone</th>
-                <th className="px-6 py-3.5 font-medium">{t.col_status}</th>
                 <th className="px-6 py-3.5 font-medium">{t.col_chw}</th>
                 <th className="px-6 py-3.5 font-medium">{t.col_weeks}</th>
                 <th className="px-6 py-3.5 font-medium">{t.col_risk}</th>
@@ -109,7 +102,7 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
             <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant bg-surface">
               {filteredPatients.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center font-bold text-on-surface-variant">
+                  <td colSpan={7} className="px-6 py-12 text-center font-bold text-on-surface-variant">
                     {t.empty_patients}
                   </td>
                 </tr>
@@ -128,9 +121,6 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                       <div className="text-[11px] font-semibold text-on-surface-variant tabular-nums">{row.patient_id ? `Patient ${row.patient_id}` : "No patient record yet"}</div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold font-mono tabular-nums">{row.phone || "Not provided"}</td>
-                    <td className="whitespace-nowrap px-6 py-3.5">
-                      <Badge className={statusStyles[row.verification_status] || "bg-surface-container-low text-on-surface-variant border-outline-variant"} label={row.verification_status || "Unknown"} />
-                    </td>
                     <td className="whitespace-nowrap px-6 py-3.5">
                       {row.link_status === "LINKED" ? (
                         <div>

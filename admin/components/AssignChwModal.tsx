@@ -148,18 +148,6 @@ export function AssignChwModal({
             <p className="font-semibold text-on-surface mt-0.5">{mother.phone || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Verification Status</p>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-bold border mt-0.5 ${
-              mother.verification_status === "VERIFIED"
-                ? "bg-primary-container text-on-primary-container border-primary-container"
-                : mother.verification_status === "PENDING"
-                ? "bg-secondary-container text-on-secondary-container border-secondary-container"
-                : "bg-error-container text-on-error-container border-error-container"
-            }`}>
-              {mother.verification_status || "PENDING"}
-            </span>
-          </div>
-          <div>
             <p className="text-on-surface-variant font-bold uppercase tracking-wider">Gestational Age</p>
             <p className="font-bold text-on-surface mt-0.5">{mother.gestational_age_weeks !== null && mother.gestational_age_weeks !== undefined ? `${mother.gestational_age_weeks} weeks` : "Not set"}</p>
           </div>

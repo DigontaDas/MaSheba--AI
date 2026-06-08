@@ -168,9 +168,11 @@ export default function MotherSetupScreen() {
             accuracy: Location.Accuracy.Balanced
           });
           locationPoint = `POINT(${loc.coords.longitude} ${loc.coords.latitude})`;
+        } else {
+          console.error("GPS location permission denied during mother profile setup.");
         }
       } catch (locErr) {
-        console.warn("Failed to capture location:", locErr);
+        console.error("GPS location capture failed during mother profile setup:", locErr);
       }
 
       // 2. Update the mother's record (verified instantly)
@@ -206,6 +208,7 @@ export default function MotherSetupScreen() {
         [{ text: lang === "bn" ? "ঠিক আছে" : "OK", onPress: () => router.replace("/(mother-tabs)/home") }]
       );
     } catch (err: any) {
+      console.error("Failed to save mother profile setup details:", err);
       setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);

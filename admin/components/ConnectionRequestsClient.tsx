@@ -149,10 +149,10 @@ export function ConnectionRequestsClient({
           <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
             <div>
               <h3 className="font-headline-md text-[18px] font-bold text-on-surface">
-                Pending Requests ({requests.length})
+                Pending &amp; Assigned Requests ({requests.length})
               </h3>
               <p className="font-label-sm text-xs text-on-surface-variant">
-                Queue of mothers requesting location assignment
+                Mothers awaiting assignment or visit acceptance by CHW
               </p>
             </div>
             <button
@@ -168,6 +168,20 @@ export function ConnectionRequestsClient({
             {requests.length > 0 ? (
               requests.map((req) => {
                 const isSelected = req.id === selectedRequestId;
+                const isAssigned = req.status === "assigned";
+
+                // Calculate expiry countdown for assigned requests
+                let expiryLabel: string | null = null;
+                if (isAssigned && req.assigned_at) {
+                  const assignedMs = new Date(req.assigned_at).getTime();
+                  const nowMs = Date.now();
+                  const elapsedHours = (nowMs - assignedMs) / (1000 * 60 * 60);
+                  const remainingHours = Math.max(0, 48 - elapsedHours);
+                  if (elapsedHours >= 24) {
+                    expiryLabel = `Expires in ${remainingHours.toFixed(0)}h`;
+                  }
+                }
+
                 return (
                   <div
                     key={req.id}
@@ -183,25 +197,41 @@ export function ConnectionRequestsClient({
                     }`}
                   >
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-on-surface font-headline-sm text-sm">
                           {req.mother_name}
                         </span>
-                        <span className="text-[10px] bg-error-container/20 text-error px-2 py-0.5 rounded-full font-bold">
-                          Pending
-                        </span>
+                        {isAssigned ? (
+                          <span className="text-[10px] bg-tertiary-container/30 text-tertiary px-2 py-0.5 rounded-full font-bold">
+                            Assigned
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-error-container/20 text-error px-2 py-0.5 rounded-full font-bold">
+                            Pending
+                          </span>
+                        )}
+                        {expiryLabel && (
+                          <span className="text-[10px] bg-orange-100 text-orange-700 border border-orange-300 px-2 py-0.5 rounded-full font-bold animate-pulse">
+                            ⚠️ {expiryLabel}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-on-surface-variant font-label-sm">
                         Requested: {new Date(req.created_at).toLocaleString()}
                       </p>
+                      {isAssigned && req.assigned_at && (
+                        <p className="text-xs text-tertiary font-label-sm">
+                          Assigned: {new Date(req.assigned_at).toLocaleString()}
+                        </p>
+                      )}
                       {req.notes && (
                         <p className="text-xs text-on-surface-variant/80 italic font-body-sm line-clamp-1">
-                          "{req.notes}"
+                          &quot;{req.notes}&quot;
                         </p>
                       )}
                     </div>
                     {req.lat && req.lng && (
-                      <span className="text-[11px] font-mono text-outline bg-surface-container px-2 py-0.5 rounded border border-outline-variant/30">
+                      <span className="text-[11px] font-mono text-outline bg-surface-container px-2 py-0.5 rounded border border-outline-variant/30 shrink-0">
                         {req.lat.toFixed(4)}, {req.lng.toFixed(4)}
                       </span>
                     )}
@@ -213,7 +243,7 @@ export function ConnectionRequestsClient({
                 <span className="material-symbols-outlined text-outline text-[40px] mb-2 block">
                   check_circle
                 </span>
-                No pending connection requests. All mothers assigned!
+                No pending or assigned connection requests.
               </div>
             )}
           </div>

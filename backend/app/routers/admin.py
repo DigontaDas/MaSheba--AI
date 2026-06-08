@@ -931,12 +931,12 @@ async def get_pending_connection_requests(
     admin: AdminContext = Depends(require_admin),
 ) -> list[dict[str, Any]] | JSONResponse:
     try:
-        # Fetch pending requests
+        # Fetch pending and assigned requests
         requests = await _supabase_get(
             settings,
             "connection_requests",
-            select="id,mother_id,status,notes,created_at,mother_location",
-            query="&status=eq.pending&order=created_at.asc"
+            select="id,mother_id,status,notes,created_at,mother_location,assigned_at",
+            query="&status=in.(pending,assigned)&order=created_at.asc"
         )
         
         if not requests:
@@ -981,6 +981,7 @@ async def get_pending_connection_requests(
                 "status": r["status"],
                 "notes": r.get("notes"),
                 "created_at": r["created_at"],
+                "assigned_at": r.get("assigned_at"),
                 "lat": lat,
                 "lng": lng
             })

@@ -24,6 +24,7 @@ import { getSession } from "@/auth/secureSession";
 import { getDeviceId } from "@/utils/ids";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
+import { supabase } from "@/auth/supabaseAuth";
 
 type CheckItem = {
   id: number;
@@ -332,6 +333,36 @@ export default function RiskAssessmentScreen() {
 
       if (riskScore >= 0.7) {
         notifyNow("⚠️ উচ্চ ঝুঁকি", `${patient?.name ?? "ফাতেমা বেগম"} জরুরি মূল্যায়ন প্রয়োজন`, "maasheba-emergency");
+      }
+
+      // Try to complete any active connection request online
+      try {
+        const { data: motherData } = await supabase
+          .from("mothers")
+          .select("id")
+          .eq("patient_id", patientId)
+          .maybeSingle();
+
+        if (motherData?.id) {
+          const { error: completeErr } = await supabase
+            .from("connection_requests")
+            .update({
+              status: "completed",
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq("mother_id", motherData.id)
+            .eq("chw_id", session.chwId)
+            .eq("status", "active");
+
+          if (completeErr) {
+            console.error("Failed to complete active connection request online:", completeErr);
+          } else {
+            console.log("Successfully completed active connection request for mother:", motherData.id);
+          }
+        }
+      } catch (reqErr) {
+        console.error("Error completing active connection request:", reqErr);
       }
 
       Alert.alert("💾 তথ্য সংরক্ষিত", "পরিদর্শন ও মূল্যায়ন বিবরণী সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।");

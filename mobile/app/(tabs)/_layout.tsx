@@ -15,6 +15,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="home" options={{ title: copy.common.home }} />
       <Tabs.Screen name="chat" options={{ title: copy.common.chat }} />
       <Tabs.Screen name="patients" options={{ title: copy.common.patients }} />
+      <Tabs.Screen name="requests" options={{ title: t("nav.requests") }} />
       <Tabs.Screen name="medicine" options={{ title: t("nav.medicine") }} />
       <Tabs.Screen name="profile" options={{ title: copy.common.profile }} />
       <Tabs.Screen name="sync" options={{ href: null, title: copy.common.sync }} />

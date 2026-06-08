@@ -31,6 +31,15 @@ jest.mock("expo-network", () => ({
   useNetworkState: () => ({ isConnected: true, isInternetReachable: true })
 }));
 
+jest.mock("@/auth/supabaseAuth", () => {
+  const maybeSingle = () => Promise.resolve({ data: null, error: null });
+  const eqFn: (...args: unknown[]) => unknown = () => ({ eq: eqFn, maybeSingle });
+  const selectFn = () => ({ eq: eqFn, maybeSingle });
+  const updateFn = () => ({ eq: eqFn });
+  const fromFn = () => ({ select: selectFn, update: updateFn });
+  return { supabase: { from: fromFn } };
+});
+
 jest.mock("@/components/ui/Icon", () => {
   const React = require("react");
   const { Text } = require("react-native");

@@ -8,6 +8,7 @@ const iconByRoute: Record<string, IconName> = {
   home: "home",
   chat: "chat-bubble",
   patients: "groups",
+  requests: "assignment",
   medicine: "medication",
   profile: "person"
 };
@@ -16,6 +17,7 @@ const routeLabels: Record<string, string> = {
   home: "হোম",
   chat: "চ্যাট",
   patients: "রোগী",
+  requests: "অনুরোধ",
   medicine: "ওষুধ",
   profile: "প্রোফাইল"
 };
@@ -23,13 +25,14 @@ const routeLabels: Record<string, string> = {
 export function ChwBottomNavigation({ state, descriptors, navigation }: BottomTabBarProps) {
   const { t } = useLanguage();
   // Extract visible routes and insert the custom "medicine" tab in the 4th slot
-  const nativeRoutes = state.routes.filter((r) => ["home", "chat", "patients", "medicine", "profile"].includes(r.name));
+  const nativeRoutes = state.routes.filter((r) => ["home", "chat", "patients", "requests", "medicine", "profile"].includes(r.name));
   
-  // Construct the 5 tabs in the exact order: Home, Chat, Patients, Medicine, Profile
+  // Construct the 6 tabs in the exact order: Home, Chat, Patients, Requests, Medicine, Profile
   const items = [
     nativeRoutes.find((r) => r.name === "home"),
     nativeRoutes.find((r) => r.name === "chat"),
     nativeRoutes.find((r) => r.name === "patients"),
+    nativeRoutes.find((r) => r.name === "requests"),
     nativeRoutes.find((r) => r.name === "medicine"),
     nativeRoutes.find((r) => r.name === "profile")
   ].filter(Boolean) as Array<{ name: string; key: string }>;
