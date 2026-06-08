@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import MapView, { Marker, Circle, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
+import * as Network from "expo-network";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { Icon } from "@/components/ui/Icon";
@@ -42,9 +43,10 @@ export default function FindChwScreen() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearbyChws, setNearbyChws] = useState<CHW[]>([]);
   const [pendingRequest, setPendingRequest] = useState<ConnectionRequest | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const fetchRequestStatus = async (mId: string) => {
-    if (mId === "60000000-0000-0000-0000-000000000002") {
+    if (mId === "60000000-0000-0000-0000-000000000002" || mId === "mother-demo-id") {
       setPendingRequest({
         id: "demo-req-1",
         status: "assigned",
@@ -105,7 +107,40 @@ export default function FindChwScreen() {
         return;
       }
       setMotherId(profile.id);
+
+      const net = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
+      const offline = net.isConnected === false || net.isInternetReachable === false;
+      setIsOffline(offline);
+
+      if (offline) {
+        if (profile.id === "60000000-0000-0000-0000-000000000002" || profile.id === "mother-demo-id") {
+          await fetchRequestStatus(profile.id);
+        }
+        setNearbyChws([]);
+        setLoading(false);
+        return;
+      }
+
       await fetchRequestStatus(profile.id);
+
+      const isDemo = profile.id === "60000000-0000-0000-0000-000000000002" || profile.id === "mother-demo-id";
+      if (isDemo) {
+        const mockCoords = { latitude: 23.8103, longitude: 90.4125 };
+        setCoords(mockCoords);
+        setNearbyChws([
+          {
+            chw_id: "00000000-0000-0000-0000-0000000000a1",
+            name: "মোছাঃ জাহানারা বেগম (Jahanara)",
+            union_name: "ভল্লবপুর",
+            upazila: "নরসিংদী সদর",
+            distance_km: 1.25,
+            latitude: mockCoords.latitude + 0.008,
+            longitude: mockCoords.longitude - 0.005
+          }
+        ]);
+        setLoading(false);
+        return;
+      }
 
       // Get current position
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -129,21 +164,6 @@ export default function FindChwScreen() {
         longitude: loc.coords.longitude
       };
       setCoords(currentCoords);
-
-      if (profile.id === "60000000-0000-0000-0000-000000000002") {
-        setNearbyChws([
-          {
-            chw_id: "00000000-0000-0000-0000-0000000000a1",
-            name: "মোছাঃ জাহানারা বেগম (Jahanara)",
-            union_name: "ভল্লবপুর",
-            upazila: "নরসিংদী সদর",
-            distance_km: 1.25,
-            latitude: currentCoords.latitude + 0.008,
-            longitude: currentCoords.longitude - 0.005
-          }
-        ]);
-        return;
-      }
 
       // Query database RPC
       const { data, error } = await supabase.rpc("find_nearby_chws", {
@@ -288,7 +308,16 @@ export default function FindChwScreen() {
 
           {viewMode === "list" ? (
             <ScrollView contentContainerStyle={styles.listContent}>
-              {nearbyChws.length > 0 ? (
+              {isOffline ? (
+                <View style={styles.emptyContainer}>
+                  <Icon name="cloud-off" color="#A08E88" size={48} />
+                  <Text style={styles.emptyText}>
+                    {lang === "bn"
+                      ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
+                      : "Please connect to the internet to search for health workers."}
+                  </Text>
+                </View>
+              ) : nearbyChws.length > 0 ? (
                 nearbyChws.map((chw) => (
                   <View key={chw.chw_id} style={styles.chwCard}>
                     <View style={styles.chwInfo}>
@@ -339,7 +368,16 @@ export default function FindChwScreen() {
             </ScrollView>
           ) : (
             <View style={styles.mapContainer}>
-              {coords ? (
+              {isOffline ? (
+                <View style={styles.mapError}>
+                  <Icon name="cloud-off" color="#A08E88" size={48} />
+                  <Text style={[styles.errorText, { marginTop: 12 }]}>
+                    {lang === "bn"
+                      ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
+                      : "Please connect to the internet to search for health workers."}
+                  </Text>
+                </View>
+              ) : coords ? (
                 <MapView
                   style={StyleSheet.absoluteFillObject}
                   initialRegion={{

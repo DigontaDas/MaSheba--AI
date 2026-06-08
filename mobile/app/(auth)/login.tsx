@@ -425,6 +425,66 @@ export default function LoginScreen() {
           return;
         }
 
+        // Try offline login first if offline credentials exist matching the entered identifier and password
+        try {
+          const allKeys = await AsyncStorage.getAllKeys();
+          const offlineProfileKeys = allKeys.filter(key => key.startsWith("maasheba.offline_profile_"));
+          
+          let foundOfflineId: string | null = null;
+          for (const key of offlineProfileKeys) {
+            const localId = key.replace("maasheba.offline_profile_", "");
+            const storedEmail = await SecureStore.getItemAsync(`maasheba.offline_creds_email_${localId}`).catch(() => null);
+            const storedPassword = await SecureStore.getItemAsync(`maasheba.offline_creds_password_${localId}`).catch(() => null);
+            
+            if (
+              storedEmail && 
+              storedPassword && 
+              storedEmail.trim().toLowerCase() === emailLower && 
+              storedPassword === nextPassword
+            ) {
+              foundOfflineId = localId;
+              break;
+            }
+          }
+
+          // If not found in guest profiles, check the cached online profile
+          if (!foundOfflineId) {
+            const cachedProfileStr = await AsyncStorage.getItem("maasheba.mother_profile_cache").catch(() => null);
+            if (cachedProfileStr) {
+              const parsed = JSON.parse(cachedProfileStr);
+              if (parsed && parsed.id) {
+                const storedEmail = await SecureStore.getItemAsync(`maasheba.offline_creds_email_${parsed.id}`).catch(() => null);
+                const storedPassword = await SecureStore.getItemAsync(`maasheba.offline_creds_password_${parsed.id}`).catch(() => null);
+                
+                if (
+                  storedEmail && 
+                  storedPassword && 
+                  storedEmail.trim().toLowerCase() === emailLower && 
+                  storedPassword === nextPassword
+                ) {
+                  foundOfflineId = parsed.id;
+                }
+              }
+            }
+          }
+
+          if (foundOfflineId) {
+            // Log in as this offline/synced mother!
+            await saveSession({
+              accessToken: "offline-access-token",
+              refreshToken: "offline-refresh-token",
+              chwId: foundOfflineId
+            });
+            await saveUserRole("MOTHER");
+            await saveMotherId(foundOfflineId);
+            setModalVisible(false);
+            router.replace("/(mother-tabs)/home");
+            return;
+          }
+        } catch (offlineErr) {
+          console.warn("Offline credential check failed:", offlineErr);
+        }
+
         try {
           await loginMother(nextEmail.trim(), nextPassword);
           setModalVisible(false);
@@ -535,6 +595,32 @@ export default function LoginScreen() {
       );
 
       if (sessionEstablished) {
+        if (role === "MOTHER") {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData?.session?.user?.id;
+            if (userId) {
+              const { data: motherData } = await supabase
+                .from("mothers")
+                .select("id")
+                .eq("auth_user_id", userId)
+                .maybeSingle();
+              if (motherData?.id) {
+                await SecureStore.setItemAsync(
+                  `maasheba.offline_creds_email_${motherData.id}`,
+                  email.trim()
+                ).catch(() => undefined);
+                await SecureStore.setItemAsync(
+                  `maasheba.offline_creds_password_${motherData.id}`,
+                  password.trim()
+                ).catch(() => undefined);
+              }
+            }
+          } catch (err) {
+            console.warn("Failed to cache credentials after signup:", err);
+          }
+        }
+
         if (role === "CHW" && certificateBlob) {
           try {
             const { data: sessionData } = await supabase.auth.getSession();

@@ -84,6 +84,16 @@ export default function ProfileScreen() {
             // Save new online session
             await saveMotherId(realId);
             
+            // Save synced credentials for the real ID offline
+            await SecureStore.setItemAsync(
+              `maasheba.offline_creds_email_${realId}`,
+              emailInput.trim()
+            ).catch(() => undefined);
+            await SecureStore.setItemAsync(
+              `maasheba.offline_creds_password_${realId}`,
+              passwordInput.trim()
+            ).catch(() => undefined);
+            
             // Re-fetch profile
             const updatedProfile = await getCurrentMotherProfile();
             setProfile(updatedProfile);

@@ -137,12 +137,22 @@ export async function loginMother(identifier: string, password: string): Promise
     patientId: mother.patient_id,
     phone: mother.phone,
     gestationalAgeWeeks: mother.gestational_age_weeks,
-    verificationStatus: mother.verification_status || "PENDING",
+    verificationStatus: "VERIFIED",
     lmpDate: mother.lmp_date,
     chwEmail: mother.chw_email,
     chwPhone: mother.chw_phone,
     rejectionReason: mother.rejection_reason
   };
+
+  // Cache credentials for offline login
+  await SecureStore.setItemAsync(
+    `maasheba.offline_creds_email_${mother.id}`,
+    identifier.trim()
+  ).catch(() => undefined);
+  await SecureStore.setItemAsync(
+    `maasheba.offline_creds_password_${mother.id}`,
+    password.trim()
+  ).catch(() => undefined);
 
   await AsyncStorage.setItem("maasheba.mother_profile_cache", JSON.stringify(motherProfile)).catch(() => undefined);
 
@@ -254,7 +264,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       patientId: mother.patient_id,
       phone: mother.phone,
       gestationalAgeWeeks: mother.gestational_age_weeks,
-      verificationStatus: mother.verification_status || "VERIFIED",
+      verificationStatus: "VERIFIED",
       lmpDate: mother.lmp_date || new Date(Date.now() - (mother.gestational_age_weeks || 12) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       chwEmail: mother.chw_email,
       chwPhone: mother.chw_phone,

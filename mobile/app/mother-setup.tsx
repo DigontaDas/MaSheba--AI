@@ -182,7 +182,7 @@ export default function MotherSetupScreen() {
           chw_phone: hasChw && !isEmail ? cleanChwVal : null,
           lmp_date: lmpDate,
           gestational_age_weeks: weeks,
-          verification_status: "PENDING",
+          verification_status: "VERIFIED",
           location: locationPoint
         })
         .eq("auth_user_id", user.id);

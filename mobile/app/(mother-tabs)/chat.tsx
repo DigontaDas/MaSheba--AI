@@ -27,21 +27,42 @@ export default function MotherChatScreen() {
     const profile = await getCurrentMotherProfile();
     if (!profile) return;
     setMotherId(profile.id);
+
+    // Support demo mother ID bypass
+    const DEMO_PATIENT_ID = "11111111-1111-1111-1111-111111111102";
+    const DEMO_CHW_ID = "00000000-0000-0000-0000-0000000000a1";
+    if (profile.id === "60000000-0000-0000-0000-000000000002" || profile.patientId === DEMO_PATIENT_ID) {
+      setChwId(DEMO_CHW_ID);
+      return;
+    }
+
     if (profile.patientId) {
-      // For demo mothers with mock tokens, the Supabase query would fail (401).
-      // Short-circuit using the known demo patient -> CHW mapping.
-      const DEMO_PATIENT_ID = "11111111-1111-1111-1111-111111111102";
-      const DEMO_CHW_ID = "00000000-0000-0000-0000-0000000000a1";
-      if (profile.patientId === DEMO_PATIENT_ID) {
-        setChwId(DEMO_CHW_ID);
-        return;
-      }
       const { data } = await supabase
         .from("patients")
         .select("chw_id")
         .eq("id", profile.patientId)
         .maybeSingle<{ chw_id: string }>();
-      if (data?.chw_id) setChwId(data.chw_id);
+      if (data?.chw_id) {
+        setChwId(data.chw_id);
+        return;
+      }
+    }
+
+    // Fallback: Check connection_requests to see if a CHW is assigned to this mother
+    try {
+      const { data } = await supabase
+        .from("connection_requests")
+        .select("chw_id")
+        .eq("mother_id", profile.id)
+        .eq("status", "assigned")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.chw_id) {
+        setChwId(data.chw_id);
+      }
+    } catch (err) {
+      console.warn("Failed to retrieve fallback chw_id from connection_requests:", err);
     }
   }, []);
 
