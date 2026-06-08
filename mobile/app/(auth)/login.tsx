@@ -29,6 +29,9 @@ import { copy } from "@/data/stitchCopy.bn";
 import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
 import { base64ToBlob } from "@/utils/base64";
+import * as Network from "expo-network";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 type LoadingAction = "login" | "demo-chw" | "demo-mother";
 
@@ -640,6 +643,93 @@ export default function LoginScreen() {
     submitLogin(modalRole, creds.email, creds.password, modalRole === "CHW" ? "demo-chw" : "demo-mother");
   };
 
+  const handleOfflineRegister = async () => {
+    if (modalMode !== "signup") {
+      setModalMode("signup");
+      Alert.alert(
+        lang === "bn" ? "অফলাইন গেস্ট মোড" : "Offline Guest Mode",
+        lang === "bn"
+          ? "অফলাইনে ব্যবহারের জন্য অনুগ্রহ করে নাম এবং গর্ভকালীন বয়স দিয়ে নিবন্ধন করুন।"
+          : "Please enter your name and gestational age to use the app offline."
+      );
+      return;
+    }
+
+    if (!name.trim()) {
+      setError(lang === "bn" ? "অনুগ্রহ করে আপনার নাম দিন" : "Please enter your name");
+      return;
+    }
+
+    if (!gestationalAge.trim()) {
+      setError(lang === "bn" ? "অনুগ্রহ করে গর্ভকালীন বয়স দিন" : "Please enter gestational age");
+      return;
+    }
+
+    const weeks = parseInt(gestationalAge.trim(), 10);
+    if (isNaN(weeks) || weeks < 1 || weeks > 45) {
+      setError(lang === "bn" ? "গর্ভকালীন বয়স ১ থেকে ৪৫ সপ্তাহের মধ্যে হতে হবে" : "Gestational age must be between 1 and 45 weeks");
+      return;
+    }
+
+    setLoadingAction("login");
+    setError(null);
+
+    try {
+      const localId = `offline-mother-${Date.now()}`;
+      
+      // Calculate LMP Date locally
+      const lmpDate = new Date(Date.now() - weeks * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      const localProfile = {
+        id: localId,
+        name: name.trim(),
+        patientId: null,
+        phone: email.trim() || null, // store whatever phone/email typed
+        gestationalAgeWeeks: weeks,
+        verificationStatus: "VERIFIED",
+        lmpDate: lmpDate,
+        chwEmail: null,
+        chwPhone: null,
+        rejectionReason: null
+      };
+
+      // Save offline credentials if they typed email and password
+      if (email.trim() && password.trim()) {
+        await SecureStore.setItemAsync(
+          `maasheba.offline_creds_email_${localId}`,
+          email.trim()
+        );
+        await SecureStore.setItemAsync(
+          `maasheba.offline_creds_password_${localId}`,
+          password.trim()
+        );
+      }
+
+      await AsyncStorage.setItem(`maasheba.offline_profile_${localId}`, JSON.stringify(localProfile));
+      
+      await saveSession({
+        accessToken: "offline-access-token",
+        refreshToken: "offline-refresh-token",
+        chwId: localId
+      });
+      await saveUserRole("MOTHER");
+      await saveMotherId(localId);
+
+      setModalVisible(false);
+      Alert.alert(
+        lang === "bn" ? "নিবন্ধন সফল" : "Registration Successful",
+        lang === "bn" 
+          ? "গেস্ট অফলাইন নিবন্ধন সফল! ড্যাশবোর্ডে প্রবেশ করা হচ্ছে..."
+          : "Offline guest registration successful! Redirecting to dashboard...",
+        [{ text: lang === "bn" ? "ঠিক আছে" : "OK", onPress: () => router.replace("/(mother-tabs)/home") }]
+      );
+    } catch (err: any) {
+      setError(err?.message || "Offline registration failed");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -923,6 +1013,22 @@ export default function LoginScreen() {
               <Pressable onPress={handleDemoAutoLogin} style={styles.modalDemoLink}>
                 <Text style={styles.modalDemoLinkText}>{t.demoAutoLoginBtn}</Text>
               </Pressable>
+
+              {modalRole === "MOTHER" && (
+                <Pressable
+                  accessibilityLabel="অফলাইন গেস্ট হিসেবে প্রবেশ করুন"
+                  onPress={handleOfflineRegister}
+                  style={({ pressed }) => [
+                    styles.modalSubmitButton,
+                    { backgroundColor: "#4A6047", marginTop: 12 },
+                    pressed && styles.pressed
+                  ]}
+                >
+                  <Text style={styles.modalSubmitButtonText}>
+                    {lang === "bn" ? "অফলাইন গেস্ট হিসেবে প্রবেশ করুন 💾" : "Enter as Offline Guest 💾"}
+                  </Text>
+                </Pressable>
+              )}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>

@@ -155,6 +155,33 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
     return null;
   }
 
+  if (motherId.startsWith("offline-mother-")) {
+    const cachedProfileStr = await AsyncStorage.getItem(`maasheba.offline_profile_${motherId}`).catch(() => null);
+    if (cachedProfileStr) {
+      try {
+        const parsed = JSON.parse(cachedProfileStr);
+        return {
+          ...parsed,
+          verificationStatus: "VERIFIED"
+        };
+      } catch {
+        // fallback
+      }
+    }
+    return {
+      id: motherId,
+      name: "মা",
+      patientId: null,
+      phone: null,
+      gestationalAgeWeeks: 12,
+      verificationStatus: "VERIFIED",
+      lmpDate: new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      chwEmail: null,
+      chwPhone: null,
+      rejectionReason: null
+    };
+  }
+
   if (motherId === "mother-demo-id" || motherId === "60000000-0000-0000-0000-000000000002") {
     return {
       id: motherId,

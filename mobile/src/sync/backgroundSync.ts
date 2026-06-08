@@ -21,7 +21,7 @@ export async function runOutboxSync(): Promise<{ processed: number; skipped: boo
   }
 
   // Skip sync entirely for demo/offline mode — mock tokens are rejected by the backend with 401
-  if (session.accessToken === "mock-access-token") {
+  if (session.accessToken === "mock-access-token" || session.accessToken === "offline-access-token") {
     return { processed: 0, skipped: true };
   }
 

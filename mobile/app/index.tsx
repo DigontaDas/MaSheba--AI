@@ -25,6 +25,21 @@ async function routeFromStoredSession() {
     return;
   }
 
+  // Bypass Supabase validation for offline guest/registered mothers
+  if (storedSession.chwId && storedSession.chwId.startsWith("offline-mother-")) {
+    await saveUserRole("MOTHER");
+    await saveMotherId(storedSession.chwId);
+    router.replace("/(mother-tabs)/home");
+    return;
+  }
+
+  const motherId = await getMotherId();
+  if (motherId && motherId.startsWith("offline-mother-")) {
+    await saveUserRole("MOTHER");
+    router.replace("/(mother-tabs)/home");
+    return;
+  }
+
   // On app launch, if network is unreachable, attempt offline bypass for Mother users
   const networkState = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
   const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false;
@@ -32,7 +47,6 @@ async function routeFromStoredSession() {
   if (isOffline) {
     const role = await getUserRole();
     if (role === "MOTHER") {
-      const motherId = await getMotherId();
       if (motherId) {
         await saveUserRole("MOTHER");
         router.replace("/(mother-tabs)/home");
