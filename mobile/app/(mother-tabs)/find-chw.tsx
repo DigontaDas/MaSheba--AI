@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
-import MapView, { Marker, Circle, UrlTile } from "react-native-maps";
 import * as Location from "expo-location";
 import * as Network from "expo-network";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
@@ -11,8 +10,6 @@ import { Icon } from "@/components/ui/Icon";
 import { colors, radius, spacing, typography } from "@/theme";
 import { useLanguage } from "@/context/LanguageContext";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
-
-type ViewMode = "list" | "map";
 
 interface CHW {
   chw_id: string;
@@ -36,7 +33,6 @@ interface ConnectionRequest {
 
 export default function FindChwScreen() {
   const { language: lang } = useLanguage();
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [motherId, setMotherId] = useState<string | null>(null);
@@ -226,8 +222,7 @@ export default function FindChwScreen() {
     return lang === "bn" ? `${toBanglaNumber(kmStr)} কি.মি.` : `${kmStr} km`;
   };
 
-  const stadiaApiKey = process.env.EXPO_PUBLIC_STADIA_MAPS_API_KEY;
-  const tileUrl = `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`;
+
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -240,27 +235,6 @@ export default function FindChwScreen() {
             ? "আপনার চারপাশের স্বাস্থ্যকর্মীদের খুঁজুন এবং যোগাযোগ করুন"
             : "Locate and connect with active CHWs in your area"}
         </Text>
-      </View>
-
-      <View style={styles.segmentedContainer}>
-        <Pressable
-          style={[styles.segmentButton, viewMode === "list" && styles.segmentActive]}
-          onPress={() => setViewMode("list")}
-        >
-          <Icon name="list" color={viewMode === "list" ? "#FFFFFF" : "#70605A"} size={20} />
-          <Text style={[styles.segmentText, viewMode === "list" && styles.segmentTextActive]}>
-            {lang === "bn" ? "তালিকা" : "List View"}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.segmentButton, viewMode === "map" && styles.segmentActive]}
-          onPress={() => setViewMode("map")}
-        >
-          <Icon name="map" color={viewMode === "map" ? "#FFFFFF" : "#70605A"} size={20} />
-          <Text style={[styles.segmentText, viewMode === "map" && styles.segmentTextActive]}>
-            {lang === "bn" ? "মানচিত্র" : "Map View"}
-          </Text>
-        </Pressable>
       </View>
 
       {loading ? (
@@ -306,127 +280,65 @@ export default function FindChwScreen() {
             </View>
           )}
 
-          {viewMode === "list" ? (
-            <ScrollView contentContainerStyle={styles.listContent}>
-              {isOffline ? (
-                <View style={styles.emptyContainer}>
-                  <Icon name="cloud-off" color="#A08E88" size={48} />
-                  <Text style={styles.emptyText}>
-                    {lang === "bn"
-                      ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
-                      : "Please connect to the internet to search for health workers."}
-                  </Text>
-                </View>
-              ) : nearbyChws.length > 0 ? (
-                nearbyChws.map((chw) => (
-                  <View key={chw.chw_id} style={styles.chwCard}>
-                    <View style={styles.chwInfo}>
-                      <View style={styles.avatar}>
-                        <Icon name="person" color="#FFFFFF" size={24} />
-                      </View>
-                      <View style={styles.chwDetails}>
-                        <Text style={styles.chwName}>{chw.name}</Text>
-                        <Text style={styles.chwArea}>
-                          {chw.union_name}, {chw.upazila}
-                        </Text>
-                      </View>
+          <ScrollView contentContainerStyle={styles.listContent}>
+            {isOffline ? (
+              <View style={styles.emptyContainer}>
+                <Icon name="cloud-off" color="#A08E88" size={48} />
+                <Text style={styles.emptyText}>
+                  {lang === "bn"
+                    ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
+                    : "Please connect to the internet to search for health workers."}
+                </Text>
+              </View>
+            ) : nearbyChws.length > 0 ? (
+              nearbyChws.map((chw) => (
+                <View key={chw.chw_id} style={styles.chwCard}>
+                  <View style={styles.chwInfo}>
+                    <View style={styles.avatar}>
+                      <Icon name="person" color="#FFFFFF" size={24} />
                     </View>
-                    <View style={styles.chwActions}>
-                      <View style={styles.distanceBadge}>
-                        <Text style={styles.distanceText}>{formatDistance(chw.distance_km)}</Text>
-                      </View>
-                      <Pressable style={styles.chatButton} onPress={() => handleOpenChat(chw.chw_id)}>
-                        <Icon name="chat" color="#FFFFFF" size={16} />
-                        <Text style={styles.chatButtonText}>{lang === "bn" ? "চ্যাট" : "Chat"}</Text>
-                      </Pressable>
+                    <View style={styles.chwDetails}>
+                      <Text style={styles.chwName}>{chw.name}</Text>
+                      <Text style={styles.chwArea}>
+                        {chw.union_name}, {chw.upazila}
+                      </Text>
                     </View>
                   </View>
-                ))
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <Icon name="location-off" color="#A08E88" size={48} />
-                  <Text style={styles.emptyText}>
-                    {lang === "bn"
-                      ? "১০ কি.মি.-এর মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।"
-                      : "No active health workers found within 10 km."}
-                  </Text>
-                  {!pendingRequest && (
-                    <Pressable
-                      style={styles.requestButton}
-                      disabled={submitting}
-                      onPress={handleRequestChw}
-                    >
-                      <Text style={styles.requestButtonText}>
-                        {submitting
-                          ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...")
-                          : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a Health Worker")}
-                      </Text>
+                  <View style={styles.chwActions}>
+                    <View style={styles.distanceBadge}>
+                      <Text style={styles.distanceText}>{formatDistance(chw.distance_km)}</Text>
+                    </View>
+                    <Pressable style={styles.chatButton} onPress={() => handleOpenChat(chw.chw_id)}>
+                      <Icon name="chat" color="#FFFFFF" size={16} />
+                      <Text style={styles.chatButtonText}>{lang === "bn" ? "চ্যাট" : "Chat"}</Text>
                     </Pressable>
-                  )}
+                  </View>
                 </View>
-              )}
-            </ScrollView>
-          ) : (
-            <View style={styles.mapContainer}>
-              {isOffline ? (
-                <View style={styles.mapError}>
-                  <Icon name="cloud-off" color="#A08E88" size={48} />
-                  <Text style={[styles.errorText, { marginTop: 12 }]}>
-                    {lang === "bn"
-                      ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
-                      : "Please connect to the internet to search for health workers."}
-                  </Text>
-                </View>
-              ) : coords ? (
-                <MapView
-                  style={StyleSheet.absoluteFillObject}
-                  initialRegion={{
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                    latitudeDelta: 0.15,
-                    longitudeDelta: 0.15
-                  }}
-                >
-                  {/* Stadia Maps Tiles overlay */}
-                  <UrlTile urlTemplate={tileUrl} maximumZ={19} tileSize={256} />
-
-                  {/* Mother self marker */}
-                  <Marker
-                    coordinate={coords}
-                    title={lang === "bn" ? "আপনার অবস্থান" : "Your Location"}
-                    pinColor={colors.primary}
-                  />
-
-                  {/* 10km radius circle */}
-                  <Circle
-                    center={coords}
-                    radius={10000}
-                    strokeWidth={1.5}
-                    strokeColor="#E57A58"
-                    fillColor="rgba(229, 122, 88, 0.08)"
-                  />
-
-                  {/* CHW pins */}
-                  {nearbyChws.map((chw) => (
-                    <Marker
-                      key={chw.chw_id}
-                      coordinate={{ latitude: chw.latitude, longitude: chw.longitude }}
-                      title={chw.name}
-                      description={`${chw.union_name} (${formatDistance(chw.distance_km)})`}
-                      pinColor="#2196F3"
-                      onCalloutPress={() => handleOpenChat(chw.chw_id)}
-                    />
-                  ))}
-                </MapView>
-              ) : (
-                <View style={styles.mapError}>
-                  <Text style={styles.errorText}>
-                    {lang === "bn" ? "মানচিত্র লোড করা যায়নি।" : "Unable to render map view."}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Icon name="location-off" color="#A08E88" size={48} />
+                <Text style={styles.emptyText}>
+                  {lang === "bn"
+                    ? "১০ কি.মি.-এর মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।"
+                    : "No active health workers found within 10 km."}
+                </Text>
+                {!pendingRequest && (
+                  <Pressable
+                    style={styles.requestButton}
+                    disabled={submitting}
+                    onPress={handleRequestChw}
+                  >
+                    <Text style={styles.requestButtonText}>
+                      {submitting
+                        ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...")
+                        : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a Health Worker")}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </ScrollView>
         </View>
       )}
     </SafeAreaView>
@@ -454,35 +366,7 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginTop: 2
   },
-  segmentedContainer: {
-    backgroundColor: "#FCEBE5",
-    borderRadius: 24,
-    flexDirection: "row",
-    gap: 4,
-    marginHorizontal: 20,
-    marginVertical: 12,
-    padding: 4
-  },
-  segmentButton: {
-    alignItems: "center",
-    borderRadius: 20,
-    flex: 1,
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-    minHeight: 40
-  },
-  segmentActive: {
-    backgroundColor: "#E57A58"
-  },
-  segmentText: {
-    color: "#70605A",
-    fontSize: 14,
-    fontWeight: "bold"
-  },
-  segmentTextActive: {
-    color: "#FFFFFF"
-  },
+
   container: {
     flex: 1
   },
@@ -610,19 +494,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold"
   },
-  mapContainer: {
-    flex: 1,
-    overflow: "hidden"
-  },
-  mapError: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center"
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.error
-  },
+
   emptyContainer: {
     alignItems: "center",
     paddingVertical: 48,
