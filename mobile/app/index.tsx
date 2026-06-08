@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, BackHandler, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import * as Network from "expo-network";
 import { clearRoleSession, saveMotherId, saveUserRole, getUserRole, getMotherId } from "@/auth/roleSession";
@@ -98,6 +98,11 @@ async function routeFromStoredSession() {
 
 export default function IndexRoute() {
   useEffect(() => {
+    if ((globalThis as any).hasRedirectedFromIndex) {
+      BackHandler.exitApp();
+      return;
+    }
+    (globalThis as any).hasRedirectedFromIndex = true;
     routeFromStoredSession()
       .catch(() => router.replace("/(auth)/login"));
   }, []);

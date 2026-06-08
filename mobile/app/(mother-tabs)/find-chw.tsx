@@ -44,6 +44,18 @@ export default function FindChwScreen() {
   const [pendingRequest, setPendingRequest] = useState<ConnectionRequest | null>(null);
 
   const fetchRequestStatus = async (mId: string) => {
+    if (mId === "60000000-0000-0000-0000-000000000002") {
+      setPendingRequest({
+        id: "demo-req-1",
+        status: "assigned",
+        chw_id: "00000000-0000-0000-0000-0000000000a1",
+        chws: {
+          name: "মোছাঃ জাহানারা বেগম (Jahanara)"
+        }
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("connection_requests")
@@ -117,6 +129,21 @@ export default function FindChwScreen() {
         longitude: loc.coords.longitude
       };
       setCoords(currentCoords);
+
+      if (profile.id === "60000000-0000-0000-0000-000000000002") {
+        setNearbyChws([
+          {
+            chw_id: "00000000-0000-0000-0000-0000000000a1",
+            name: "মোছাঃ জাহানারা বেগম (Jahanara)",
+            union_name: "ভল্লবপুর",
+            upazila: "নরসিংদী সদর",
+            distance_km: 1.25,
+            latitude: currentCoords.latitude + 0.008,
+            longitude: currentCoords.longitude - 0.005
+          }
+        ]);
+        return;
+      }
 
       // Query database RPC
       const { data, error } = await supabase.rpc("find_nearby_chws", {

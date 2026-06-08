@@ -1,4 +1,5 @@
 import { supabase } from "@/auth/supabaseAuth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type ChatSenderType = "chw" | "mother";
 export type ChatCategory = "জরুরি" | "স্বাভাবিক" | "পুষ্টি" | "সতর্কতা";
@@ -30,7 +31,73 @@ export interface ChatMother {
   } | null;
 }
 
+// ----------------------------------------------------
+// Demo Mock Chat Support
+// ----------------------------------------------------
+const DEMO_CHAT_CACHE_KEY = "maasheba.demo_chat_messages";
+let demoMessages: ChatMessage[] = [];
+let demoListeners: ((msg: ChatMessage) => void)[] = [];
+
+async function loadDemoMessages() {
+  if (demoMessages.length > 0) return demoMessages;
+  try {
+    const cached = await AsyncStorage.getItem(DEMO_CHAT_CACHE_KEY);
+    if (cached) {
+      demoMessages = JSON.parse(cached);
+    } else {
+      demoMessages = [
+        {
+          id: "seed-msg-1",
+          chw_id: "00000000-0000-0000-0000-0000000000a1",
+          mother_id: "60000000-0000-0000-0000-000000000002",
+          sender_type: "chw",
+          sender_id: "00000000-0000-0000-0000-0000000000a1",
+          message: "আসসালামু আলাইকুম রহিমা বেগম। আপনার আজকের স্বাস্থ্য কেমন আছে? কোনো সমস্যা হচ্ছে কি?",
+          message_type: "text",
+          category: "স্বাভাবিক",
+          is_read: true,
+          created_at: new Date(Date.now() - 3600000 * 2).toISOString()
+        },
+        {
+          id: "seed-msg-2",
+          chw_id: "00000000-0000-0000-0000-0000000000a1",
+          mother_id: "60000000-0000-0000-0000-000000000002",
+          sender_type: "mother",
+          sender_id: "60000000-0000-0000-0000-000000000002",
+          message: "ওয়া আলাইকুম আসসালাম আপা। আমার পা একটু ফুলেছে আর মাথা ব্যথা করছে মাঝে মাঝে।",
+          message_type: "text",
+          category: null,
+          is_read: true,
+          created_at: new Date(Date.now() - 3600000).toISOString()
+        }
+      ];
+      await AsyncStorage.setItem(DEMO_CHAT_CACHE_KEY, JSON.stringify(demoMessages));
+    }
+  } catch {
+    // Fallback
+  }
+  return demoMessages;
+}
+
 export async function listAssignedMothers(chwId: string): Promise<ChatMother[]> {
+  if (chwId === "00000000-0000-0000-0000-0000000000a1") {
+    return [
+      {
+        id: "60000000-0000-0000-0000-000000000002",
+        name: "রহিমা বেগম (Rahima)",
+        phone: "+8801700000002",
+        patient_id: "11111111-1111-1111-1111-111111111102",
+        gestational_age_weeks: 32,
+        patient: {
+          id: "11111111-1111-1111-1111-111111111102",
+          name: "রহিমা বেগম",
+          gestational_age_weeks: 32,
+          last_risk_level: "MODERATE"
+        }
+      }
+    ];
+  }
+
   // Query mothers that have a patient row assigned to this CHW.
   // The foreign key is mothers.patient_id → patients.id.
   // Using !inner ensures only mothers with a matching patient row are returned.
@@ -91,6 +158,11 @@ export async function listAssignedMothers(chwId: string): Promise<ChatMother[]> 
 
 
 export async function getMessages(chwId: string, motherId: string): Promise<ChatMessage[]> {
+  const isDemo = chwId === "00000000-0000-0000-0000-0000000000a1" && motherId === "60000000-0000-0000-0000-000000000002";
+  if (isDemo) {
+    return loadDemoMessages();
+  }
+
   const { data, error } = await supabase
     .from("chat_messages")
     .select("*")
@@ -110,6 +182,39 @@ export async function sendMessage(params: {
   message: string;
   category?: ChatCategory | null;
 }): Promise<ChatMessage> {
+  const isDemo = params.chwId === "00000000-0000-0000-0000-0000000000a1" && params.motherId === "60000000-0000-0000-0000-000000000002";
+  if (isDemo) {
+    const category = params.category ?? null;
+    const newMessage: ChatMessage = {
+      id: `demo-msg-${Date.now()}`,
+      chw_id: params.chwId,
+      mother_id: params.motherId,
+      sender_type: params.senderType,
+      sender_id: params.senderId,
+      message: params.message,
+      message_type: category === "জরুরি" ? "alert" : category ? "notification" : "text",
+      category,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+    
+    await loadDemoMessages();
+    demoMessages.push(newMessage);
+    await AsyncStorage.setItem(DEMO_CHAT_CACHE_KEY, JSON.stringify(demoMessages)).catch(() => undefined);
+    
+    setTimeout(() => {
+      demoListeners.forEach((listener) => {
+        try {
+          listener(newMessage);
+        } catch (err) {
+          console.error("Error in demo message listener:", err);
+        }
+      });
+    }, 50);
+
+    return newMessage;
+  }
+
   const category = params.category ?? null;
   const { data, error } = await supabase
     .from("chat_messages")
@@ -131,6 +236,24 @@ export async function sendMessage(params: {
 }
 
 export async function markMessagesRead(chwId: string, motherId: string, readerType: ChatSenderType): Promise<void> {
+  const isDemo = chwId === "00000000-0000-0000-0000-0000000000a1" && motherId === "60000000-0000-0000-0000-000000000002";
+  if (isDemo) {
+    const oppositeType: ChatSenderType = readerType === "chw" ? "mother" : "chw";
+    await loadDemoMessages();
+    let changed = false;
+    demoMessages = demoMessages.map((msg) => {
+      if (msg.sender_type === oppositeType && !msg.is_read) {
+        changed = true;
+        return { ...msg, is_read: true };
+      }
+      return msg;
+    });
+    if (changed) {
+      await AsyncStorage.setItem(DEMO_CHAT_CACHE_KEY, JSON.stringify(demoMessages)).catch(() => undefined);
+    }
+    return;
+  }
+
   const oppositeType: ChatSenderType = readerType === "chw" ? "mother" : "chw";
   const { error } = await supabase
     .from("chat_messages")
@@ -144,6 +267,12 @@ export async function markMessagesRead(chwId: string, motherId: string, readerTy
 }
 
 export async function getUnreadCount(chwId: string, readerType: ChatSenderType, motherId?: string): Promise<number> {
+  const isDemo = chwId === "00000000-0000-0000-0000-0000000000a1" && (!motherId || motherId === "60000000-0000-0000-0000-000000000002");
+  if (isDemo) {
+    await loadDemoMessages();
+    return demoMessages.filter((msg) => msg.sender_type === (readerType === "chw" ? "mother" : "chw") && !msg.is_read).length;
+  }
+
   let query = supabase
     .from("chat_messages")
     .select("id", { count: "exact", head: true })
@@ -172,6 +301,16 @@ export async function getRecentUnreadMessages(chwId: string, limit = 3): Promise
 }
 
 export function subscribeToMessages(chwId: string, motherId: string, onMessage: (message: ChatMessage) => void) {
+  const isDemo = chwId === "00000000-0000-0000-0000-0000000000a1" && motherId === "60000000-0000-0000-0000-000000000002";
+  if (isDemo) {
+    demoListeners.push(onMessage);
+    return {
+      unsubscribe: () => {
+        demoListeners = demoListeners.filter((l) => l !== onMessage);
+      }
+    };
+  }
+
   return supabase
     .channel(`chat:${chwId}:${motherId}`)
     .on(

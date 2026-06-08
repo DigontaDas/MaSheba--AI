@@ -736,7 +736,7 @@ export default function LoginScreen() {
         onRequestClose={closeModal}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.modalBackdrop}
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
@@ -779,13 +779,14 @@ export default function LoginScreen() {
             </View>
 
             {/* Input Forms list */}
-            <View style={styles.modalFormContent}>
+            <ScrollView
+              style={styles.modalFormScroll}
+              contentContainerStyle={styles.modalFormContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+            >
               {modalMode === "signup" && (
-                <ScrollView 
-                  style={{ maxHeight: 320 }} 
-                  contentContainerStyle={{ gap: 12 }}
-                  keyboardShouldPersistTaps="handled"
-                >
+                <View style={{ gap: 12, marginBottom: 12 }}>
                   {/* Name field */}
                   <TextInput
                     onChangeText={setName}
@@ -874,7 +875,7 @@ export default function LoginScreen() {
                       value={gestationalAge}
                     />
                   )}
-                </ScrollView>
+                </View>
               )}
 
               {/* Email or Phone Address */}
@@ -922,7 +923,7 @@ export default function LoginScreen() {
               <Pressable onPress={handleDemoAutoLogin} style={styles.modalDemoLink}>
                 <Text style={styles.modalDemoLinkText}>{t.demoAutoLoginBtn}</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1195,6 +1196,9 @@ const styles = StyleSheet.create({
   },
   tabBtnTextActive: {
     color: "#FFFFFF"
+  },
+  modalFormScroll: {
+    maxHeight: 400
   },
   modalFormContent: {
     gap: 12
