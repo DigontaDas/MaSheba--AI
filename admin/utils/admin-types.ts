@@ -15,6 +15,8 @@ export type ChwRow = {
   worker_type?: string | null;
   years_of_experience?: number;
   certificate_url?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 export type PendingChwRow = {

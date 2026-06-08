@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { getChws, getPatients } from "@/utils/admin-api";
-import type { ChwRow, MotherRegistryRow, HeatmapRow } from "@/utils/admin-types";
+import { getPatients } from "@/utils/admin-api";
+import type { MotherRegistryRow, HeatmapRow } from "@/utils/admin-types";
 
 // Dynamically import RequestsMap to prevent Leaflet SSR errors
 const RequestsMap = dynamic(
@@ -21,23 +21,12 @@ const RequestsMap = dynamic(
 export function UpazilaRiskMap({ rows }: { rows: HeatmapRow[] }) {
   const [selectedRow, setSelectedRow] = useState<HeatmapRow | null>(null);
   const [mothers, setMothers] = useState<MotherRegistryRow[]>([]);
-  const [chws, setChws] = useState<ChwRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadLiveMapData() {
       try {
-        const [chwsData, mothersData] = await Promise.all([
-          getChws(),
-          getPatients(1000), // Get up to 1000 tracked mothers for overview map
-        ]);
-        
-        // Filter active, verified CHWs
-        const activeChws = chwsData.filter(
-          (c) => c.verification_status === "APPROVED" && c.is_active
-        );
-        
-        setChws(activeChws);
+        const mothersData = await getPatients(1000);
         setMothers(mothersData);
       } catch (err) {
         console.error("Failed to fetch live map data:", err);
@@ -65,8 +54,7 @@ export function UpazilaRiskMap({ rows }: { rows: HeatmapRow[] }) {
       {/* Live Map Layer */}
       <div className="p-4 bg-surface-container-low/30">
         <RequestsMap
-          requests={[]} // Connection requests not shown here
-          chws={chws}
+          requests={[]} // Connection requests not shown on Risk Map
           mothers={mothers}
           selectedRequestId={null}
           onSelectRequest={() => {}}

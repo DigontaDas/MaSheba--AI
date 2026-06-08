@@ -100,7 +100,8 @@ const getChwIcon = () => {
   });
 };
 
-// Deterministic helper functions for risk, gestational age, location, last active
+
+// Deterministic helpers for connection-request pins (risk colour + gestational age estimate)
 const getMotherRisk = (req: ConnectionRequest, index: number): "LOW" | "MODERATE" | "HIGH" | "UNASSESSED" => {
   const levels: ("LOW" | "MODERATE" | "HIGH" | "UNASSESSED")[] = ["HIGH", "MODERATE", "LOW", "UNASSESSED"];
   return levels[index % 4];
@@ -108,24 +109,6 @@ const getMotherRisk = (req: ConnectionRequest, index: number): "LOW" | "MODERATE
 
 const getMotherGestationalAge = (req: ConnectionRequest, index: number): number => {
   return 8 + (index % 5) * 6;
-};
-
-const getChwCoords = (chw: ChwRow, index: number): [number, number] => {
-  const angle = (index * 2 * Math.PI) / 8;
-  const radius = 0.025 + (index % 3) * 0.012; // 2.5km to 6km offset
-  return [23.9097 + Math.sin(angle) * radius, 90.7153 + Math.cos(angle) * radius];
-};
-
-const getChwLastActive = (chw: ChwRow, index: number): string => {
-  const times = [
-    "10 minutes ago",
-    "25 minutes ago",
-    "1 hour ago",
-    "3 hours ago",
-    "Active now",
-    "Yesterday"
-  ];
-  return times[index % times.length];
 };
 
 /**
@@ -192,7 +175,7 @@ export function RequestsMap({
     }
   }, [zoom, upazilas, loadingUpazilas]);
 
-  const defaultCenter: [number, number] = [23.9097, 90.7153]; // Narsingdi District Center
+  const defaultCenter: [number, number] = [23.685, 90.356]; // Geographic centre of Bangladesh
 
   const selectedRequest = requests.find((r) => r.id === selectedRequestId);
   const center: [number, number] =
@@ -323,23 +306,22 @@ export function RequestsMap({
           );
         })}
 
-        {/* CHW pins */}
-        {chws.map((chw, index) => {
-          const coords = getChwCoords(chw, index);
+        {/* CHW pins — only rendered when the chw has real GPS coordinates */}
+        {chws.map((chw) => {
+          if (!chw.lat || !chw.lng) return null; // skip CHWs with no GPS data
           const icon = getChwIcon();
-          const lastActive = getChwLastActive(chw, index);
 
           return (
             <Marker
               key={chw.chw_id}
-              position={coords}
+              position={[chw.lat, chw.lng]}
               icon={icon}
             >
               <Popup>
                 <div className="p-1 font-body-md text-xs space-y-1">
                   <h4 className="font-bold text-sm text-teal-800 mb-1">{chw.name}</h4>
                   <p className="text-on-surface-variant mb-1">
-                    <span className="font-bold">Last Active:</span> {lastActive}
+                    <span className="font-bold">Location:</span> {chw.district ? `${chw.upazila}, ${chw.district}` : chw.upazila || "Not set"}
                   </p>
                   <p className="text-on-surface-variant mb-1">
                     <span className="font-bold">Assigned Mothers:</span> {chw.patient_count || 0}

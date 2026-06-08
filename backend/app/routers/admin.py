@@ -270,7 +270,28 @@ def _in_filter(values: list[str]) -> str:
     return ",".join(quote(value, safe="") for value in values if value)
 
 
+def _parse_location(loc: Any) -> tuple[float | None, float | None]:
+    """Parse a Supabase geography column (GeoJSON dict or WKT string) into (lat, lng).
+    Returns (None, None) if the location is missing or unparseable."""
+    if not loc:
+        return None, None
+    if isinstance(loc, dict) and loc.get("type") == "Point" and isinstance(loc.get("coordinates"), list):
+        coords = loc["coordinates"]
+        if len(coords) >= 2:
+            return float(coords[1]), float(coords[0])  # GeoJSON is [lng, lat]
+    if isinstance(loc, str):
+        try:
+            content = loc.replace("POINT(", "").replace(")", "").strip()
+            parts = content.split()
+            if len(parts) >= 2:
+                return float(parts[1]), float(parts[0])  # WKT is "lng lat"
+        except (ValueError, IndexError):
+            pass
+    return None, None
+
+
 async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[dict[str, Any]]:
+
     mothers = await _supabase_get(
         settings,
         "mothers",
@@ -358,7 +379,7 @@ async def get_chws(
         chws = await _supabase_get(
             settings,
             "chws",
-            select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+            select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url,location",
             query=page.query,
         )
         chw_ids = [c["id"] for c in chws if c.get("id")]
@@ -377,6 +398,7 @@ async def get_chws(
         
         mapped_chws = []
         for c in chws:
+            chw_lat, chw_lng = _parse_location(c.get("location"))
             mapped_chws.append({
                 "id": c["id"],
                 "chw_id": c["id"],
@@ -393,6 +415,8 @@ async def get_chws(
                 "years_of_experience": c.get("years_of_experience"),
                 "certificate_url": c.get("certificate_url"),
                 "patient_count": patient_counts.get(c["id"], 0),
+                "lat": chw_lat,
+                "lng": chw_lng,
             })
         await audit(settings, admin, "admin.chws.read", "chw")
         return {"chws": mapped_chws, "page": _page(mapped_chws, page)}
@@ -762,7 +786,7 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
     chws_raw = await _supabase_get(
         settings,
         "chws",
-        select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url",
+        select="id,name,union_name,upazila,district,is_active,verification_status,rejection_reason,created_at,organization_name,worker_type,years_of_experience,certificate_url,location",
         query="&order=name.asc",
     )
     chw_ids = [c["id"] for c in chws_raw if c.get("id")]
@@ -781,6 +805,7 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
     
     chws = []
     for c in chws_raw:
+        chw_lat, chw_lng = _parse_location(c.get("location"))
         chws.append({
             "id": c["id"],
             "chw_id": c["id"],
@@ -797,6 +822,8 @@ async def _load_summary_rows(settings: Settings) -> tuple[list[dict[str, Any]], 
             "years_of_experience": c.get("years_of_experience"),
             "certificate_url": c.get("certificate_url"),
             "patient_count": patient_counts.get(c["id"], 0),
+            "lat": chw_lat,
+            "lng": chw_lng,
         })
 
     risk_summary = await _supabase_get(settings, "v_risk_summary", select="chw_id,chw_name,low_count,moderate_count,high_count", query="&order=chw_name.asc")
