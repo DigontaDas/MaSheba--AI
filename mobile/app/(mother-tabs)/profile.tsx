@@ -248,14 +248,6 @@ export default function ProfileScreen() {
     statusLabel = language === "en" ? "Offline Guest Mode" : "অফলাইন গেস্ট মোড";
     statusColor = colors.outline;
     statusIcon = "cloud-off";
-  } else if (profile?.verificationStatus === "PENDING") {
-    statusLabel = language === "en" ? "Pending Verification" : "যাচাইকরণ পেন্ডিং";
-    statusColor = colors.outline;
-    statusIcon = "history";
-  } else if (profile?.verificationStatus === "REJECTED") {
-    statusLabel = language === "en" ? "Rejected" : "অনুমোদন মেলেনি";
-    statusColor = colors.error;
-    statusIcon = "error";
   } else {
     statusLabel = copy.profile.verifiedMother;
     statusColor = colors.secondary;
@@ -283,14 +275,6 @@ export default function ProfileScreen() {
           <Icon name={statusIcon} color={statusColor} size={16} />
           <Text style={[styles.verifiedText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
-        {profile?.verificationStatus === "REJECTED" && profile?.rejectionReason ? (
-          <View style={styles.rejectionReasonBox}>
-            <Text style={styles.rejectionReasonLabel}>
-              {language === "bn" ? "প্রত্যাখ্যানের কারণ:" : "Reason for Rejection:"}
-            </Text>
-            <Text style={styles.rejectionReasonText}>{profile.rejectionReason}</Text>
-          </View>
-        ) : null}
       </View>
 
       {profile?.id && profile.id.startsWith("offline-mother-") && (

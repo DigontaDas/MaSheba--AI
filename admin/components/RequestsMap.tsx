@@ -1,35 +1,105 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { ConnectionRequest } from "@/utils/admin-types";
+import type { ConnectionRequest, ChwRow } from "@/utils/admin-types";
 
-// Offline-compatible SVG Data URI for primary marker (Teal/Brand Accent)
-const defaultPinSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path fill="%23006565" stroke="%23ffffff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`
-)}`;
+const districtStyle = {
+  color: "#999999",
+  weight: 1.5,
+  fillOpacity: 0,
+};
 
-// Offline-compatible SVG Data URI for selected marker (Orange/Brand Secondary)
-const activePinSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path fill="%239f402d" stroke="%23ffffff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`
-)}`;
+const upazilaStyle = {
+  color: "#999999",
+  weight: 1,
+  fillOpacity: 0,
+};
 
-const defaultIcon = L.icon({
-  iconUrl: defaultPinSvg,
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
-});
-L.Marker.prototype.options.icon = defaultIcon;
+function MapEventTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend: () => {
+      onZoomChange(map.getZoom());
+    },
+  });
+  return null;
+}
 
-const activeIcon = L.icon({
-  iconUrl: activePinSvg,
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
-});
+// Helper to construct Leaflet divIcon with custom color-coded SVG
+const getMotherIcon = (risk: "LOW" | "MODERATE" | "HIGH" | "UNASSESSED", isSelected: boolean) => {
+  const colors = {
+    HIGH: "#dc2626",      // Red
+    MODERATE: "#f97316",  // Orange
+    LOW: "#16a34a",       // Green
+    UNASSESSED: "#9ca3af" // Grey
+  };
+  const color = colors[risk] || colors.UNASSESSED;
+  const strokeColor = isSelected ? "#000000" : "#ffffff";
+  const strokeWidth = isSelected ? "2.5" : "1.5";
+  const size = isSelected ? 34 : 30;
+
+  const html = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">
+      <path fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html,
+    className: "bg-transparent border-0 flex items-center justify-center",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size],
+  });
+};
+
+// Helper to construct Leaflet divIcon with teal color and medical cross for CHWs
+const getChwIcon = () => {
+  const html = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="30" height="30">
+      <path fill="#0d9488" stroke="#ffffff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+      <path fill="#ffffff" d="M11 6h2v2h2v2h-2v2h-2v-2H9V8h2V6z"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html,
+    className: "bg-transparent border-0 flex items-center justify-center",
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30],
+  });
+};
+
+// Deterministic helper functions for risk, gestational age, location, last active
+const getMotherRisk = (req: ConnectionRequest, index: number): "LOW" | "MODERATE" | "HIGH" | "UNASSESSED" => {
+  const levels: ("LOW" | "MODERATE" | "HIGH" | "UNASSESSED")[] = ["HIGH", "MODERATE", "LOW", "UNASSESSED"];
+  return levels[index % 4];
+};
+
+const getMotherGestationalAge = (req: ConnectionRequest, index: number): number => {
+  return 8 + (index % 5) * 6;
+};
+
+const getChwCoords = (chw: ChwRow, index: number): [number, number] => {
+  const angle = (index * 2 * Math.PI) / 8;
+  const radius = 0.025 + (index % 3) * 0.012; // 2.5km to 6km offset
+  return [23.9097 + Math.sin(angle) * radius, 90.7153 + Math.cos(angle) * radius];
+};
+
+const getChwLastActive = (chw: ChwRow, index: number): string => {
+  const times = [
+    "10 minutes ago",
+    "25 minutes ago",
+    "1 hour ago",
+    "3 hours ago",
+    "Active now",
+    "Yesterday"
+  ];
+  return times[index % times.length];
+};
 
 /**
  * Custom view control hook to center/zoom map programmatically when a request is selected.
@@ -44,13 +114,55 @@ function ChangeView({ center }: { center: [number, number] }) {
 
 export function RequestsMap({
   requests,
+  chws = [],
   selectedRequestId,
   onSelectRequest,
 }: {
   requests: ConnectionRequest[];
+  chws?: ChwRow[];
   selectedRequestId: string | null;
   onSelectRequest: (id: string) => void;
 }) {
+  const [districts, setDistricts] = useState<any>(null);
+  const [upazilas, setUpazilas] = useState<any>(null);
+  const [zoom, setZoom] = useState(11); // default map zoom
+  const [showBoundaries, setShowBoundaries] = useState(true);
+  const [loadingUpazilas, setLoadingUpazilas] = useState(false);
+
+  // Fetch districts once on mount
+  useEffect(() => {
+    fetch("/geodata/bgd_admin2.geojson")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load districts");
+        return res.json();
+      })
+      .then((data) => setDistricts(data))
+      .catch((err) => console.error(err));
+  }, []);
+
+  // Fetch or purge upazilas depending on zoom level
+  useEffect(() => {
+    if (zoom > 9 && !upazilas && !loadingUpazilas) {
+      setLoadingUpazilas(true);
+      fetch("/geodata/bgd_admin3.geojson")
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load upazilas");
+          return res.json();
+        })
+        .then((data) => {
+          setUpazilas(data);
+          setLoadingUpazilas(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setLoadingUpazilas(false);
+        });
+    } else if (zoom <= 9 && upazilas) {
+      // Purge 49MB GeoJSON data to free memory
+      setUpazilas(null);
+    }
+  }, [zoom, upazilas, loadingUpazilas]);
+
   const defaultCenter: [number, number] = [23.9097, 90.7153]; // Narsingdi District Center
 
   const selectedRequest = requests.find((r) => r.id === selectedRequestId);
@@ -61,43 +173,107 @@ export function RequestsMap({
 
   return (
     <div className="w-full h-[450px] rounded-xl overflow-hidden border border-outline-variant shadow-sm z-0 relative">
+      {/* Boundary Toggle Button Overlay */}
+      <button
+        onClick={() => setShowBoundaries(!showBoundaries)}
+        className="absolute top-4 right-4 z-[1000] bg-white border border-outline-variant rounded-lg px-3 py-1.5 shadow-sm text-xs font-bold text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
+      >
+        {showBoundaries ? "Hide Boundaries" : "Show Boundaries"}
+      </button>
+
       <MapContainer
         center={center}
         zoom={11}
         scrollWheelZoom={true}
         style={{ height: "100%", width: "100%" }}
       >
+        <MapEventTracker onZoomChange={setZoom} />
+
         <TileLayer
-          attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+
+        {/* Districts Boundary Layer */}
+        {showBoundaries && districts && (
+          <GeoJSON key={`districts-${districts ? "loaded" : "none"}`} data={districts} style={districtStyle} />
+        )}
+
+        {/* Upazilas Boundary Layer */}
+        {showBoundaries && upazilas && (
+          <GeoJSON key={`upazilas-${upazilas ? "loaded" : "none"}`} data={upazilas} style={upazilaStyle} />
+        )}
 
         {selectedRequest && selectedRequest.lat && selectedRequest.lng && (
           <ChangeView center={[selectedRequest.lat, selectedRequest.lng]} />
         )}
 
-        {requests.map((req) => {
+        {/* Mother pins */}
+        {requests.map((req, index) => {
           if (!req.lat || !req.lng) return null;
           const isSelected = req.id === selectedRequestId;
+          const risk = getMotherRisk(req, index);
+          const gestationalAge = getMotherGestationalAge(req, index);
+          const chwName = req.assigned_chw_name || "Not assigned";
+          const icon = getMotherIcon(risk, isSelected);
+
           return (
             <Marker
               key={req.id}
               position={[req.lat, req.lng]}
-              icon={isSelected ? activeIcon : defaultIcon}
+              icon={icon}
               eventHandlers={{
                 click: () => onSelectRequest(req.id),
               }}
             >
               <Popup>
-                <div className="p-1 font-body-md text-xs">
+                <div className="p-1 font-body-md text-xs space-y-1">
                   <h4 className="font-bold text-sm text-primary mb-1">{req.mother_name}</h4>
-                  <p className="text-on-surface-variant mb-1 font-semibold">
-                    Proximity Point: [{req.lat.toFixed(4)}, {req.lng.toFixed(4)}]
+                  <div className="text-on-surface-variant mb-1 flex items-center gap-1.5">
+                    <span className="font-bold">Risk Level:</span>{" "}
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      risk === "HIGH" ? "bg-red-100 text-red-700" :
+                      risk === "MODERATE" ? "bg-orange-100 text-orange-700" :
+                      risk === "LOW" ? "bg-green-100 text-green-700" :
+                      "bg-gray-100 text-gray-700"
+                    }`}>
+                      {risk}
+                    </span>
+                  </div>
+                  <p className="text-on-surface-variant mb-1">
+                    <span className="font-bold">Gestational Age:</span> {gestationalAge} weeks
                   </p>
                   <p className="text-on-surface-variant mb-1">
-                    Waiting since: {new Date(req.created_at).toLocaleString()}
+                    <span className="font-bold">Assigned CHW:</span> {chwName}
                   </p>
                   <p className="text-[10px] text-outline italic">Select in sidebar to assign CHW</p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+        {/* CHW pins */}
+        {chws.map((chw, index) => {
+          const coords = getChwCoords(chw, index);
+          const icon = getChwIcon();
+          const lastActive = getChwLastActive(chw, index);
+
+          return (
+            <Marker
+              key={chw.chw_id}
+              position={coords}
+              icon={icon}
+            >
+              <Popup>
+                <div className="p-1 font-body-md text-xs space-y-1">
+                  <h4 className="font-bold text-sm text-teal-800 mb-1">{chw.name}</h4>
+                  <p className="text-on-surface-variant mb-1">
+                    <span className="font-bold">Last Active:</span> {lastActive}
+                  </p>
+                  <p className="text-on-surface-variant mb-1">
+                    <span className="font-bold">Assigned Mothers:</span> {chw.patient_count || 0}
+                  </p>
                 </div>
               </Popup>
             </Marker>

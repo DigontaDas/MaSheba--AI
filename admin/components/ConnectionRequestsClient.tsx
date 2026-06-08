@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { assignRequestChw, getPendingRequests } from "@/utils/admin-api";
 import type { ConnectionRequest, ChwRow } from "@/utils/admin-types";
+import { createClient } from "@/utils/supabase/client";
 
 // Dynamically import the RequestsMap component with SSR disabled to prevent Leaflet window failures
 const RequestsMap = dynamic(
@@ -27,8 +28,60 @@ export function ConnectionRequestsClient({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  interface SuggestedChw {
+    chw_id: string;
+    name: string;
+    union_name: string | null;
+    upazila: string;
+    distance_km: number;
+  }
+
+  const [suggestedChws, setSuggestedChws] = useState<SuggestedChw[]>([]);
+  const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
+
   const selectedRequest = requests.find((r) => r.id === selectedRequestId);
-  
+
+  useEffect(() => {
+    if (!selectedRequest?.lat || !selectedRequest?.lng) {
+      setSuggestedChws([]);
+      return;
+    }
+
+    let active = true;
+    const fetchSuggestions = async () => {
+      setFetchingSuggestions(true);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase.rpc("find_nearby_chws", {
+          mother_lat: selectedRequest.lat,
+          mother_lng: selectedRequest.lng,
+          radius_km: 15.0,
+        });
+
+        if (error) {
+          console.error("Error fetching nearby CHWs:", error);
+          if (active) setSuggestedChws([]);
+          return;
+        }
+
+        if (active) {
+          setSuggestedChws((data || []).slice(0, 3));
+        }
+      } catch (err) {
+        console.error("Failed to query nearby CHWs:", err);
+        if (active) setSuggestedChws([]);
+      } finally {
+        if (active) setFetchingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedRequest?.lat, selectedRequest?.lng]);
+
   // Filter active, verified CHWs
   const activeChws = chws.filter(
     (c) => c.verification_status === "APPROVED" && c.is_active
@@ -82,6 +135,7 @@ export function ConnectionRequestsClient({
         {/* Dynamic map */}
         <RequestsMap
           requests={requests}
+          chws={activeChws}
           selectedRequestId={selectedRequestId}
           onSelectRequest={(id) => {
             setSelectedRequestId(id);
@@ -208,6 +262,79 @@ export function ConnectionRequestsClient({
                     <span className="font-mono text-on-surface">
                       {selectedRequest.lat.toFixed(4)}, {selectedRequest.lng.toFixed(4)}
                     </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggested CHWs Section */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-primary">distance</span>
+                    Suggested CHWs (within 15 km)
+                  </label>
+                  {fetchingSuggestions && (
+                    <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full"></span>
+                  )}
+                </div>
+
+                {fetchingSuggestions ? (
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="animate-pulse bg-surface-container-low border border-outline-variant/40 rounded-lg p-2.5 flex justify-between items-center">
+                        <div className="space-y-1.5 w-2/3">
+                          <div className="h-3 bg-outline-variant/50 rounded w-3/4"></div>
+                          <div className="h-2.5 bg-outline-variant/50 rounded w-1/2"></div>
+                        </div>
+                        <div className="h-5 bg-outline-variant/50 rounded-full w-16"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : suggestedChws.length > 0 ? (
+                  <div className="space-y-2">
+                    {suggestedChws.map((chw) => {
+                      const isSelected = assignedChwId === chw.chw_id;
+                      return (
+                        <button
+                          key={chw.chw_id}
+                          type="button"
+                          onClick={() => setAssignedChwId(chw.chw_id)}
+                          className={`w-full text-left p-2.5 rounded-lg border transition-all duration-200 flex justify-between items-center group cursor-pointer ${
+                            isSelected
+                              ? "bg-primary-container/20 border-primary shadow-sm"
+                              : "bg-surface-container-lowest border-outline-variant/60 hover:border-primary/50 hover:bg-surface-container-low"
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <p className="font-bold text-xs text-on-surface group-hover:text-primary transition-colors flex items-center gap-1">
+                              {chw.name}
+                              {isSelected && (
+                                <span className="material-symbols-outlined text-[14px] text-primary font-bold">check_circle</span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-on-surface-variant">
+                              {chw.union_name ? `${chw.union_name}, ` : ""}{chw.upazila}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                            isSelected
+                              ? "bg-primary text-white"
+                              : "bg-primary-container/15 text-primary group-hover:bg-primary group-hover:text-white"
+                          }`}>
+                            {chw.distance_km.toFixed(1)} km
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-surface-container-low border border-outline-variant/40 rounded-lg text-center">
+                    <span className="material-symbols-outlined text-outline text-[20px] mb-0.5 block">
+                      location_off
+                    </span>
+                    <p className="text-[10px] text-on-surface-variant">
+                      No active CHWs found within 15 km.
+                    </p>
                   </div>
                 )}
               </div>

@@ -120,4 +120,5 @@ export type ConnectionRequest = {
   created_at: string;
   lat: number | null;
   lng: number | null;
+  assigned_chw_name?: string | null;
 };

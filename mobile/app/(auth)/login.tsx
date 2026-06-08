@@ -28,7 +28,8 @@ import type { Patient } from "@/types/schema";
 import { copy } from "@/data/stitchCopy.bn";
 import { useLanguage } from "@/context/LanguageContext";
 import { colors, radius, spacing, typography } from "@/theme";
-import { base64ToBlob } from "@/utils/base64";
+import { base64ToBlob, base64ToArrayBuffer } from "@/utils/base64";
+import * as FileSystem from "expo-file-system";
 import * as Network from "expo-network";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -239,6 +240,7 @@ export default function LoginScreen() {
   const [certificateUrlText, setCertificateUrlText] = useState("");
   const [certificateName, setCertificateName] = useState<string | null>(null);
   const [certificateBlob, setCertificateBlob] = useState<Blob | null>(null);
+  const [certificateUri, setCertificateUri] = useState<string | null>(null);
   const [certPickerVisible, setCertPickerVisible] = useState(false);
   
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +253,7 @@ export default function LoginScreen() {
       const blob = base64ToBlob(DUMMY_CERT_BASE64, "image/png");
       setCertificateBlob(blob);
       setCertificateName(type);
+      setCertificateUri(null);
       setCertPickerVisible(false);
     } catch (err) {
       setError(lang === "bn" ? "সার্টিফিকেট প্রসেস করতে ব্যর্থ হয়েছে" : "Failed to process certificate");
@@ -277,10 +280,11 @@ export default function LoginScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        setCertificateUri(asset.uri);
+        setCertificateName(asset.fileName || "camera_photo.png");
         const response = await fetch(asset.uri);
         const blob = await response.blob();
         setCertificateBlob(blob);
-        setCertificateName(asset.fileName || "camera_photo.png");
       }
     } catch (err) {
       setError(lang === "bn" ? "ক্যামেরা খুলতে ব্যর্থ হয়েছে" : "Failed to open camera");
@@ -298,10 +302,11 @@ export default function LoginScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
+        setCertificateUri(asset.uri);
+        setCertificateName(asset.fileName || "library_photo.png");
         const response = await fetch(asset.uri);
         const blob = await response.blob();
         setCertificateBlob(blob);
-        setCertificateName(asset.fileName || "library_photo.png");
       }
     } catch (err) {
       setError(lang === "bn" ? "গ্যালারি খুলতে ব্যর্থ হয়েছে" : "Failed to open image library");
@@ -352,6 +357,7 @@ export default function LoginScreen() {
     setCertificateUrlText("");
     setCertificateName(null);
     setCertificateBlob(null);
+    setCertificateUri(null);
     setEmail("");
     setPassword("");
     setError(null);
@@ -621,7 +627,7 @@ export default function LoginScreen() {
           }
         }
 
-        if (role === "CHW" && certificateBlob) {
+        if (role === "CHW" && (certificateBlob || certificateUri)) {
           try {
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData?.session?.user?.id) {
@@ -629,9 +635,19 @@ export default function LoginScreen() {
               const fileExt = certificateName ? certificateName.split('.').pop() : 'png';
               const fileName = `${userId}_${Date.now()}.${fileExt}`;
               
+              let uploadBody: ArrayBuffer | string;
+              if (certificateUri) {
+                const base64Str = await FileSystem.readAsStringAsync(certificateUri, {
+                  encoding: "base64",
+                });
+                uploadBody = base64ToArrayBuffer(base64Str);
+              } else {
+                uploadBody = base64ToArrayBuffer(DUMMY_CERT_BASE64);
+              }
+              
               const { data: uploadData, error: uploadErr } = await supabase.storage
                 .from('certificates')
-                .upload(fileName, certificateBlob, {
+                .upload(fileName, uploadBody, {
                   contentType: 'image/' + (fileExt === 'jpg' ? 'jpeg' : fileExt),
                   upsert: true
                 });

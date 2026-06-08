@@ -17,7 +17,8 @@ import type { Patient } from "@/types/schema";
 import { formatNumber } from "@/utils/localizedFormat";
 import { getInitials, getRiskBorderColor } from "./helpers";
 import { supabase } from "@/auth/supabaseAuth";
-import { base64ToBlob } from "@/utils/base64";
+import { base64ToBlob, base64ToArrayBuffer } from "@/utils/base64";
+import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { updateChwLocation } from "@/api/locationService";
 
@@ -61,6 +62,7 @@ export default function ChwDashboardScreen() {
   const [editCertUrlText, setEditCertUrlText] = useState("");
   const [editCertName, setEditCertName] = useState<string | null>(null);
   const [editCertBlob, setEditCertBlob] = useState<Blob | null>(null);
+  const [editCertUri, setEditCertUri] = useState<string | null>(null);
   const [editCertPickerVisible, setEditCertPickerVisible] = useState(false);
   const [resubmitting, setResubmitting] = useState(false);
 
@@ -196,7 +198,7 @@ export default function ChwDashboardScreen() {
       Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Experience must be a valid number" : "অভিজ্ঞতা অবশ্যই একটি সঠিক সংখ্যা হতে হবে");
       return;
     }
-    if (!editCertUrlText.trim() && !editCertBlob && !chwStatus?.certificate_url) {
+    if (!editCertUrlText.trim() && !editCertBlob && !editCertUri && !chwStatus?.certificate_url) {
       Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Certificate document is required" : "সার্টিফিকেট প্রমাণ প্রয়োজন");
       return;
     }
@@ -208,12 +210,23 @@ export default function ChwDashboardScreen() {
 
       let finalCertUrl = editCertUrlText.trim() || chwStatus?.certificate_url || null;
 
-      if (editCertBlob) {
+      if (editCertBlob || editCertUri) {
         const fileExt = editCertName ? editCertName.split('.').pop() : 'png';
         const fileName = `${session.chwId}_resubmit_${Date.now()}.${fileExt}`;
+        
+        let uploadBody: ArrayBuffer | string;
+        if (editCertUri) {
+          const base64Str = await FileSystem.readAsStringAsync(editCertUri, {
+            encoding: "base64",
+          });
+          uploadBody = base64ToArrayBuffer(base64Str);
+        } else {
+          uploadBody = base64ToArrayBuffer(DUMMY_CERT_BASE64);
+        }
+
         const { data: uploadData, error: uploadErr } = await supabase.storage
           .from('certificates')
-          .upload(fileName, editCertBlob, {
+          .upload(fileName, uploadBody, {
             contentType: 'image/' + (fileExt === 'jpg' ? 'jpeg' : fileExt),
             upsert: true
           });
@@ -353,6 +366,7 @@ export default function ChwDashboardScreen() {
                     setEditCertUrlText(chwStatus.certificate_url || "");
                     setEditCertName(null);
                     setEditCertBlob(null);
+                    setEditCertUri(null);
                     setShowEditForm(true);
                   }}
                   style={styles.resubmitBtn}
@@ -487,10 +501,11 @@ export default function ChwDashboardScreen() {
                       const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8 });
                       if (!result.canceled && result.assets && result.assets.length > 0) {
                         const asset = result.assets[0];
+                        setEditCertUri(asset.uri);
+                        setEditCertName(asset.fileName || "library_photo.png");
                         const response = await fetch(asset.uri);
                         const blob = await response.blob();
                         setEditCertBlob(blob);
-                        setEditCertName(asset.fileName || "library_photo.png");
                       }
                     } catch {
                       Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Failed to open library" : "গ্যালারি খুলতে ব্যর্থ হয়েছে");
@@ -513,10 +528,11 @@ export default function ChwDashboardScreen() {
                       const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
                       if (!result.canceled && result.assets && result.assets.length > 0) {
                         const asset = result.assets[0];
+                        setEditCertUri(asset.uri);
+                        setEditCertName(asset.fileName || "camera_photo.png");
                         const response = await fetch(asset.uri);
                         const blob = await response.blob();
                         setEditCertBlob(blob);
-                        setEditCertName(asset.fileName || "camera_photo.png");
                       }
                     } catch {
                       Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Failed to open camera" : "ক্যামেরা খুলতে ব্যর্থ হয়েছে");
@@ -536,6 +552,7 @@ export default function ChwDashboardScreen() {
                       const blob = base64ToBlob(DUMMY_CERT_BASE64, "image/png");
                       setEditCertBlob(blob);
                       setEditCertName("Demo Certificate (Mock).png");
+                      setEditCertUri(null);
                       setEditCertPickerVisible(false);
                     } catch {
                       Alert.alert(language === "en" ? "Error" : "ত্রুটি", language === "en" ? "Failed to process certificate" : "সার্টিফিকেট প্রসেস করতে ব্যর্থ হয়েছে");
@@ -607,25 +624,6 @@ export default function ChwDashboardScreen() {
           </View>
         </Pressable>
 
-        {/* Verification Card */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push("/(tabs)/verifications")}
-          style={styles.verificationCard}
-        >
-          <View style={styles.verificationIcon}>
-            <Icon name="verified" color="#FFFFFF" size={22} />
-          </View>
-          <View style={styles.verificationTextWrap}>
-            <Text style={styles.verificationTitle}>
-              {language === "en" ? "Maa Verification Requests" : "মায়ের যাচাইকরণ অনুরোধ"}
-            </Text>
-            <Text style={styles.verificationDesc}>
-              {language === "en" ? "Review certificate uploads & verify accounts" : "সার্টিফিকেট আপলোড দেখে অ্যাকাউন্ট অনুমোদন করুন"}
-            </Text>
-          </View>
-          <Icon name="chevron-right" color="#E57A58" size={20} />
-        </Pressable>
 
         <View style={styles.statsCard}>
           <Text style={styles.sectionTitle}>{language === "en" ? "Today's Progress" : "আজকের অগ্রগতি"}</Text>

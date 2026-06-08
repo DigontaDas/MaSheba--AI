@@ -3,7 +3,7 @@ ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS chw_email TEXT;
 ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS chw_phone TEXT;
 ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS lmp_date DATE;
 ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS certificate_url TEXT;
-ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS verification_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (verification_status IN ('PENDING', 'VERIFIED', 'REJECTED'));
+ALTER TABLE public.mothers ADD COLUMN IF NOT EXISTS verification_status TEXT NOT NULL DEFAULT 'VERIFIED' CHECK (verification_status IN ('PENDING', 'VERIFIED', 'REJECTED'));
 
 ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS lmp_date DATE;
 
