@@ -1,0 +1,146 @@
+env: load .env
+env: export EXPO_PUBLIC_API_BASE_URL EXPO_PUBLIC_DEMO_CHW_EMAIL EXPO_PUBLIC_DEMO_CHW_PASSWORD EXPO_PUBLIC_DEMO_MOTHER_EMAIL EXPO_PUBLIC_DEMO_MOTHER_PASSWORD EXPO_PUBLIC_STADIA_MAPS_API_KEY EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+Starting project at H:\Projects\MaaSheba\mobile
+Starting Metro Bundler
+
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Android node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  1.0% (1/1)
+Android node_modules\expo-router\entry.js ▓░░░░░░░░░░░░░░░  9.0% (3/5)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% (14/38)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% ( 48/248)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% ( 76/320)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% (107/374)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% (155/421)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 16.0% (184/492)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 18.5% (234/560)
+Android node_modules\expo-router\entry.js ▓▓▓░░░░░░░░░░░░░ 21.2% (282/612)
+Android node_modules\expo-router\entry.js ▓▓▓░░░░░░░░░░░░░ 23.2% (322/678)
+Android node_modules\expo-router\entry.js ▓▓▓▓░░░░░░░░░░░░ 25.8% (370/732)
+Android node_modules\expo-router\entry.js ▓▓▓▓░░░░░░░░░░░░ 28.1% (418/788)
+Android node_modules\expo-router\entry.js ▓▓▓▓░░░░░░░░░░░░ 30.5% (452/819)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓░░░░░░░░░░░ 32.1% (486/858)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓░░░░░░░░░░░ 32.7% (533/934)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓░░░░░░░░░░░ 34.7% (581/988)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓░░░░░░░░░░░ 37.2% ( 631/1035)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.1% ( 669/1070)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓░░░░░░░░░░ 42.0% ( 714/1102)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 46.0% ( 752/1109)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.7% ( 798/1121)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 52.0% ( 844/1170)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 55.2% ( 894/1203)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.4% ( 941/1211)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 64.8% ( 987/1226)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 67.2% (1035/1263)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 69.9% (1076/1287)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.1% (1113/1302)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.1% (1153/1367)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.2% (1201/1404)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 76.4% (1250/1430)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 79.6% (1296/1453)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 84.2% (1348/1469)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.9% (1390/1491)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.9% (1439/1619)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.9% (1487/1635)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 87.4% (1536/1643)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.9% (1584/1652)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.0% (1632/1666)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 97.3% (1679/1702)
+Android Bundled 173709ms node_modules\expo-router\entry.js (1703 modules)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1703/1703)
+ WARN  Require cycle: src/auth/supabaseAuth.ts -> src/auth/secureSession.ts -> src/auth/supabaseAuth.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)
+Android node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android Bundled 65ms node_modules\expo-router\entry.js (1 module)
+ WARN  Require cycle: src/auth/supabaseAuth.ts -> src/auth/secureSession.ts -> src/auth/supabaseAuth.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)
+ ERROR  expo-notifications: Custom sound 'default' not found in native app. Make sure the sound file (e.g. 'custom_sound.wav') is included in the expo-notifications config plugin sounds array in app config. 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules\@babel\runtime\helpers\construct.js)
+  Wrapper (node_modules\@babel\runtime\helpers\wrapNativeSuper.js)
+  construct (<native>)
+  _callSuper (node_modules\@babel\runtime\helpers\callSuper.js)
+  NamelessError (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  captureCurrentStack (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  HMRClient.log (node_modules\@expo\metro-runtime\src\metroServerLogs.native.ts)
+  console.level (node_modules\react-native\Libraries\Core\setUpDeveloperTools.js)
+  NativeJSLogger.addListener$argument_1 (node_modules\expo-modules-core\src\sweet\setUpJsLogger.fx.ts)

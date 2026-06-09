@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Alert, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import * as Location from "expo-location";
@@ -7,8 +7,8 @@ import * as Network from "expo-network";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { Icon } from "@/components/ui/Icon";
-import { colors, radius, spacing, typography } from "@/theme";
 import { useLanguage } from "@/context/LanguageContext";
+import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 
 interface CHW {
@@ -31,6 +31,21 @@ interface ConnectionRequest {
   };
 }
 
+const DEMO_MOTHER_IDS = new Set(["60000000-0000-0000-0000-000000000002", "mother-demo-id"]);
+const DEMO_CHW: CHW = {
+  chw_id: "00000000-0000-0000-0000-0000000000a1",
+  name: "মোছাঃ জাহানারা বেগম (Jahanara)",
+  union_name: "ভল্লবপুর",
+  upazila: "নরসিংদী সদর",
+  distance_km: 1.25,
+  latitude: 23.8183,
+  longitude: 90.4075
+};
+
+function isDemoMother(motherId: string | null | undefined) {
+  return Boolean(motherId && DEMO_MOTHER_IDS.has(motherId));
+}
+
 export default function FindChwScreen() {
   const { language: lang } = useLanguage();
   const [loading, setLoading] = useState(true);
@@ -41,54 +56,56 @@ export default function FindChwScreen() {
   const [pendingRequest, setPendingRequest] = useState<ConnectionRequest | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
+  const setDemoChwState = (mId: string) => {
+    setCoords({ latitude: 23.8103, longitude: 90.4125 });
+    setNearbyChws([DEMO_CHW]);
+    setPendingRequest({
+      id: "demo-req-1",
+      status: "assigned",
+      chw_id: DEMO_CHW.chw_id,
+      chws: { name: DEMO_CHW.name }
+    });
+    setMotherId(mId);
+  };
+
   const fetchRequestStatus = async (mId: string) => {
-    if (mId === "60000000-0000-0000-0000-000000000002" || mId === "mother-demo-id") {
+    if (isDemoMother(mId)) {
       setPendingRequest({
         id: "demo-req-1",
         status: "assigned",
-        chw_id: "00000000-0000-0000-0000-0000000000a1",
-        chws: {
-          name: "মোছাঃ জাহানারা বেগম (Jahanara)"
-        }
+        chw_id: DEMO_CHW.chw_id,
+        chws: { name: DEMO_CHW.name }
       });
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("connection_requests")
-        .select(`
-          id,
-          status,
-          chw_id
-        `)
+        .select("id,status,chw_id")
         .eq("mother_id", mId)
         .in("status", ["pending", "assigned"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (data) {
-        let reqData: ConnectionRequest = {
-          id: data.id,
-          status: data.status as any,
-          chw_id: data.chw_id
-        };
-
-        if (data.chw_id) {
-          const { data: chw } = await supabase
-            .from("chws")
-            .select("name")
-            .eq("id", data.chw_id)
-            .maybeSingle();
-          if (chw) {
-            reqData.chws = { name: chw.name };
-          }
-        }
-        setPendingRequest(reqData);
-      } else {
+      if (!data) {
         setPendingRequest(null);
+        return;
       }
+
+      const requestData: ConnectionRequest = {
+        id: data.id,
+        status: data.status as ConnectionRequest["status"],
+        chw_id: data.chw_id
+      };
+
+      if (data.chw_id) {
+        const { data: chw } = await supabase.from("chws").select("name,phone").eq("id", data.chw_id).maybeSingle();
+        if (chw) requestData.chws = { name: chw.name, phone: chw.phone };
+      }
+
+      setPendingRequest(requestData);
     } catch (err) {
       console.warn("Failed to fetch request status:", err);
     }
@@ -102,66 +119,41 @@ export default function FindChwScreen() {
         setLoading(false);
         return;
       }
+
+      if (isDemoMother(profile.id)) {
+        setIsOffline(false);
+        setDemoChwState(profile.id);
+        return;
+      }
+
       setMotherId(profile.id);
 
       const net = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
       const offline = net.isConnected === false || net.isInternetReachable === false;
       setIsOffline(offline);
 
-      if (offline) {
-        if (profile.id === "60000000-0000-0000-0000-000000000002" || profile.id === "mother-demo-id") {
-          await fetchRequestStatus(profile.id);
-        }
-        setNearbyChws([]);
-        setLoading(false);
-        return;
-      }
-
       await fetchRequestStatus(profile.id);
 
-      const isDemo = profile.id === "60000000-0000-0000-0000-000000000002" || profile.id === "mother-demo-id";
-      if (isDemo) {
-        const mockCoords = { latitude: 23.8103, longitude: 90.4125 };
-        setCoords(mockCoords);
-        setNearbyChws([
-          {
-            chw_id: "00000000-0000-0000-0000-0000000000a1",
-            name: "মোছাঃ জাহানারা বেগম (Jahanara)",
-            union_name: "ভল্লবপুর",
-            upazila: "নরসিংদী সদর",
-            distance_km: 1.25,
-            latitude: mockCoords.latitude + 0.008,
-            longitude: mockCoords.longitude - 0.005
-          }
-        ]);
-        setLoading(false);
+      if (offline) {
+        setNearbyChws([]);
         return;
       }
 
-      // Get current position
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setLoading(false);
         Alert.alert(
           lang === "bn" ? "অনুমতি প্রয়োজন" : "Permission Required",
           lang === "bn"
             ? "স্বাস্থ্যকর্মীদের দূরত্ব দেখার জন্য লোকেশন পারমিশন প্রয়োজন।"
-            : "Location permissions are required to find nearby health workers."
+            : "Location permission is required to find nearby health workers."
         );
         return;
       }
 
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced
-      });
-
-      const currentCoords = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude
-      };
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
       setCoords(currentCoords);
 
-      // Query database RPC
       const { data, error } = await supabase.rpc("find_nearby_chws", {
         mother_lat: currentCoords.latitude,
         mother_lng: currentCoords.longitude,
@@ -188,21 +180,17 @@ export default function FindChwScreen() {
     setSubmitting(true);
     try {
       const pointWkt = `POINT(${coords.longitude} ${coords.latitude})`;
-      const { error } = await supabase
-        .from("connection_requests")
-        .insert({
-          mother_id: motherId,
-          mother_location: pointWkt,
-          status: "pending"
-        });
+      const { error } = await supabase.from("connection_requests").insert({
+        mother_id: motherId,
+        mother_location: pointWkt,
+        status: "pending"
+      });
 
       if (error) throw error;
 
       Alert.alert(
         lang === "bn" ? "অনুরোধ পাঠানো হয়েছে" : "Request Submitted",
-        lang === "bn"
-          ? "অ্যাডমিন শীঘ্রই একজন স্বাস্থ্যকর্মী নিয়োগ করবেন।"
-          : "An administrator will assign a health worker to you shortly."
+        lang === "bn" ? "অ্যাডমিন শীঘ্রই একজন স্বাস্থ্যকর্মী নিয়োগ করবেন।" : "An administrator will assign a health worker shortly."
       );
       await fetchRequestStatus(motherId);
     } catch (err: any) {
@@ -212,9 +200,8 @@ export default function FindChwScreen() {
     }
   };
 
-  const handleOpenChat = (chwId: string) => {
-    // Navigate to chat and trigger state updates if needed
-    router.push("/(mother-tabs)/chat");
+  const handleOpenChat = () => {
+    router.push({ pathname: "/(mother-tabs)/chat", params: { mode: "chw" } });
   };
 
   const formatDistance = (dist: number) => {
@@ -222,72 +209,69 @@ export default function FindChwScreen() {
     return lang === "bn" ? `${toBanglaNumber(kmStr)} কি.মি.` : `${kmStr} km`;
   };
 
-
-
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {lang === "bn" ? "নিকটস্থ স্বাস্থ্যকর্মী" : "Nearby Health Workers"}
-        </Text>
+        <Text style={styles.headerTitle}>{lang === "bn" ? "স্বাস্থ্যকেন্দ্র" : "Health Centers"}</Text>
         <Text style={styles.headerSubtitle}>
           {lang === "bn"
-            ? "আপনার চারপাশের স্বাস্থ্যকর্মীদের খুঁজুন এবং যোগাযোগ করুন"
-            : "Locate and connect with active CHWs in your area"}
+            ? "স্বাস্থ্যকর্মী খুঁজুন, আর হাসপাতাল ও ডাক্তার সার্চের জায়গা দেখুন"
+            : "Find CHWs now, with hospital and doctor search coming soon"}
         </Text>
       </View>
 
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color="#E57A58" />
-          <Text style={styles.loadingText}>
-            {lang === "bn" ? "স্বাস্থ্যকর্মী খোঁজা হচ্ছে..." : "Searching for health workers..."}
-          </Text>
+          <Text style={styles.loadingText}>{lang === "bn" ? "তথ্য লোড হচ্ছে..." : "Loading health center options..."}</Text>
         </View>
       ) : (
-        <View style={styles.container}>
-          {pendingRequest && (
-            <View style={[styles.alertBanner, pendingRequest.status === "assigned" && styles.alertBannerAssigned]}>
-              <Icon
-                name={pendingRequest.status === "assigned" ? "check-circle" : "hourglass-empty"}
-                color={pendingRequest.status === "assigned" ? "#4A6047" : "#E57A58"}
-                size={22}
-              />
-              <View style={styles.alertTextWrap}>
-                <Text style={styles.alertTitle}>
-                  {pendingRequest.status === "assigned"
-                    ? (lang === "bn" ? "স্বাস্থ্যকর্মী নিযুক্ত করা হয়েছে" : "Health Worker Assigned")
-                    : (lang === "bn" ? "অনুরোধ প্রক্রিয়াধীন রয়েছে" : "Connection Request Pending")}
-                </Text>
-                <Text style={styles.alertDesc}>
-                  {pendingRequest.status === "assigned"
-                    ? (lang === "bn"
-                        ? `${pendingRequest.chws?.name} আপনার অনুরোধ গ্রহণ করেছেন।`
-                        : `${pendingRequest.chws?.name} has been assigned to help you.`)
-                    : (lang === "bn"
-                        ? "অনুগ্রহ করে অ্যাডমিন অনুমোদন হওয়া পর্যন্ত অপেক্ষা করুন।"
-                        : "Waiting for admin assignment of a health worker.")}
+        <ScrollView contentContainerStyle={styles.listContent}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Icon name="person-search" color="#FFFFFF" size={22} />
+              </View>
+              <View style={styles.sectionTitleWrap}>
+                <Text style={styles.sectionTitle}>{lang === "bn" ? "স্বাস্থ্যকর্মী খুঁজুন" : "Find CHW"}</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {lang === "bn" ? "আপনার কাছের স্বাস্থ্যকর্মীর সাথে যোগাযোগ করুন" : "Connect with a nearby health worker"}
                 </Text>
               </View>
-              {pendingRequest.status === "assigned" && pendingRequest.chw_id && (
-                <Pressable
-                  style={styles.alertChatBtn}
-                  onPress={() => handleOpenChat(pendingRequest.chw_id!)}
-                >
-                  <Icon name="chat" color="#FFFFFF" size={18} />
-                </Pressable>
-              )}
             </View>
-          )}
 
-          <ScrollView contentContainerStyle={styles.listContent}>
+            {pendingRequest && (
+              <View style={[styles.alertBanner, pendingRequest.status === "assigned" && styles.alertBannerAssigned]}>
+                <Icon name={pendingRequest.status === "assigned" ? "check-circle" : "hourglass-empty"} color={pendingRequest.status === "assigned" ? "#4A6047" : "#E57A58"} size={22} />
+                <View style={styles.alertTextWrap}>
+                  <Text style={styles.alertTitle}>
+                    {pendingRequest.status === "assigned"
+                      ? lang === "bn" ? "স্বাস্থ্যকর্মী নিযুক্ত করা হয়েছে" : "Health worker assigned"
+                      : lang === "bn" ? "অনুরোধ প্রক্রিয়াধীন" : "Connection request pending"}
+                  </Text>
+                  <Text style={styles.alertDesc}>
+                    {pendingRequest.status === "assigned"
+                      ? lang === "bn"
+                        ? `${pendingRequest.chws?.name} আপনার অনুরোধ গ্রহণ করেছেন।`
+                        : `${pendingRequest.chws?.name} has been assigned to help you.`
+                      : lang === "bn"
+                        ? "অ্যাডমিন অনুমোদন হওয়া পর্যন্ত অপেক্ষা করুন।"
+                        : "Waiting for admin assignment of a health worker."}
+                  </Text>
+                </View>
+                {pendingRequest.status === "assigned" && pendingRequest.chw_id && (
+                  <Pressable style={styles.alertChatBtn} onPress={handleOpenChat}>
+                    <Icon name="chat" color="#FFFFFF" size={18} />
+                  </Pressable>
+                )}
+              </View>
+            )}
+
             {isOffline ? (
               <View style={styles.emptyContainer}>
-                <Icon name="cloud-off" color="#A08E88" size={48} />
+                <Icon name="cloud-off" color="#A08E88" size={42} />
                 <Text style={styles.emptyText}>
-                  {lang === "bn"
-                    ? "স্বাস্থ্যকর্মী খুঁজতে অনুগ্রহ করে ইন্টারনেট সংযোগ করুন।"
-                    : "Please connect to the internet to search for health workers."}
+                  {lang === "bn" ? "স্বাস্থ্যকর্মী খুঁজতে ইন্টারনেট সংযোগ করুন।" : "Connect to the internet to search for health workers."}
                 </Text>
               </View>
             ) : nearbyChws.length > 0 ? (
@@ -299,16 +283,14 @@ export default function FindChwScreen() {
                     </View>
                     <View style={styles.chwDetails}>
                       <Text style={styles.chwName}>{chw.name}</Text>
-                      <Text style={styles.chwArea}>
-                        {chw.union_name}, {chw.upazila}
-                      </Text>
+                      <Text style={styles.chwArea}>{chw.union_name}, {chw.upazila}</Text>
                     </View>
                   </View>
                   <View style={styles.chwActions}>
                     <View style={styles.distanceBadge}>
                       <Text style={styles.distanceText}>{formatDistance(chw.distance_km)}</Text>
                     </View>
-                    <Pressable style={styles.chatButton} onPress={() => handleOpenChat(chw.chw_id)}>
+                    <Pressable style={styles.chatButton} onPress={handleOpenChat}>
                       <Icon name="chat" color="#FFFFFF" size={16} />
                       <Text style={styles.chatButtonText}>{lang === "bn" ? "চ্যাট" : "Chat"}</Text>
                     </Pressable>
@@ -317,29 +299,63 @@ export default function FindChwScreen() {
               ))
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon name="location-off" color="#A08E88" size={48} />
+                <Icon name="location-off" color="#A08E88" size={42} />
                 <Text style={styles.emptyText}>
-                  {lang === "bn"
-                    ? "১০ কি.মি.-এর মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।"
-                    : "No active health workers found within 10 km."}
+                  {lang === "bn" ? "১০ কি.মি.-এর মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।" : "No active health workers found within 10 km."}
                 </Text>
                 {!pendingRequest && (
-                  <Pressable
-                    style={styles.requestButton}
-                    disabled={submitting}
-                    onPress={handleRequestChw}
-                  >
+                  <Pressable style={styles.requestButton} disabled={submitting} onPress={handleRequestChw}>
                     <Text style={styles.requestButtonText}>
                       {submitting
-                        ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...")
-                        : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a Health Worker")}
+                        ? lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting..."
+                        : lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a health worker"}
                     </Text>
                   </Pressable>
                 )}
               </View>
             )}
-          </ScrollView>
-        </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, styles.hospitalIcon]}>
+                <Icon name="local-hospital" color="#FFFFFF" size={22} />
+              </View>
+              <View style={styles.sectionTitleWrap}>
+                <Text style={styles.sectionTitle}>{lang === "bn" ? "Nearby Hospitals" : "Nearby Hospitals"}</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {lang === "bn" ? "হাসপাতাল ও ডাক্তার সার্চ শীঘ্রই যুক্ত হবে" : "Hospital and doctor search will be added soon"}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.comingSoonPanel}>
+              <View style={styles.searchBox}>
+                <Icon name="search" color={colors.onSurfaceVariant} size={20} />
+                <TextInput
+                  editable={false}
+                  pointerEvents="none"
+                  placeholder={lang === "bn" ? "হাসপাতাল বা ডাক্তার খুঁজুন" : "Search hospitals or doctors"}
+                  placeholderTextColor={colors.onSurfaceVariant}
+                  style={styles.searchInput}
+                  value=""
+                />
+              </View>
+
+              <View style={styles.comingSoonCard}>
+                <Icon name="construction" color={colors.primary} size={30} />
+                <View style={styles.comingSoonTextWrap}>
+                  <Text style={styles.comingSoonTitle}>{lang === "bn" ? "Coming soon" : "Coming soon"}</Text>
+                  <Text style={styles.comingSoonBody}>
+                    {lang === "bn"
+                      ? "এখানে কাছের হাসপাতাল, ক্লিনিক এবং ডাক্তারদের তালিকা সার্চ করা যাবে।"
+                      : "This area will let you search nearby hospitals, clinics, and doctors."}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -351,10 +367,10 @@ const styles = StyleSheet.create({
     flex: 1
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
     borderBottomColor: "#F5ECE9",
-    borderBottomWidth: 1
+    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 12
   },
   headerTitle: {
     ...typography.h2,
@@ -366,18 +382,51 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginTop: 2
   },
-
-  container: {
-    flex: 1
-  },
   loadingWrap: {
     alignItems: "center",
     flex: 1,
-    justifyContent: "center",
-    gap: 12
+    gap: 12,
+    justifyContent: "center"
   },
   loadingText: {
     ...typography.body,
+    color: colors.onSurfaceVariant
+  },
+  listContent: {
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 24
+  },
+  section: {
+    gap: spacing.sm
+  },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  sectionIcon: {
+    alignItems: "center",
+    backgroundColor: "#E57A58",
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  hospitalIcon: {
+    backgroundColor: "#4A6047"
+  },
+  sectionTitleWrap: {
+    flex: 1,
+    gap: 2
+  },
+  sectionTitle: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontWeight: "bold"
+  },
+  sectionSubtitle: {
+    ...typography.caption,
     color: colors.onSurfaceVariant
   },
   alertBanner: {
@@ -388,8 +437,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
-    marginHorizontal: 20,
-    marginBottom: 12,
     padding: spacing.base
   },
   alertBannerAssigned: {
@@ -402,8 +449,8 @@ const styles = StyleSheet.create({
   },
   alertTitle: {
     ...typography.body,
-    fontWeight: "bold",
-    color: colors.onSurface
+    color: colors.onSurface,
+    fontWeight: "bold"
   },
   alertDesc: {
     ...typography.caption,
@@ -417,39 +464,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 38
   },
-  listContent: {
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 24
-  },
   chwCard: {
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderColor: "#F2EBE8",
     borderRadius: radius.card,
     borderWidth: 1,
+    elevation: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     padding: spacing.base,
     shadowColor: "#E57A58",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1
+    shadowRadius: 2
   },
   chwInfo: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: spacing.base,
-    flex: 1
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.base
   },
   avatar: {
+    alignItems: "center",
     backgroundColor: "#E57A58",
     borderRadius: 20,
     height: 40,
-    width: 40,
-    alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    width: 40
   },
   chwDetails: {
     flex: 1,
@@ -457,8 +499,8 @@ const styles = StyleSheet.create({
   },
   chwName: {
     ...typography.body,
-    fontWeight: "bold",
-    color: colors.onSurface
+    color: colors.onSurface,
+    fontWeight: "bold"
   },
   chwArea: {
     ...typography.caption,
@@ -485,20 +527,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.default,
     flexDirection: "row",
     gap: 4,
+    justifyContent: "center",
     minHeight: 32,
-    paddingHorizontal: 12,
-    justifyContent: "center"
+    paddingHorizontal: 12
   },
   chatButtonText: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "bold"
   },
-
   emptyContainer: {
     alignItems: "center",
-    paddingVertical: 48,
-    gap: 12
+    gap: 12,
+    paddingVertical: 28
   },
   emptyText: {
     ...typography.body,
@@ -506,17 +547,65 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   requestButton: {
+    alignItems: "center",
     backgroundColor: "#E57A58",
     borderRadius: 24,
-    minHeight: 48,
     justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    marginTop: 12
+    marginTop: 12,
+    minHeight: 48,
+    paddingHorizontal: 24
   },
   requestButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "bold"
+  },
+  comingSoonPanel: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F2EBE8",
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.base
+  },
+  searchBox: {
+    alignItems: "center",
+    backgroundColor: "#FFF9F6",
+    borderColor: "#F2EBE8",
+    borderRadius: radius.default,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm
+  },
+  searchInput: {
+    ...typography.body,
+    color: colors.onSurface,
+    flex: 1,
+    paddingVertical: 0
+  },
+  comingSoonCard: {
+    alignItems: "center",
+    backgroundColor: "#EDF4EB",
+    borderColor: "#DCE8D7",
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.base
+  },
+  comingSoonTextWrap: {
+    flex: 1,
+    gap: 2
+  },
+  comingSoonTitle: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontWeight: "bold"
+  },
+  comingSoonBody: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant
   }
 });

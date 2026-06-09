@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { getCurrentMotherProfile } from "@/auth/roleSession";
 import { supabase } from "@/auth/supabaseAuth";
 import { getMessages, markMessagesRead, sendMessage, subscribeToMessages, type ChatMessage } from "@/api/chatService";
@@ -17,7 +17,9 @@ type Mode = "ai" | "chw";
 
 export default function MotherChatScreen() {
   const { language } = useLanguage();
-  const [mode, setMode] = useState<Mode>("ai");
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const initialMode: Mode = params.mode === "chw" ? "chw" : "ai";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [motherId, setMotherId] = useState<string | null>(null);
   const [chwId, setChwId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -68,8 +70,9 @@ export default function MotherChatScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (params.mode === "chw") setMode("chw");
       load().catch(() => undefined);
-    }, [load])
+    }, [load, params.mode])
   );
 
   useEffect(() => {
