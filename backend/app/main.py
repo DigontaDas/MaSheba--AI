@@ -9,6 +9,7 @@ from app.routers.sms_webhook import router as sms_router
 from app.routers.qa_sync import router as qa_router
 from app.routers.ussd import router as ussd_router
 from app.routers.verification import router as verification_router
+from app.routers.hospitals import router as hospitals_router
 
 app = FastAPI(
     title="MaaSheba AI Backend",
@@ -50,3 +51,4 @@ app.include_router(sms_router)
 app.include_router(qa_router)
 app.include_router(ussd_router)
 app.include_router(verification_router)
+app.include_router(hospitals_router)

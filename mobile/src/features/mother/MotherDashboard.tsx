@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View, ImageBackground } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View, ImageBackground, ActivityIndicator, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { Icon } from "@/components/ui/Icon";
 import { MenuModal } from "@/components/ui/MenuModal";
@@ -34,6 +34,8 @@ export function MotherDashboard({
   const copy = useCopy();
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [hospitals, setHospitals] = useState<any[]>([]);
+  const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +60,26 @@ export function MotherDashboard({
     }
 
     loadUnreadCount().catch(() => undefined);
+
+    async function loadHospitals() {
+      try {
+        const profile = await getCurrentMotherProfile();
+        const lat = (profile as any)?.location?.lat ?? 23.9097;
+        const lng = (profile as any)?.location?.lng ?? 90.7153;
+        
+        const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
+        const res = await fetch(`${API_BASE}/api/v1/hospitals/nearby?lat=${lat}&lng=${lng}&radius_km=15`);
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (!cancelled) setHospitals(data);
+      } catch (err) {
+        if (!cancelled) setHospitals([]);
+      } finally {
+        if (!cancelled) setIsLoadingHospitals(false);
+      }
+    }
+    loadHospitals();
+
     return () => {
       cancelled = true;
     };
@@ -185,6 +207,68 @@ export function MotherDashboard({
           </View>
         ) : null}
       </Pressable>
+
+      <View style={styles.hospitalSection}>
+        <Text style={styles.sectionTitle}>কাছের হাসপাতাল</Text>
+        {isLoadingHospitals ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hospitalScroll}>
+            {[1, 2, 3].map(i => (
+              <View key={i} style={[styles.hospitalCard, styles.skeletonCard]}>
+                <ActivityIndicator color={colors.primary} />
+              </View>
+            ))}
+          </ScrollView>
+        ) : hospitals.length === 0 ? (
+          <View style={styles.emptyHospital}>
+            <Text style={styles.body}>কোনো হাসপাতাল পাওয়া যায়নি</Text>
+          </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hospitalScroll}>
+            {hospitals.slice(0, 3).map((h, index) => {
+              const isFirstGovt = h.type === 'government' && hospitals.findIndex(x => x.type === 'government') === index;
+              return (
+                <View key={h.id} style={styles.hospitalCard}>
+                  <Text style={styles.hospitalName} numberOfLines={2}>{h.name}</Text>
+                  
+                  <View style={styles.badgesRow}>
+                    <View style={styles.typeBadge}>
+                      <Text style={styles.typeText}>
+                        {h.type === 'government' ? 'সরকারি' : h.type === 'private' ? 'বেসরকারি' : 'ক্লিনিক'}
+                      </Text>
+                    </View>
+                    {h.is_partner && (
+                      <View style={styles.partnerBadge}>
+                        <Icon name="verified" color="#FFFFFF" size={12} />
+                        <Text style={styles.partnerText}>অনুমোদিত অংশীদার</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.hospitalDistance}>
+                    <Icon name="location-on" size={14} color={colors.secondary} />
+                    {" "}{toBanglaNumber(h.distance_km.toFixed(1))} কিমি দূরে
+                  </Text>
+                  <Text style={styles.hospitalPhone}>
+                    <Icon name="phone" size={14} color={colors.secondary} />
+                    {" "}{h.phone || "তথ্য নেই"}
+                  </Text>
+
+                  {isFirstGovt && (
+                    <View style={styles.recommendationBadge}>
+                      <Icon name="star" color="#FFFFFF" size={12} />
+                      <Text style={styles.recommendationText}>আপনার স্বাস্থ্যকর্মীর পরামর্শকৃত</Text>
+                    </View>
+                  )}
+
+                  <Pressable style={styles.detailsBtn} onPress={showComingSoon}>
+                    <Text style={styles.detailsBtnText}>বিস্তারিত দেখুন</Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
     </ScreenShell>
   );
 }
@@ -379,5 +463,99 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: "#FFFFFF",
     fontFamily: typography.h2.fontFamily
+  },
+  hospitalSection: {
+    gap: spacing.sm,
+    marginTop: spacing.base,
+  },
+  hospitalScroll: {
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  hospitalCard: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.card,
+    padding: spacing.cardPadding,
+    width: 280,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+  },
+  skeletonCard: {
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 150,
+  },
+  emptyHospital: {
+    padding: spacing.cardPadding,
+    alignItems: "center",
+  },
+  hospitalName: {
+    ...typography.h2,
+    color: colors.onSurface,
+  },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  typeBadge: {
+    backgroundColor: colors.surfaceContainerHighest,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  typeText: {
+    ...typography.caption,
+    color: colors.onSurface,
+  },
+  partnerBadge: {
+    backgroundColor: "#00796B",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 4,
+  },
+  partnerText: {
+    ...typography.caption,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  hospitalDistance: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    marginTop: 4,
+  },
+  hospitalPhone: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  recommendationBadge: {
+    backgroundColor: "#E65100",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+    marginTop: 4,
+  },
+  recommendationText: {
+    ...typography.caption,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  detailsBtn: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.outlineVariant,
+    paddingTop: 8,
+    alignItems: "center",
+  },
+  detailsBtnText: {
+    ...typography.label,
+    color: colors.primary,
   }
 });

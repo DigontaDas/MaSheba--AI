@@ -16,13 +16,13 @@ if (!isExpoGo) {
 
 if (Notifications) {
   Notifications.setNotificationHandler({
-    handleNotification: async (notification: any) => {
-      const category = notification.request.content.data?.category;
-      const isEmergency = category === "জরুরি";
+    handleNotification: async () => {
       return {
         shouldShowAlert: true,
-        shouldPlaySound: isEmergency,
-        shouldSetBadge: true
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
       };
     }
   });
@@ -62,7 +62,7 @@ export async function scheduleLocalNotification(params: {
         title: params.title,
         body: params.body,
         data: { category: params.category, ...params.data },
-        sound: params.category === "জরুরি" ? "default" : undefined,
+        sound: "default",
         color: params.category === "জরুরি" ? "#B3261E" : "#E57A58"
       },
       trigger: null
