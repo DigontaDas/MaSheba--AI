@@ -27,7 +27,7 @@ export default function MotherChatScreen() {
 
   const load = useCallback(async () => {
     const profile = await getCurrentMotherProfile();
-    if (!profile) return;
+    if (!profile) return null;
     setMotherId(profile.id);
 
     // Support demo mother ID bypass
@@ -35,7 +35,7 @@ export default function MotherChatScreen() {
     const DEMO_CHW_ID = "00000000-0000-0000-0000-0000000000a1";
     if (profile.id === "60000000-0000-0000-0000-000000000002" || profile.patientId === DEMO_PATIENT_ID) {
       setChwId(DEMO_CHW_ID);
-      return;
+      return DEMO_CHW_ID;
     }
 
     if (profile.patientId) {
@@ -46,7 +46,7 @@ export default function MotherChatScreen() {
         .maybeSingle<{ chw_id: string }>();
       if (data?.chw_id) {
         setChwId(data.chw_id);
-        return;
+        return data.chw_id;
       }
     }
 
@@ -62,17 +62,35 @@ export default function MotherChatScreen() {
         .maybeSingle();
       if (data?.chw_id) {
         setChwId(data.chw_id);
+        return data.chw_id;
       }
     } catch (err) {
       console.warn("Failed to retrieve fallback chw_id from connection_requests:", err);
     }
+    setChwId(null);
+    return null;
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      if (params.mode === "chw") setMode("chw");
-      load().catch(() => undefined);
-    }, [load, params.mode])
+      load().then((assignedChwId) => {
+        if (params.mode === "chw") {
+          if (assignedChwId) {
+            setMode("chw");
+          } else {
+            setMode("ai");
+            Alert.alert(
+              language === "en" ? "Chat Unavailable" : "চ্যাট উপলব্ধ নয়",
+              language === "en"
+                ? "Chatting with a health worker will be available once a worker is assigned to you."
+                : "স্বাস্থ্যকর্মী নিযুক্ত হওয়ার পর সরাসরি চ্যাট করার সুবিধা চালু হবে।"
+            );
+          }
+        } else {
+          setMode("ai");
+        }
+      }).catch(() => undefined);
+    }, [load, params.mode, language])
   );
 
   useEffect(() => {
@@ -122,7 +140,7 @@ export default function MotherChatScreen() {
   if (mode === "ai") {
     return (
       <SafeAreaView style={styles.screen} edges={["top"]}>
-        <TopTabs active={mode} onChange={setMode} />
+        {chwId && <TopTabs active={mode} onChange={setMode} />}
         <View style={styles.aiWrap}>
           <QaChatScreen />
         </View>
@@ -132,7 +150,7 @@ export default function MotherChatScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <TopTabs active={mode} onChange={setMode} />
+      {chwId && <TopTabs active={mode} onChange={setMode} />}
       <View style={styles.header}>
         <Pressable onPress={() => router.push("/(mother-tabs)/home")} style={styles.backButton}>
           <Icon name="arrow-back" color={colors.onSurface} />

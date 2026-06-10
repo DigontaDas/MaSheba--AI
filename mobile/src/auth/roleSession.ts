@@ -22,6 +22,9 @@ type MotherRow = {
   chw_email: string | null;
   chw_phone: string | null;
   rejection_reason: string | null;
+  age: number | null;
+  location_name: string | null;
+  location: string | null;
 };
 
 export type MotherProfile = {
@@ -35,6 +38,9 @@ export type MotherProfile = {
   chwEmail: string | null;
   chwPhone: string | null;
   rejectionReason: string | null;
+  age: number | null;
+  locationName: string | null;
+  location: string | null;
 };
 
 export async function saveUserRole(role: UserRole): Promise<void> {
@@ -115,7 +121,7 @@ export async function loginMother(identifier: string, password: string): Promise
 
   const { data: mother, error: motherError } = await supabase
     .from("mothers")
-    .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,lmp_date,chw_email,chw_phone,rejection_reason")
+    .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,lmp_date,chw_email,chw_phone,rejection_reason,age,location_name,location")
     .eq("auth_user_id", data.session.user.id)
     .single<MotherRow>();
 
@@ -141,7 +147,10 @@ export async function loginMother(identifier: string, password: string): Promise
     lmpDate: mother.lmp_date || new Date(Date.now() - (mother.gestational_age_weeks || 12) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     chwEmail: mother.chw_email,
     chwPhone: mother.chw_phone,
-    rejectionReason: mother.rejection_reason
+    rejectionReason: mother.rejection_reason,
+    age: mother.age ?? null,
+    locationName: mother.location_name ?? null,
+    location: mother.location ?? null
   };
 
   // Cache credentials for offline login
@@ -188,7 +197,10 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       lmpDate: new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       chwEmail: null,
       chwPhone: null,
-      rejectionReason: null
+      rejectionReason: null,
+      age: null,
+      locationName: null,
+      location: null
     };
   }
 
@@ -203,7 +215,10 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       lmpDate: new Date(Date.now() - 32 * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       chwEmail: "chw-a@maasheba.local",
       chwPhone: null,
-      rejectionReason: null
+      rejectionReason: null,
+      age: 26,
+      locationName: "মোহাম্মদপুর, ঢাকা",
+      location: "POINT(90.3624 23.7548)"
     };
   }
 
@@ -225,7 +240,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
   try {
     const { data: mother, error } = await supabase
       .from("mothers")
-      .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,lmp_date,chw_email,chw_phone,rejection_reason")
+      .select("id,name,patient_id,phone,gestational_age_weeks,is_active,verification_status,lmp_date,chw_email,chw_phone,rejection_reason,age,location_name,location")
       .eq("id", motherId)
       .maybeSingle<MotherRow>();
 
@@ -252,7 +267,10 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
           lmpDate: new Date(Date.now() - (isDemo ? 32 : 28) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
           chwEmail: isDemo ? "chw-a@maasheba.local" : null,
           chwPhone: null,
-          rejectionReason: null
+          rejectionReason: null,
+          age: null,
+          locationName: null,
+          location: null
         };
       }
       return null;
@@ -268,7 +286,10 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       lmpDate: mother.lmp_date || new Date(Date.now() - (mother.gestational_age_weeks || 12) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       chwEmail: mother.chw_email,
       chwPhone: mother.chw_phone,
-      rejectionReason: mother.rejection_reason
+      rejectionReason: mother.rejection_reason,
+      age: mother.age ?? null,
+      locationName: mother.location_name ?? null,
+      location: mother.location ?? null
     };
 
     await AsyncStorage.setItem("maasheba.mother_profile_cache", JSON.stringify(profile)).catch(() => undefined);
@@ -295,7 +316,10 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
         lmpDate: new Date(Date.now() - (isDemo ? 32 : 28) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         chwEmail: isDemo ? "chw-a@maasheba.local" : null,
         chwPhone: null,
-        rejectionReason: null
+        rejectionReason: null,
+        age: null,
+        locationName: null,
+        location: null
       };
     }
     return null;
@@ -350,3 +374,61 @@ export async function resolveStoredRole(): Promise<UserRole | null> {
 
   return null;
 }
+
+export async function updateMotherProfile(
+  motherId: string,
+  updates: {
+    age?: number | null;
+    locationName?: string | null;
+    location?: string | null;
+  }
+): Promise<void> {
+  const networkState = await Network.getNetworkStateAsync().catch(() => ({ isConnected: true, isInternetReachable: true }));
+  const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false;
+
+  const payload: any = {};
+  if (updates.age !== undefined) payload.age = updates.age;
+  if (updates.locationName !== undefined) payload.location_name = updates.locationName;
+  if (updates.location !== undefined) payload.location = updates.location;
+
+  if (motherId.startsWith("offline-mother-")) {
+    const cachedProfileStr = await AsyncStorage.getItem(`maasheba.offline_profile_${motherId}`).catch(() => null);
+    let currentProfile: any = {};
+    if (cachedProfileStr) {
+      try { currentProfile = JSON.parse(cachedProfileStr); } catch {}
+    }
+    const updated = {
+      ...currentProfile,
+      age: updates.age !== undefined ? updates.age : currentProfile.age,
+      locationName: updates.locationName !== undefined ? updates.locationName : currentProfile.locationName,
+      location: updates.location !== undefined ? updates.location : currentProfile.location
+    };
+    await AsyncStorage.setItem(`maasheba.offline_profile_${motherId}`, JSON.stringify(updated));
+    return;
+  }
+
+  if (!isOffline) {
+    const { error } = await supabase
+      .from("mothers")
+      .update(payload)
+      .eq("id", motherId);
+    if (error) {
+      throw error;
+    }
+  }
+
+  // Update offline profile cache
+  const cachedProfileStr = await AsyncStorage.getItem("maasheba.mother_profile_cache").catch(() => null);
+  let currentProfile: any = {};
+  if (cachedProfileStr) {
+    try { currentProfile = JSON.parse(cachedProfileStr); } catch {}
+  }
+  const updated = {
+    ...currentProfile,
+    age: updates.age !== undefined ? updates.age : currentProfile.age,
+    locationName: updates.locationName !== undefined ? updates.locationName : currentProfile.locationName,
+    location: updates.location !== undefined ? updates.location : currentProfile.location
+  };
+  await AsyncStorage.setItem("maasheba.mother_profile_cache", JSON.stringify(updated));
+}
+

@@ -12,6 +12,42 @@ import { colors, radius, spacing, typography } from "@/theme";
 import { toBanglaNumber } from "@/utils/banglaNumerals";
 import { callPhoneNumber } from "@/utils/phone";
 
+function parsePointWkt(wkt: string | null): { latitude: number; longitude: number } | null {
+  if (!wkt) return null;
+  const match = wkt.match(/POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/i);
+  if (match) {
+    const longitude = parseFloat(match[1]);
+    const latitude = parseFloat(match[2]);
+    return { latitude, longitude };
+  }
+  return null;
+}
+
+function parseEwkbPoint(ewkbHex: string | null): { latitude: number; longitude: number } | null {
+  if (!ewkbHex || ewkbHex.length < 50) return null;
+  const isLittleEndian = ewkbHex.startsWith("01");
+  try {
+    const longHex = ewkbHex.substring(18, 34);
+    const latHex = ewkbHex.substring(34, 50);
+    
+    const hexToDouble = (hex: string) => {
+      const bytes = new Uint8Array(8);
+      for (let i = 0; i < 8; i++) {
+        const byteIndex = isLittleEndian ? i : 7 - i;
+        bytes[byteIndex] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+      }
+      return new DataView(bytes.buffer).getFloat64(0, true);
+    };
+
+    return {
+      longitude: hexToDouble(longHex),
+      latitude: hexToDouble(latHex)
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://maasheba-backend.onrender.com";
 
 type HealthCenterTab = "chw" | "review" | "hospitals";
@@ -344,33 +380,45 @@ export default function FindChwScreen() {
         return;
       }
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল দেখাতে লোকেশন অনুমতি দরকার।" : "Location permission is needed to show nearby hospitals.");
-        Alert.alert(
-          lang === "bn" ? "অনুমতি প্রয়োজন" : "Permission Required",
-          lang === "bn"
-            ? "স্বাস্থ্যকর্মী ও হাসপাতালের দূরত্ব দেখার জন্য লোকেশন অনুমতি প্রয়োজন।"
-            : "Location permission is required to show nearby health workers and hospitals."
-        );
-        return;
+      let currentCoords = null;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          setCoords(currentCoords);
+        } else {
+          setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল দেখাতে লোকেশন অনুমতি দরকার।" : "Location permission is needed to show nearby hospitals.");
+        }
+      } catch (locErr) {
+        console.warn("Failed to get location automatically:", locErr);
       }
 
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      setCoords(currentCoords);
+      if (!currentCoords && profile.location) {
+        const parsed = parsePointWkt(profile.location) || parseEwkbPoint(profile.location);
+        if (parsed) {
+          currentCoords = parsed;
+          setCoords(parsed);
+        }
+      }
 
-      const [{ data, error }] = await Promise.all([
-        supabase.rpc("find_nearby_chws", {
-          mother_lat: currentCoords.latitude,
-          mother_lng: currentCoords.longitude,
-          radius_km: 10.0
-        }),
-        fetchHospitals(currentCoords.latitude, currentCoords.longitude)
-      ]);
+      if (currentCoords) {
+        const [{ data, error }] = await Promise.all([
+          supabase.rpc("find_nearby_chws", {
+            mother_lat: currentCoords.latitude,
+            mother_lng: currentCoords.longitude,
+            radius_km: 10.0
+          }),
+          fetchHospitals(currentCoords.latitude, currentCoords.longitude)
+        ]);
 
-      if (error) throw error;
-      setNearbyChws(data || []);
+        if (error) throw error;
+        setNearbyChws(data || []);
+      } else {
+        setNearbyChws([]);
+        setHospitals([]);
+        setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল ও স্বাস্থ্যকর্মী দেখতে জিপিএস সচল করুন।" : "Please enable GPS to view nearby hospitals and health workers.");
+      }
     } catch (err) {
       console.error("Failed to load health center data:", err);
     } finally {
@@ -385,10 +433,10 @@ export default function FindChwScreen() {
   );
 
   const handleRequestChw = async () => {
-    if (!motherId || !coords) return;
+    if (!motherId) return;
     setSubmitting(true);
     try {
-      const pointWkt = `POINT(${coords.longitude} ${coords.latitude})`;
+      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : null;
       const { error } = await supabase.from("connection_requests").insert({
         mother_id: motherId,
         mother_location: pointWkt,
@@ -667,13 +715,9 @@ export default function FindChwScreen() {
                 <View style={styles.distanceBadge}>
                   <Text style={styles.distanceText}>{formatDistance(chw.distance_km)}</Text>
                 </View>
-                <Pressable style={styles.chatButton} onPress={handleOpenChat}>
-                  <Icon name="chat" color="#FFFFFF" size={16} />
-                  <Text style={styles.chatButtonText}>{lang === "bn" ? "চ্যাট" : "Chat"}</Text>
-                </Pressable>
                 {!pendingRequest && (
                   <Pressable 
-                    style={[styles.chatButton, { backgroundColor: '#4A6047', marginLeft: 8 }]} 
+                    style={[styles.chatButton, { backgroundColor: '#4A6047' }]} 
                     onPress={() => handleRequestSpecificChw(chw.chw_id, chw.name)}
                   >
                     <Icon name="person-add" color="#FFFFFF" size={16} />
@@ -689,7 +733,7 @@ export default function FindChwScreen() {
           <Icon name="location-off" color="#A08E88" size={42} />
           <Text style={styles.emptyText}>{lang === "bn" ? "১০ কিমির মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।" : "No active health workers found within 10 km."}</Text>
           {!pendingRequest && (
-            <Pressable style={styles.requestButton} disabled={submitting || !coords} onPress={handleRequestChw}>
+            <Pressable style={styles.requestButton} disabled={submitting} onPress={handleRequestChw}>
               <Text style={styles.requestButtonText}>
                 {submitting ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...") : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a health worker")}
               </Text>

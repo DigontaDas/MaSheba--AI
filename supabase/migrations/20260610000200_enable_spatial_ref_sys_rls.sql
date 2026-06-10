@@ -8,9 +8,15 @@
 do $$
 begin
   if to_regclass('public.spatial_ref_sys') is not null then
-    revoke all on table public.spatial_ref_sys from anon;
-    revoke all on table public.spatial_ref_sys from authenticated;
-    alter table public.spatial_ref_sys enable row level security;
+    begin
+      revoke all on table public.spatial_ref_sys from anon;
+      revoke all on table public.spatial_ref_sys from authenticated;
+      alter table public.spatial_ref_sys enable row level security;
+    exception
+      when others then
+        raise warning 'Could not modify public.spatial_ref_sys RLS: %', SQLERRM;
+    end;
   end if;
 end;
 $$;
+

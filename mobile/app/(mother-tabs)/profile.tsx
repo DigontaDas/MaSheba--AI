@@ -4,7 +4,8 @@ import { router } from "expo-router";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ScreenShell } from "@/components/ui/ScreenShell";
 import { clearSession } from "@/auth/secureSession";
-import { clearRoleSession, getCurrentMotherProfile, saveMotherId, type MotherProfile } from "@/auth/roleSession";
+import { clearRoleSession, getCurrentMotherProfile, saveMotherId, type MotherProfile, updateMotherProfile } from "@/auth/roleSession";
+import * as Location from "expo-location";
 import { supabase, signUpAndBootstrap } from "@/auth/supabaseAuth";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCopy } from "@/data/useCopy";
@@ -38,9 +39,116 @@ export default function ProfileScreen() {
   const [syncPassword, setSyncPassword] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
 
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editAge, setEditAge] = useState("");
+  const [editLocationName, setEditLocationName] = useState("");
+  const [editLatitude, setEditLatitude] = useState<number | null>(null);
+  const [editLongitude, setEditLongitude] = useState<number | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
   useEffect(() => {
     getCurrentMotherProfile().then(setProfile).catch(() => undefined);
   }, []);
+
+  const openEditModal = () => {
+    setEditAge(profile?.age ? profile.age.toString() : "");
+    setEditLocationName(profile?.locationName ?? "");
+    setEditLatitude(null);
+    setEditLongitude(null);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    const ageNum = parseInt(editAge, 10);
+    if (editAge.trim() && (isNaN(ageNum) || ageNum < 10 || ageNum > 60)) {
+      Alert.alert(
+        language === "bn" ? "ভুল বয়স" : "Invalid Age",
+        language === "bn" ? "দয়া করে ১০ থেকে ৬০ এর মধ্যে বয়স লিখুন।" : "Please enter an age between 10 and 60."
+      );
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      const updates: any = {
+        age: editAge.trim() ? ageNum : null,
+        locationName: editLocationName.trim() || null
+      };
+
+      if (editLongitude !== null && editLatitude !== null) {
+        updates.location = `POINT(${editLongitude} ${editLatitude})`;
+      }
+
+      await updateMotherProfile(profile.id, updates);
+      
+      const updatedProfile = await getCurrentMotherProfile();
+      setProfile(updatedProfile);
+      
+      Alert.alert(
+        language === "bn" ? "সংরক্ষিত হয়েছে" : "Saved",
+        language === "bn" ? "আপনার তথ্য সফলভাবে সংরক্ষিত হয়েছে।" : "Your information has been successfully saved."
+      );
+      setEditModalVisible(false);
+    } catch (err: any) {
+      Alert.alert(
+        language === "bn" ? "সংরক্ষণ ব্যর্থ" : "Save Failed",
+        err?.message || (language === "bn" ? "কোনো সমস্যা হয়েছে" : "An error occurred")
+      );
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleGpsGrab = async () => {
+    setGpsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          language === "bn" ? "অনুমতি প্রয়োজন" : "Permission Required",
+          language === "bn"
+            ? "স্বয়ংক্রিয়ভাবে অবস্থান পেতে লোকেশন অনুমতি প্রয়োজন।"
+            : "Location permission is required to automatically fetch location."
+        );
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const lat = loc.coords.latitude;
+      const lng = loc.coords.longitude;
+      setEditLatitude(lat);
+      setEditLongitude(lng);
+
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (geocode && geocode.length > 0) {
+          const first = geocode[0];
+          const parts = [
+            first.streetNumber,
+            first.street,
+            first.subregion || first.district,
+            first.city || first.subregion
+          ].filter(Boolean);
+          const address = parts.join(", ") || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          setEditLocationName(address);
+        } else {
+          setEditLocationName(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        }
+      } catch (geocodingErr) {
+        console.warn("Reverse geocoding failed:", geocodingErr);
+        setEditLocationName(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      }
+    } catch (err: any) {
+      Alert.alert(
+        language === "bn" ? "লোকেশন পাওয়া যায়নি" : "Location Error",
+        err?.message || (language === "bn" ? "জিপিএস অবস্থান নেওয়া যায়নি।" : "Could not retrieve GPS coordinates.")
+      );
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   const syncOfflineAccount = async (emailInput: string, passwordInput: string) => {
     if (!profile) return;
@@ -239,6 +347,12 @@ export default function ProfileScreen() {
   const week = getPregnancyWeeks(profile?.lmpDate, profile?.gestationalAgeWeeks);
   const eddDate = getEDD(profile?.lmpDate);
 
+  const displayAge = profile?.age
+    ? (language === "bn" ? `${toBanglaNumber(profile.age)} বছর` : `${profile.age} years`)
+    : copy.profile.ageValue;
+
+  const displayLocation = profile?.locationName ?? copy.profile.locationValue;
+
   // Determine verification status label and color
   let statusLabel = "";
   let statusColor: string = colors.secondary;
@@ -363,13 +477,100 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* Edit Profile Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setEditModalVisible(false)} />
+          <View style={styles.modalPanel}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {language === "bn" ? "ব্যক্তিগত তথ্য সম্পাদন" : "Edit Personal Info"}
+              </Text>
+              <Pressable onPress={() => setEditModalVisible(false)}>
+                <Icon name="close" color="#70605A" size={24} />
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 14, paddingBottom: 20 }}>
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 14, color: "#70605A", fontWeight: "bold" }}>
+                  {language === "bn" ? "বয়স (বছর)" : "Age (Years)"}
+                </Text>
+                <TextInput
+                  keyboardType="numeric"
+                  onChangeText={setEditAge}
+                  placeholder={language === "bn" ? "যেমন: ২৫" : "e.g. 25"}
+                  placeholderTextColor="#A0A0A0"
+                  style={styles.modalInput}
+                  value={editAge}
+                />
+              </View>
+
+              <View style={{ gap: 6 }}>
+                <Text style={{ fontSize: 14, color: "#70605A", fontWeight: "bold" }}>
+                  {language === "bn" ? "অবস্থান" : "Location"}
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TextInput
+                    onChangeText={setEditLocationName}
+                    placeholder={language === "bn" ? "যেমন: মোহাম্মদপুর, ঢাকা" : "e.g. Mohammadpur, Dhaka"}
+                    placeholderTextColor="#A0A0A0"
+                    style={[styles.modalInput, { flex: 1 }]}
+                    value={editLocationName}
+                  />
+                  <Pressable
+                    disabled={gpsLoading}
+                    onPress={handleGpsGrab}
+                    style={[
+                      styles.iconButton,
+                      { backgroundColor: "#E57A58", borderRadius: 8, height: 50, width: 50 }
+                    ]}
+                  >
+                    {gpsLoading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Icon name="my-location" color="#FFFFFF" size={20} />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+
+              <Pressable
+                disabled={saveLoading}
+                onPress={handleSaveProfile}
+                style={({ pressed }) => [
+                  styles.modalSubmitButton,
+                  pressed && styles.pressed,
+                  saveLoading && styles.disabled,
+                  { marginTop: 20 }
+                ]}
+              >
+                {saveLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.modalSubmitButtonText}>
+                    {language === "bn" ? "সংরক্ষণ করুন" : "Save Changes"}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <InfoSection
         icon="person"
         title={copy.profile.personalInfo}
+        onEditPress={openEditModal}
         rows={[
           [copy.profile.nameLabel, displayName],
-          [copy.profile.age, copy.profile.ageValue],
-          [copy.profile.location, copy.profile.locationValue]
+          [copy.profile.age, displayAge],
+          [copy.profile.location, displayLocation]
         ]}
       />
       <InfoSection
@@ -398,17 +599,24 @@ export default function ProfileScreen() {
 function InfoSection({
   icon,
   title,
-  rows
+  rows,
+  onEditPress
 }: {
   icon: "person" | "favorite";
   title: string;
   rows: Array<[string, string]>;
+  onEditPress?: () => void;
 }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Icon name={icon} color={colors.primary} />
         <Text style={styles.sectionTitle}>{title}</Text>
+        {onEditPress && (
+          <Pressable accessibilityLabel="Edit info" accessibilityRole="button" onPress={onEditPress} style={{ padding: 6 }}>
+            <Icon name="edit" color={colors.primary} size={18} />
+          </Pressable>
+        )}
       </View>
       {rows.map(([label, value]) => (
         <View key={label} style={styles.infoRow}>
