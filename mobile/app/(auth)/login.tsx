@@ -429,7 +429,11 @@ export default function LoginScreen() {
 
       if (role === "MOTHER") {
         if (action === "demo-mother" || emailLower === DEMO_MOTHER_EMAIL.toLowerCase()) {
-          await seedLocalMotherDemoData();
+          try {
+            await loginMother(DEMO_MOTHER_EMAIL, DEMO_MOTHER_PASSWORD);
+          } catch (_demoLoginError) {
+            await seedLocalMotherDemoData();
+          }
           setModalVisible(false);
           router.replace("/(mother-tabs)/home");
           return;

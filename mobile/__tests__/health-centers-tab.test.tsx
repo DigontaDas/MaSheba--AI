@@ -73,23 +73,32 @@ describe("mother health centers tab", () => {
     expect(EN_STRINGS["nav.find-chw"]).toBe("Health Centers");
   });
 
-  it("keeps the demo CHW finder and adds a separate nearby hospitals coming-soon section", async () => {
+  it("renders the demo Health Center tabs with assigned CHW and nearby hospitals", async () => {
     const tree = await renderScreen();
     const json = JSON.stringify(tree.toJSON());
 
-    expect(json).toContain("স্বাস্থ্যকেন্দ্র");
-    expect(json).toContain("স্বাস্থ্যকর্মী খুঁজুন");
-    expect(json).toContain("মোছাঃ জাহানারা বেগম");
-    expect(json).toContain("Nearby Hospitals");
-    expect(json).toContain("হাসপাতাল বা ডাক্তার খুঁজুন");
-    expect(json).toContain("Coming soon");
-    expect(json).toContain("এখানে কাছের হাসপাতাল, ক্লিনিক এবং ডাক্তারদের তালিকা সার্চ করা যাবে।");
+    expect(json).toContain("স্বাস্থ্য কেন্দ্র");
+    expect(json).toContain("আমার CHW");
+    expect(json).toContain("রিভিউ");
+    expect(json).toContain("হাসপাতাল");
+    expect(json).toContain("Mst. Jahanara Begum");
+
+    const hospitalsTab = (tree.root as any).findAll(
+      (node: any) => node.props.accessibilityLabel === "Health Center tab hospitals"
+    )[0];
+    act(() => {
+      hospitalsTab.props.onPress();
+    });
+
+    expect(JSON.stringify(tree.toJSON())).toContain("Narsingdi District Hospital");
     expect(mockRequestForegroundPermissionsAsync).not.toHaveBeenCalled();
   });
 
   it("opens direct CHW messaging mode from the demo Find CHW chat action", async () => {
     const tree = await renderScreen();
-    const chatButton = (tree.root as any).findAll((node: any) => typeof node.props.onPress === "function")[0];
+    const chatButton = (tree.root as any).findAll(
+      (node: any) => node.props.accessibilityLabel === "Chat with assigned CHW"
+    )[0];
 
     expect(chatButton).toBeDefined();
     act(() => {
