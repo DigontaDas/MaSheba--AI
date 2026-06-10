@@ -8,7 +8,7 @@ const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localho
 type JsonObject = Record<string, unknown>;
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = await requireAdminBearerToken();
+  const token = await requireAdminBearerToken({ isAction: true });
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     cache: "no-store",
@@ -20,8 +20,20 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Admin API request failed: ${response.status}`);
+    const rawText = await response.text();
+    let friendlyMessage = rawText || `Admin API request failed: ${response.status}`;
+    try {
+      const parsed = JSON.parse(rawText);
+      // Backend returns { error: { code, message } }
+      if (parsed?.error?.message) {
+        friendlyMessage = parsed.error.message;
+      } else if (parsed?.detail) {
+        friendlyMessage = typeof parsed.detail === "string" ? parsed.detail : JSON.stringify(parsed.detail);
+      }
+    } catch {
+      // rawText is not JSON — keep as-is
+    }
+    throw new Error(friendlyMessage);
   }
 
   if (response.status === 204) {

@@ -4,6 +4,14 @@ import { createServerSupabaseClient } from "@/utils/supabase/server";
 
 export const DEV_COOKIE = "maasheba_admin_dev";
 
+/** Sentinel error class so callers can detect auth failures vs backend errors */
+export class AdminSessionExpiredError extends Error {
+  constructor() {
+    super("Your session has expired. Please refresh the page and log in again.");
+    this.name = "AdminSessionExpiredError";
+  }
+}
+
 export async function getAdminBearerToken(): Promise<string | null> {
   const cookieStore = await cookies();
   const headerStore = await headers();
@@ -18,9 +26,18 @@ export async function getAdminBearerToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-export async function requireAdminBearerToken(): Promise<string> {
+/**
+ * Returns the current admin bearer token.
+ * - When called from a Server Component (page render), redirects to /login on missing token.
+ * - When called from a Server Action (client event), throws AdminSessionExpiredError so the
+ *   client can show a readable error instead of the cryptic NEXT_REDIRECT message.
+ */
+export async function requireAdminBearerToken(options?: { isAction?: boolean }): Promise<string> {
   const token = await getAdminBearerToken();
   if (!token) {
+    if (options?.isAction) {
+      throw new AdminSessionExpiredError();
+    }
     redirect("/login");
   }
   return token;
