@@ -112,6 +112,7 @@ def main() -> None:
     "patient_id": "11111111-1111-1111-1111-111111111102",
     "gestational_age_weeks": 28,
     "is_active": True,
+    "chw_email": "chw-a@maasheba.local",
   }
   if existing_mothers:
     request_json(

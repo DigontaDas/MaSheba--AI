@@ -122,10 +122,10 @@ BEGIN
      'email', now(), now(), now(), gen_random_uuid());
 
   -- Upsert public.mothers
-  INSERT INTO public.mothers (auth_user_id, name, patient_id, phone, gestational_age_weeks, is_active)
+  INSERT INTO public.mothers (auth_user_id, name, patient_id, phone, gestational_age_weeks, is_active, chw_email)
   VALUES
-    (v_amina,    'আমিনা খাতুন',    '11111111-1111-1111-1111-111111111101', '+8801700000001', 28, true),
-    (v_rahima,   'রহিমা বেগম',    '11111111-1111-1111-1111-111111111102', '+8801700000002', 32, true),
+    (v_amina,    'আমিনা খাতুন',    '11111111-1111-1111-1111-111111111101', '+8801700000001', 28, true, 'chw-a@maasheba.local'),
+    (v_rahima,   'রহিমা বেগম',    '11111111-1111-1111-1111-111111111102', '+8801700000002', 32, true, 'chw-a@maasheba.local'),
     (v_sharmin,  'শারমিন আক্তার',   '11111111-1111-1111-1111-111111111103', '+8801700000003', 20, true),
     (v_nasima,   'নাসিমা বেগম',    '11111111-1111-1111-1111-111111111104', '+8801700000004', 34, true),
     (v_fatema,   'ফাতেমা আক্তার',    '11111111-1111-1111-1111-111111111105', '+8801700000005', 26, true),

@@ -119,6 +119,21 @@ function initialsForName(name?: string) {
     .toUpperCase();
 }
 
+function formatChwName(name: string | null | undefined, lang: string) {
+  if (!name) return lang === "bn" ? "স্বাস্থ্যকর্মী" : "Health Worker";
+  if (name === "CHW_A") {
+    return lang === "bn" ? "রাহেলা বেগম" : "Rahela Begum";
+  }
+  if (name === "CHW_B") {
+    return lang === "bn" ? "মোসাঃ সুফিয়া খাতুন" : "Mst. Sufia Khatun";
+  }
+  if (name.startsWith("CHW_")) {
+    const num = name.replace("CHW_", "");
+    return lang === "bn" ? `স্বাস্থ্যকর্মী ${num}` : `Health Worker ${num}`;
+  }
+  return name;
+}
+
 export default function FindChwScreen() {
   const { language: lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<HealthCenterTab>("chw");
@@ -141,7 +156,9 @@ export default function FindChwScreen() {
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
   const [hospitalsError, setHospitalsError] = useState<string | null>(null);
 
-  const assignedChwName = pendingRequest?.chws?.name ?? (lang === "bn" ? "নিযুক্ত স্বাস্থ্যকর্মী" : "Assigned CHW");
+  const assignedChwName = pendingRequest?.chws?.name
+    ? formatChwName(pendingRequest.chws.name, lang)
+    : (lang === "bn" ? "নিযুক্ত স্বাস্থ্যকর্মী" : "Assigned CHW");
   const assignedChwArea = nearbyChws.find((chw) => chw.chw_id === pendingRequest?.chw_id);
 
   const setDemoChwState = (mId: string) => {
@@ -221,7 +238,7 @@ export default function FindChwScreen() {
     setPendingReassignment(reassignment as ReassignmentRequest | null);
   };
 
-  const fetchRequestStatus = async (mId: string) => {
+  const fetchRequestStatus = async (mId: string, profile?: any) => {
     if (isDemoMother(mId)) {
       setPendingRequest({
         id: "demo-req-1",
@@ -243,6 +260,36 @@ export default function FindChwScreen() {
         .maybeSingle();
 
       if (!data) {
+        let fallbackRequest: ConnectionRequest | null = null;
+        if (profile?.patientId) {
+          const { data: patientData } = await supabase
+            .from("patients")
+            .select("chw_id")
+            .eq("id", profile.patientId)
+            .maybeSingle();
+
+          if (patientData?.chw_id) {
+            const { data: chwDetails } = await supabase
+              .from("chws")
+              .select("name,phone")
+              .eq("id", patientData.chw_id)
+              .maybeSingle();
+
+            fallbackRequest = {
+              id: `profile-assigned-${patientData.chw_id}`,
+              status: "assigned",
+              chw_id: patientData.chw_id,
+              chws: chwDetails ? { name: chwDetails.name, phone: chwDetails.phone ?? undefined } : undefined
+            };
+          }
+        }
+
+        if (fallbackRequest) {
+          setPendingRequest(fallbackRequest);
+          await fetchReviewAndReassignment(mId, fallbackRequest.chw_id);
+          return;
+        }
+
         setPendingRequest(null);
         setMyReview(null);
         setPendingReassignment(null);
@@ -288,7 +335,7 @@ export default function FindChwScreen() {
       const offline = net.isConnected === false || net.isInternetReachable === false;
       setIsOffline(offline);
 
-      await fetchRequestStatus(profile.id);
+      await fetchRequestStatus(profile.id, profile);
 
       if (offline) {
         setNearbyChws([]);
@@ -355,6 +402,35 @@ export default function FindChwScreen() {
         lang === "bn" ? "অ্যাডমিন শীঘ্রই একজন স্বাস্থ্যকর্মী নিয়োগ করবেন।" : "An administrator will assign a health worker shortly."
       );
       await fetchRequestStatus(motherId);
+    } catch (err: any) {
+      Alert.alert(lang === "bn" ? "ব্যর্থ হয়েছে" : "Submission Failed", err.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRequestSpecificChw = async (chwId: string, chwName: string) => {
+    if (!motherId) return;
+    setSubmitting(true);
+    try {
+      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : null;
+      const { error } = await supabase.from("connection_requests").insert({
+        mother_id: motherId,
+        mother_location: pointWkt,
+        status: "pending",
+        chw_id: chwId
+      });
+
+      if (error) throw error;
+
+      Alert.alert(
+        lang === "bn" ? "অনুরোধ পাঠানো হয়েছে" : "Request Submitted",
+        lang === "bn"
+          ? `স্বাস্থ্যকর্মী ${formatChwName(chwName, lang)} এর জন্য অনুরোধ পাঠানো হয়েছে। অ্যাডমিন শীঘ্রই অনুমোদন করবেন।`
+          : `Request for health worker ${formatChwName(chwName, lang)} has been sent. Admin will approve shortly.`
+      );
+      const profile = await getCurrentMotherProfile();
+      await fetchRequestStatus(motherId, profile);
     } catch (err: any) {
       Alert.alert(lang === "bn" ? "ব্যর্থ হয়েছে" : "Submission Failed", err.message || "Something went wrong");
     } finally {
@@ -583,7 +659,7 @@ export default function FindChwScreen() {
                   <Icon name="person" color="#FFFFFF" size={24} />
                 </View>
                 <View style={styles.chwDetails}>
-                  <Text style={styles.chwName}>{chw.name}</Text>
+                  <Text style={styles.chwName}>{formatChwName(chw.name, lang)}</Text>
                   <Text style={styles.chwArea}>{chw.union_name}, {chw.upazila}</Text>
                 </View>
               </View>
@@ -595,6 +671,15 @@ export default function FindChwScreen() {
                   <Icon name="chat" color="#FFFFFF" size={16} />
                   <Text style={styles.chatButtonText}>{lang === "bn" ? "চ্যাট" : "Chat"}</Text>
                 </Pressable>
+                {!pendingRequest && (
+                  <Pressable 
+                    style={[styles.chatButton, { backgroundColor: '#4A6047', marginLeft: 8 }]} 
+                    onPress={() => handleRequestSpecificChw(chw.chw_id, chw.name)}
+                  >
+                    <Icon name="person-add" color="#FFFFFF" size={16} />
+                    <Text style={styles.chatButtonText}>{lang === "bn" ? "অনুরোধ" : "Request"}</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           ))}
@@ -794,7 +879,7 @@ export default function FindChwScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.listContent}>
           <View style={styles.tabs}>
-            {renderTabButton("chw", lang === "bn" ? "আমার CHW" : "My CHW", "person")}
+            {renderTabButton("chw", lang === "bn" ? "আমার স্বাস্থ্যকর্মী" : "My CHW", "person")}
             {renderTabButton("review", lang === "bn" ? "রিভিউ" : "Review", "rate-review")}
             {renderTabButton("hospitals", lang === "bn" ? "হাসপাতাল" : "Hospitals", "local-hospital")}
           </View>
