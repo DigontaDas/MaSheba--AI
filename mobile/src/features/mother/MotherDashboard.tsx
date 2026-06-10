@@ -170,12 +170,7 @@ export function MotherDashboard({
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Pressable accessibilityLabel={language === "en" ? "Listen to audio" : "অডিও শুনুন"} accessibilityRole="button" onPress={showComingSoon} style={styles.smallIconButton}>
-            <Icon name="volume-up" color={colors.primary} />
-          </Pressable>
-        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
         <Text style={styles.label}>{copy.mother.whatToExpect}</Text>
         {checklist.map((item) => (
           <View key={item} style={styles.checkRow}>
