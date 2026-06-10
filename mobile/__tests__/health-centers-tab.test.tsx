@@ -78,7 +78,7 @@ describe("mother health centers tab", () => {
     const json = JSON.stringify(tree.toJSON());
 
     expect(json).toContain("স্বাস্থ্য কেন্দ্র");
-    expect(json).toContain("আমার CHW");
+    expect(json).toContain("আমার স্বাস্থ্যকর্মী");
     expect(json).toContain("রিভিউ");
     expect(json).toContain("হাসপাতাল");
     expect(json).toContain("Mst. Jahanara Begum");

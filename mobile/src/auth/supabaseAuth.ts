@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Patient, RiskLevel } from "@/types/schema";
 import { saveSession } from "./secureSession";
 import { upsertPatients } from "@/db/patients";
+import { saveUserRole, saveMotherId } from "./roleSession";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -226,6 +227,8 @@ export async function signUpAndBootstrap(
           refreshToken: data.session.refresh_token,
           chwId: profileId
         });
+        await saveUserRole("MOTHER");
+        await saveMotherId(profileId);
       }
 
       return { sessionEstablished: true };
@@ -284,6 +287,8 @@ export async function signUpAndBootstrap(
               refreshToken: fbData.session.refresh_token,
               chwId: profileId
             });
+            await saveUserRole("MOTHER");
+            await saveMotherId(profileId);
           }
 
           return { sessionEstablished: true };
@@ -304,6 +309,8 @@ export async function signUpAndBootstrap(
             refreshToken: data.session.refresh_token,
             chwId: profileId
           });
+          await saveUserRole("MOTHER");
+          await saveMotherId(profileId);
         }
 
         return { sessionEstablished: true };

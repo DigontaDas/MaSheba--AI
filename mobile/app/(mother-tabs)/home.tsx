@@ -24,7 +24,7 @@ export default function MotherHomeScreen() {
         const p = await getCurrentMotherProfile();
         setProfile(p);
         
-        if (!p || !p.lmpDate) {
+        if (!p || (!p.patientId && !p.lmpDate)) {
           // No profile configured yet, redirect to setup
           router.replace("/mother-setup");
           return;

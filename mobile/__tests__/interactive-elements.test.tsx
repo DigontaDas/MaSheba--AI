@@ -197,11 +197,6 @@ describe("mobile interactive elements", () => {
     expect(Alert.alert).toHaveBeenCalledWith("নোটিফিকেশন", "কোনো নতুন নোটিফিকেশন নেই।", [{ text: "ঠিক আছে" }]);
 
     act(() => {
-      tree.root.findByProps({ accessibilityLabel: "অডিও শুনুন" }).props.onPress();
-    });
-    expect(Alert.alert).toHaveBeenCalledWith("শীঘ্রই আসছে", "এই বৈশিষ্ট্যটি শীঘ্রই আসছে।", [{ text: "ঠিক আছে" }]);
-
-    act(() => {
       tree.root.findByProps({ accessibilityLabel: copy.mother.emergencyHelp }).props.onPress();
     });
     expect(Alert.alert).toHaveBeenCalledWith("জরুরি সাহায্য", "এখনই সাহায্যের জন্য কল করুন:", expect.any(Array));

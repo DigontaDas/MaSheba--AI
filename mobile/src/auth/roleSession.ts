@@ -137,8 +137,8 @@ export async function loginMother(identifier: string, password: string): Promise
     patientId: mother.patient_id,
     phone: mother.phone,
     gestationalAgeWeeks: mother.gestational_age_weeks,
-    verificationStatus: "VERIFIED",
-    lmpDate: mother.lmp_date,
+    verificationStatus: mother.verification_status,
+    lmpDate: mother.lmp_date || new Date(Date.now() - (mother.gestational_age_weeks || 12) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     chwEmail: mother.chw_email,
     chwPhone: mother.chw_phone,
     rejectionReason: mother.rejection_reason
@@ -172,7 +172,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
         const parsed = JSON.parse(cachedProfileStr);
         return {
           ...parsed,
-          verificationStatus: "VERIFIED"
+          verificationStatus: parsed.verificationStatus || "VERIFIED"
         };
       } catch {
         // fallback
@@ -264,7 +264,7 @@ export async function getCurrentMotherProfile(): Promise<MotherProfile | null> {
       patientId: mother.patient_id,
       phone: mother.phone,
       gestationalAgeWeeks: mother.gestational_age_weeks,
-      verificationStatus: "VERIFIED",
+      verificationStatus: mother.verification_status,
       lmpDate: mother.lmp_date || new Date(Date.now() - (mother.gestational_age_weeks || 12) * 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       chwEmail: mother.chw_email,
       chwPhone: mother.chw_phone,

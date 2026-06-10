@@ -1,5 +1,10 @@
 const originalConsoleError = console.error;
 
+globalThis.fetch = jest.fn(() => Promise.resolve({
+  ok: true,
+  json: () => Promise.resolve([])
+} as any));
+
 jest.mock("@react-native-async-storage/async-storage", () => {
   const store: Record<string, string> = {};
   return {

@@ -44,11 +44,16 @@ export default function MotherSetupScreen() {
 
   useEffect(() => {
     // Attempt to pre-fill name if profile or auth user exists
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
       if (user) {
         setName(user.user_metadata?.name || "");
+      } else {
+        supabase.auth.getUser().then(({ data: { user: freshUser } }) => {
+          if (freshUser) setName(freshUser.user_metadata?.name || "");
+        }).catch(() => undefined);
       }
-    });
+    }).catch(() => undefined);
 
     getCurrentMotherProfile().then((profile) => {
       if (profile) {
@@ -149,7 +154,12 @@ export default function MotherSetupScreen() {
     setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      let user = session?.user;
+      if (!user) {
+        const { data: { user: freshUser } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+        user = freshUser;
+      }
       if (!user) throw new Error("Not logged in");
 
       // 1. Compute lmp_date based on gestational weeks input
