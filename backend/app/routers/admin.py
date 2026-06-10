@@ -69,9 +69,26 @@ class SmsReviewRequest(BaseModel):
     review_notes: str | None = Field(default=None, max_length=2000)
 
 
+class ChwReviewModerationRequest(BaseModel):
+    status: Literal["active", "flagged", "removed"]
+    moderation_reason: str | None = Field(default=None, max_length=500)
+
+
 class ChwAssignmentRequest(BaseModel):
     chw_id: str
     age: int | None = Field(default=None, ge=10, le=60)
+
+
+class ReassignmentResolveRequest(BaseModel):
+    new_chw_id: str
+
+
+class ReassignmentDismissRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class NotificationProcessRequest(BaseModel):
+    limit: int = Field(default=50, ge=1, le=100)
 
 
 class CursorPage(NamedTuple):
@@ -145,6 +162,37 @@ async def _supabase_delete(settings: Settings, path: str, entity_id: str) -> Non
         response = await client.delete(url, headers=_service_headers(settings))
     if response.status_code >= 400:
         raise AdminAuthError(status.HTTP_502_BAD_GATEWAY, "DATABASE_WRITE_FAILED", f"Failed to delete {path}.")
+
+
+async def _get_chw_auth_contact(settings: Settings, chw: dict[str, Any]) -> tuple[str | None, str | None]:
+    if not chw.get("auth_user_id"):
+        return None, None
+    try:
+        auth_url = f"{_base_url(settings)}/auth/v1/admin/users/{chw['auth_user_id']}"
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(auth_url, headers=_service_headers(settings))
+        if response.status_code != 200:
+            return None, None
+        data = response.json()
+        return data.get("email"), data.get("phone")
+    except httpx.HTTPError:
+        return None, None
+
+
+async def _send_expo_push(messages: list[dict[str, Any]]) -> tuple[bool, Any]:
+    if not messages:
+        return True, {"sent": 0}
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            "https://exp.host/--/api/v2/push/send",
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            json=messages,
+        )
+    try:
+        payload: Any = response.json()
+    except ValueError:
+        payload = {"text": response.text}
+    return response.status_code < 400, payload
 
 
 async def require_admin(
@@ -489,6 +537,191 @@ async def update_chw_verification(
         updated = await _supabase_patch(settings, "chws", chw_id, payload)
         await audit(settings, admin, "admin.chw.verification.update", "chw", chw_id, payload)
         return updated
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.get("/chw-reviews/summary", response_model=None)
+async def get_chw_review_summary(
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        rows = await _supabase_get(
+            settings,
+            "v_chw_review_summary",
+            select="chw_id,chw_name,average_rating,review_count",
+            query="&order=chw_name.asc",
+        )
+        await audit(settings, admin, "admin.chw_reviews.summary.read", "chw_review")
+        return {
+            "reviews": [
+                {
+                    **row,
+                    "is_low_rated": bool(row.get("review_count", 0) and float(row.get("average_rating") or 0) < 3.0),
+                }
+                for row in rows
+            ]
+        }
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.get("/chw-reviews", response_model=None)
+async def get_chw_reviews(
+    chw_id: str | None = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        query = "&order=created_at.desc"
+        if chw_id:
+            query += f"&chw_id=eq.{quote(chw_id)}"
+        rows = await _supabase_get(
+            settings,
+            "chw_reviews",
+            select="id,mother_id,chw_id,rating,review_text,status,moderation_reason,created_at,updated_at",
+            query=query,
+        )
+        mother_ids = sorted({row.get("mother_id") for row in rows if row.get("mother_id")})
+        mothers_by_id: dict[str, dict[str, Any]] = {}
+        if mother_ids:
+            mothers = await _supabase_get(
+                settings,
+                "mothers",
+                select="id,name",
+                query=f"&id=in.({_in_filter(mother_ids)})",
+            )
+            mothers_by_id = {mother["id"]: mother for mother in mothers if mother.get("id")}
+
+        reviews = []
+        for row in rows:
+            mother_name = (mothers_by_id.get(row.get("mother_id") or "", {}).get("name") or "Ma").strip()
+            reviews.append(
+                {
+                    **row,
+                    "mother_first_name": mother_name.split()[0] if mother_name else "Ma",
+                }
+            )
+        await audit(settings, admin, "admin.chw_reviews.read", "chw_review", metadata={"chw_id": chw_id})
+        return {"reviews": reviews}
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/chw-reviews/{review_id}/moderation", response_model=None)
+async def moderate_chw_review(
+    review_id: str,
+    request: ChwReviewModerationRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "moderate CHW reviews")
+        payload = {
+            "status": request.status,
+            "moderation_reason": request.moderation_reason.strip() if request.moderation_reason else None,
+            "moderated_by": admin.auth_user_id,
+            "moderated_at": datetime.now(UTC).isoformat(),
+        }
+        if request.status == "active":
+            payload["moderation_reason"] = None
+            payload["moderated_by"] = None
+            payload["moderated_at"] = None
+        updated = await _supabase_patch(settings, "chw_reviews", review_id, payload)
+        await audit(settings, admin, "admin.chw_review.moderate", "chw_review", review_id, payload)
+        return updated
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.post("/notifications/process", response_model=None)
+async def process_notification_events(
+    request: NotificationProcessRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, int] | JSONResponse:
+    try:
+        _require_super_admin(admin, "process push notification events")
+        events = await _supabase_get(
+            settings,
+            "notification_events",
+            select="id,recipient_user_id,event_type,title,body,data,created_at",
+            query=f"&status=eq.queued&order=created_at.asc&limit={request.limit}",
+        )
+        if not events:
+            await audit(settings, admin, "admin.notifications.process", "notification_events", metadata={"processed": 0})
+            return {"processed": 0, "sent": 0, "failed": 0}
+
+        user_ids = sorted({row["recipient_user_id"] for row in events if row.get("recipient_user_id")})
+        devices = await _supabase_get(
+            settings,
+            "notification_devices",
+            select="auth_user_id,expo_push_token",
+            query=f"&enabled=eq.true&auth_user_id=in.({_in_filter(user_ids)})" if user_ids else "&id=is.null",
+        )
+        tokens_by_user: dict[str, list[str]] = {}
+        for device in devices:
+            user_id = device.get("auth_user_id")
+            token = device.get("expo_push_token")
+            if user_id and token:
+                tokens_by_user.setdefault(user_id, []).append(token)
+
+        sent = 0
+        failed = 0
+        for event in events:
+            event_id = event["id"]
+            tokens = tokens_by_user.get(event.get("recipient_user_id"), [])
+            if not tokens:
+                failed += 1
+                await _supabase_patch(
+                    settings,
+                    "notification_events",
+                    event_id,
+                    {"status": "failed", "provider_response": {"error": "NO_ENABLED_DEVICE"}},
+                )
+                continue
+
+            ok, provider_response = await _send_expo_push(
+                [
+                    {
+                        "to": token,
+                        "title": event["title"],
+                        "body": event["body"],
+                        "data": event.get("data") or {},
+                    }
+                    for token in tokens
+                ]
+            )
+            if ok:
+                sent += 1
+                await _supabase_patch(
+                    settings,
+                    "notification_events",
+                    event_id,
+                    {
+                        "status": "sent",
+                        "provider_response": provider_response,
+                        "sent_at": datetime.now(UTC).isoformat(),
+                    },
+                )
+            else:
+                failed += 1
+                await _supabase_patch(
+                    settings,
+                    "notification_events",
+                    event_id,
+                    {"status": "failed", "provider_response": provider_response},
+                )
+
+        await audit(
+            settings,
+            admin,
+            "admin.notifications.process",
+            "notification_events",
+            metadata={"processed": len(events), "sent": sent, "failed": failed},
+        )
+        return {"processed": len(events), "sent": sent, "failed": failed}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -923,6 +1156,170 @@ def _simple_pdf(lines: list[str]) -> bytes:
 
 class ChwAssignBody(BaseModel):
     chw_id: str
+
+
+@router.get("/chw-reassignment-requests", response_model=None)
+async def get_chw_reassignment_requests(
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> list[dict[str, Any]] | JSONResponse:
+    try:
+        requests = await _supabase_get(
+            settings,
+            "chw_reassignment_requests",
+            select="id,mother_id,current_chw_id,requested_chw_id,reason,note,status,created_at,resolved_at",
+            query="&status=eq.pending&order=created_at.asc",
+        )
+        if not requests:
+            return []
+
+        mother_ids = sorted({row["mother_id"] for row in requests if row.get("mother_id")})
+        chw_ids = sorted(
+            {
+                row.get("current_chw_id")
+                for row in requests
+                if row.get("current_chw_id")
+            }
+        )
+        mothers_by_id: dict[str, dict[str, Any]] = {}
+        chws_by_id: dict[str, dict[str, Any]] = {}
+        if mother_ids:
+            mothers = await _supabase_get(
+                settings,
+                "mothers",
+                select="id,name",
+                query=f"&id=in.({_in_filter(mother_ids)})",
+            )
+            mothers_by_id = {mother["id"]: mother for mother in mothers if mother.get("id")}
+        if chw_ids:
+            chws = await _supabase_get(
+                settings,
+                "chws",
+                select="id,name",
+                query=f"&id=in.({_in_filter(chw_ids)})",
+            )
+            chws_by_id = {chw["id"]: chw for chw in chws if chw.get("id")}
+
+        result = []
+        for row in requests:
+            mother = mothers_by_id.get(row.get("mother_id") or "", {})
+            current_chw = chws_by_id.get(row.get("current_chw_id") or "", {})
+            result.append(
+                {
+                    **row,
+                    "mother_name": mother.get("name") or "Unknown Mother",
+                    "current_chw_name": current_chw.get("name"),
+                }
+            )
+        await audit(settings, admin, "admin.chw_reassignment_requests.read", "chw_reassignment_request")
+        return result
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/chw-reassignment-requests/{request_id}/assign", response_model=None)
+async def assign_reassignment_request(
+    request_id: str,
+    request: ReassignmentResolveRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "resolve CHW reassignment requests")
+        rows = await _supabase_get(settings, "chw_reassignment_requests", query=f"&id=eq.{quote(request_id)}")
+        if not rows:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Reassignment request not found.")
+        reassignment = rows[0]
+        if reassignment.get("status") != "pending":
+            return error_response(status.HTTP_400_BAD_REQUEST, "INVALID_STATUS", "Reassignment request is not pending.")
+
+        mothers = await _supabase_get(settings, "mothers", query=f"&id=eq.{quote(reassignment['mother_id'])}")
+        if not mothers:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "Mother not found.")
+        mother = mothers[0]
+        patient_id = mother.get("patient_id")
+        if not patient_id:
+            return error_response(status.HTTP_400_BAD_REQUEST, "MOTHER_NOT_LINKED", "Mother does not have a patient link to reassign.")
+
+        chws = await _supabase_get(settings, "chws", query=f"&id=eq.{quote(request.new_chw_id)}")
+        if not chws:
+            return error_response(status.HTTP_404_NOT_FOUND, "NOT_FOUND", "CHW not found.")
+        chw = chws[0]
+        if chw.get("verification_status") != "APPROVED" or not chw.get("is_active"):
+            return error_response(status.HTTP_400_BAD_REQUEST, "INVALID_CHW", "Assignment requires a verified and active CHW.")
+
+        chw_email, chw_phone = await _get_chw_auth_contact(settings, chw)
+        await _supabase_patch(settings, "patients", patient_id, {"chw_id": request.new_chw_id})
+        await _supabase_patch(
+            settings,
+            "mothers",
+            reassignment["mother_id"],
+            {"chw_email": chw_email, "chw_phone": chw_phone},
+        )
+
+        now_str = datetime.now(UTC).isoformat()
+        updated = await _supabase_patch(
+            settings,
+            "chw_reassignment_requests",
+            request_id,
+            {
+                "requested_chw_id": request.new_chw_id,
+                "status": "assigned",
+                "resolved_by": admin.auth_user_id,
+                "resolved_at": now_str,
+                "updated_at": now_str,
+            },
+        )
+        await audit(
+            settings,
+            admin,
+            "admin.chw_reassignment_request.assign",
+            "chw_reassignment_request",
+            request_id,
+            {
+                "mother_id": reassignment["mother_id"],
+                "old_chw_id": reassignment.get("current_chw_id"),
+                "new_chw_id": request.new_chw_id,
+                "patient_id": patient_id,
+            },
+        )
+        return updated
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/chw-reassignment-requests/{request_id}/dismiss", response_model=None)
+async def dismiss_reassignment_request(
+    request_id: str,
+    request: ReassignmentDismissRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "dismiss CHW reassignment requests")
+        now_str = datetime.now(UTC).isoformat()
+        updated = await _supabase_patch(
+            settings,
+            "chw_reassignment_requests",
+            request_id,
+            {
+                "status": "dismissed",
+                "resolved_by": admin.auth_user_id,
+                "resolved_at": now_str,
+                "updated_at": now_str,
+            },
+        )
+        await audit(
+            settings,
+            admin,
+            "admin.chw_reassignment_request.dismiss",
+            "chw_reassignment_request",
+            request_id,
+            {"reason": request.reason},
+        )
+        return updated
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
 
 
 @router.get("/connection-requests/pending", response_model=None)

@@ -12,8 +12,7 @@ export async function notifyNow(
       content: { 
         title, 
         body, 
-        data, 
-        sound: 'default' 
+        data
       },
       trigger: channelId ? { channelId } : null,
     });
@@ -80,8 +79,7 @@ export async function scheduleReminder(
     return await Notifications.scheduleNotificationAsync({
       content: { 
         title, 
-        body, 
-        sound: 'default' 
+        body
       },
       trigger: triggerInput,
     });
@@ -99,4 +97,3 @@ export async function cancelNotification(id: string) {
     // console.warn("Failed to cancel scheduled notification:", error);
   }
 }
-

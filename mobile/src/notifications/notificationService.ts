@@ -62,7 +62,6 @@ export async function scheduleLocalNotification(params: {
         title: params.title,
         body: params.body,
         data: { category: params.category, ...params.data },
-        sound: "default",
         color: params.category === "জরুরি" ? "#B3261E" : "#E57A58"
       },
       trigger: null
@@ -77,4 +76,3 @@ export function notificationTitleForMessage(message: ChatMessage): string {
   if (message.category) return `${message.category} বার্তা`;
   return "নতুন বার্তা";
 }
-

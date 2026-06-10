@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdminBearerToken } from "@/utils/admin-auth";
-import type { AuditEvent, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest } from "@/utils/admin-types";
+import type { AuditEvent, ChwReassignmentRequest, ChwReview, ChwReviewSummary, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest } from "@/utils/admin-types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localhost:8000";
 
@@ -133,5 +133,45 @@ export async function assignRequestChw(requestId: string, chwId: string): Promis
   await adminFetch(`/api/v1/admin/connection-requests/${encodeURIComponent(requestId)}/assign`, {
     method: "PATCH",
     body: JSON.stringify({ chw_id: chwId }),
+  });
+}
+
+export async function getChwReviewSummary(): Promise<ChwReviewSummary[]> {
+  const payload = await adminFetch<{ reviews: ChwReviewSummary[] }>("/api/v1/admin/chw-reviews/summary");
+  return payload.reviews;
+}
+
+export async function getChwReviews(chwId?: string): Promise<ChwReview[]> {
+  const query = chwId ? `?chw_id=${encodeURIComponent(chwId)}` : "";
+  const payload = await adminFetch<{ reviews: ChwReview[] }>(`/api/v1/admin/chw-reviews${query}`);
+  return payload.reviews;
+}
+
+export async function moderateChwReview(
+  reviewId: string,
+  status: ChwReview["status"],
+  moderationReason?: string
+): Promise<void> {
+  await adminFetch(`/api/v1/admin/chw-reviews/${encodeURIComponent(reviewId)}/moderation`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, moderation_reason: moderationReason }),
+  });
+}
+
+export async function getReassignmentRequests(): Promise<ChwReassignmentRequest[]> {
+  return adminFetch<ChwReassignmentRequest[]>("/api/v1/admin/chw-reassignment-requests");
+}
+
+export async function assignReassignmentRequest(requestId: string, newChwId: string): Promise<void> {
+  await adminFetch(`/api/v1/admin/chw-reassignment-requests/${encodeURIComponent(requestId)}/assign`, {
+    method: "PATCH",
+    body: JSON.stringify({ new_chw_id: newChwId }),
+  });
+}
+
+export async function dismissReassignmentRequest(requestId: string, reason?: string): Promise<void> {
+  await adminFetch(`/api/v1/admin/chw-reassignment-requests/${encodeURIComponent(requestId)}/dismiss`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
   });
 }

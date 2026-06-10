@@ -31,6 +31,17 @@ interface ConnectionRequest {
   };
 }
 
+interface ChwReview {
+  id: string;
+  rating: number;
+  review_text: string | null;
+}
+
+interface ReassignmentRequest {
+  id: string;
+  status: "pending" | "assigned" | "dismissed" | "cancelled";
+}
+
 const DEMO_MOTHER_IDS = new Set(["60000000-0000-0000-0000-000000000002", "mother-demo-id"]);
 const DEMO_CHW: CHW = {
   chw_id: "00000000-0000-0000-0000-0000000000a1",
@@ -54,6 +65,14 @@ export default function FindChwScreen() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearbyChws, setNearbyChws] = useState<CHW[]>([]);
   const [pendingRequest, setPendingRequest] = useState<ConnectionRequest | null>(null);
+  const [myReview, setMyReview] = useState<ChwReview | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [pendingReassignment, setPendingReassignment] = useState<ReassignmentRequest | null>(null);
+  const [reassignmentReason, setReassignmentReason] = useState<"not_responding" | "moved_area" | "other">("not_responding");
+  const [reassignmentNote, setReassignmentNote] = useState("");
+  const [reassignmentSubmitting, setReassignmentSubmitting] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
   const setDemoChwState = (mId: string) => {
@@ -65,7 +84,54 @@ export default function FindChwScreen() {
       chw_id: DEMO_CHW.chw_id,
       chws: { name: DEMO_CHW.name }
     });
+    setMyReview({ id: "demo-review-1", rating: 5, review_text: "" });
+    setReviewRating(5);
+    setReviewText("");
+    setPendingReassignment(null);
     setMotherId(mId);
+  };
+
+  const fetchReviewAndReassignment = async (mId: string, chwId: string | null) => {
+    if (!chwId) {
+      setMyReview(null);
+      setPendingReassignment(null);
+      return;
+    }
+    if (isDemoMother(mId)) {
+      setMyReview({ id: "demo-review-1", rating: 5, review_text: "" });
+      setReviewRating(5);
+      setReviewText("");
+      setPendingReassignment(null);
+      return;
+    }
+
+    const [{ data: review }, { data: reassignment }] = await Promise.all([
+      supabase
+        .from("chw_reviews")
+        .select("id,rating,review_text")
+        .eq("mother_id", mId)
+        .eq("chw_id", chwId)
+        .maybeSingle(),
+      supabase
+        .from("chw_reassignment_requests")
+        .select("id,status")
+        .eq("mother_id", mId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ]);
+
+    if (review) {
+      setMyReview(review as ChwReview);
+      setReviewRating(review.rating);
+      setReviewText(review.review_text ?? "");
+    } else {
+      setMyReview(null);
+      setReviewRating(5);
+      setReviewText("");
+    }
+    setPendingReassignment(reassignment as ReassignmentRequest | null);
   };
 
   const fetchRequestStatus = async (mId: string) => {
@@ -91,6 +157,8 @@ export default function FindChwScreen() {
 
       if (!data) {
         setPendingRequest(null);
+        setMyReview(null);
+        setPendingReassignment(null);
         return;
       }
 
@@ -106,6 +174,7 @@ export default function FindChwScreen() {
       }
 
       setPendingRequest(requestData);
+      await fetchReviewAndReassignment(mId, requestData.status === "assigned" ? requestData.chw_id : null);
     } catch (err) {
       console.warn("Failed to fetch request status:", err);
     }
@@ -204,6 +273,75 @@ export default function FindChwScreen() {
     router.push({ pathname: "/(mother-tabs)/chat", params: { mode: "chw" } });
   };
 
+  const handleSubmitReview = async () => {
+    if (!motherId || !pendingRequest?.chw_id) return;
+    const cleanText = reviewText.trim();
+    if (cleanText.length > 300) {
+      Alert.alert(lang === "bn" ? "রিভিউ বড় হয়েছে" : "Review too long", lang === "bn" ? "রিভিউ ৩০০ অক্ষরের মধ্যে লিখুন।" : "Keep the review within 300 characters.");
+      return;
+    }
+    if (isDemoMother(motherId)) {
+      const demoReview = { id: myReview?.id ?? "demo-review-1", rating: reviewRating, review_text: cleanText || null };
+      setMyReview(demoReview);
+      Alert.alert(lang === "bn" ? "রিভিউ সংরক্ষিত" : "Review saved", lang === "bn" ? "আপনার রিভিউ আপডেট হয়েছে।" : "Your review has been updated.");
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const payload = {
+        mother_id: motherId,
+        chw_id: pendingRequest.chw_id,
+        rating: reviewRating,
+        review_text: cleanText || null,
+        status: "active"
+      };
+      const query = supabase.from("chw_reviews");
+      const { data, error } = myReview
+        ? await query.update(payload).eq("id", myReview.id).select("id,rating,review_text").single()
+        : await query.insert(payload).select("id,rating,review_text").single();
+      if (error) throw error;
+      setMyReview(data as ChwReview);
+      Alert.alert(lang === "bn" ? "রিভিউ সংরক্ষিত" : "Review saved", lang === "bn" ? "আপনার রিভিউ সংরক্ষণ করা হয়েছে।" : "Your review has been saved.");
+    } catch (err: any) {
+      Alert.alert(lang === "bn" ? "রিভিউ পাঠানো যায়নি" : "Review failed", err.message || "Something went wrong");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleSubmitReassignment = async () => {
+    if (!motherId || !pendingRequest?.chw_id || pendingReassignment) return;
+    if (isDemoMother(motherId)) {
+      setPendingReassignment({ id: "demo-reassignment-1", status: "pending" });
+      Alert.alert("অনুরোধ পাঠানো হয়েছে", lang === "bn" ? "অ্যাডমিন আপনার অনুরোধ দেখবেন।" : "Admin will review your request.");
+      return;
+    }
+
+    setReassignmentSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from("chw_reassignment_requests")
+        .insert({
+          mother_id: motherId,
+          current_chw_id: pendingRequest.chw_id,
+          reason: reassignmentReason,
+          note: reassignmentNote.trim() || null,
+          status: "pending"
+        })
+        .select("id,status")
+        .single();
+      if (error) throw error;
+      setPendingReassignment(data as ReassignmentRequest);
+      setReassignmentNote("");
+      Alert.alert("অনুরোধ পাঠানো হয়েছে", lang === "bn" ? "অ্যাডমিন আপনার অনুরোধ দেখবেন।" : "Admin will review your request.");
+    } catch (err: any) {
+      Alert.alert(lang === "bn" ? "অনুরোধ পাঠানো যায়নি" : "Request failed", err.message || "Something went wrong");
+    } finally {
+      setReassignmentSubmitting(false);
+    }
+  };
+
   const formatDistance = (dist: number) => {
     const kmStr = dist.toFixed(2);
     return lang === "bn" ? `${toBanglaNumber(kmStr)} কি.মি.` : `${kmStr} km`;
@@ -263,6 +401,85 @@ export default function FindChwScreen() {
                   <Pressable style={styles.alertChatBtn} onPress={handleOpenChat}>
                     <Icon name="chat" color="#FFFFFF" size={18} />
                   </Pressable>
+                )}
+              </View>
+            )}
+
+            {pendingRequest?.status === "assigned" && pendingRequest.chw_id && (
+              <View style={styles.reviewPanel}>
+                <View style={styles.reviewHeader}>
+                  <Text style={styles.reviewTitle}>{lang === "bn" ? "স্বাস্থ্যকর্মী রিভিউ" : "CHW Review"}</Text>
+                  {myReview && <Text style={styles.reviewSaved}>{lang === "bn" ? "আগে রিভিউ দেওয়া হয়েছে" : "Existing review"}</Text>}
+                </View>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Pressable
+                      accessibilityRole="button"
+                      key={star}
+                      onPress={() => setReviewRating(star)}
+                      style={styles.starButton}
+                    >
+                      <Text style={[styles.starText, star <= reviewRating && styles.starTextActive]}>★</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <TextInput
+                  maxLength={300}
+                  multiline
+                  onChangeText={setReviewText}
+                  placeholder={lang === "bn" ? "ঐচ্ছিক রিভিউ লিখুন" : "Optional review"}
+                  placeholderTextColor={colors.onSurfaceVariant}
+                  style={styles.reviewInput}
+                  value={reviewText}
+                />
+                <View style={styles.reviewFooter}>
+                  <Text style={styles.charCount}>{reviewText.length}/300</Text>
+                  <Pressable disabled={reviewSubmitting} onPress={handleSubmitReview} style={styles.smallPrimaryButton}>
+                    <Text style={styles.smallPrimaryButtonText}>
+                      {reviewSubmitting ? (lang === "bn" ? "সংরক্ষণ..." : "Saving...") : myReview ? (lang === "bn" ? "রিভিউ আপডেট" : "Update review") : (lang === "bn" ? "রিভিউ দিন" : "Submit review")}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
+            {pendingRequest?.status === "assigned" && pendingRequest.chw_id && (
+              <View style={styles.reassignmentPanel}>
+                <Text style={styles.reviewTitle}>{lang === "bn" ? "নতুন স্বাস্থ্যকর্মী চাই" : "Request New CHW"}</Text>
+                {pendingReassignment ? (
+                  <View style={styles.pendingReassignmentBox}>
+                    <Icon name="hourglass-empty" color="#E57A58" size={20} />
+                    <Text style={styles.pendingReassignmentText}>অনুরোধ পাঠানো হয়েছে</Text>
+                  </View>
+                ) : (
+                  <>
+                    {[
+                      { key: "not_responding" as const, label: "স্বাস্থ্যকর্মী যোগাযোগ করছেন না" },
+                      { key: "moved_area" as const, label: "ভিন্ন এলাকায় চলে গেছি" },
+                      { key: "other" as const, label: "অন্য কারণ" }
+                    ].map((option) => (
+                      <Pressable
+                        key={option.key}
+                        onPress={() => setReassignmentReason(option.key)}
+                        style={[styles.reasonOption, reassignmentReason === option.key && styles.reasonOptionActive]}
+                      >
+                        <Text style={[styles.reasonText, reassignmentReason === option.key && styles.reasonTextActive]}>{option.label}</Text>
+                      </Pressable>
+                    ))}
+                    <TextInput
+                      multiline
+                      onChangeText={setReassignmentNote}
+                      placeholder={lang === "bn" ? "ঐচ্ছিক নোট" : "Optional note"}
+                      placeholderTextColor={colors.onSurfaceVariant}
+                      style={styles.reviewInput}
+                      value={reassignmentNote}
+                    />
+                    <Pressable disabled={reassignmentSubmitting} onPress={handleSubmitReassignment} style={styles.requestButton}>
+                      <Text style={styles.requestButtonText}>
+                        {reassignmentSubmitting ? (lang === "bn" ? "পাঠানো হচ্ছে..." : "Submitting...") : (lang === "bn" ? "Request New CHW" : "Request New CHW")}
+                      </Text>
+                    </Pressable>
+                  </>
                 )}
               </View>
             )}
@@ -463,6 +680,126 @@ const styles = StyleSheet.create({
     height: 38,
     justifyContent: "center",
     width: 38
+  },
+  reviewPanel: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F2EBE8",
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.base
+  },
+  reviewHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.sm
+  },
+  reviewTitle: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontWeight: "bold"
+  },
+  reviewSaved: {
+    ...typography.caption,
+    color: "#4A6047",
+    fontWeight: "bold"
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 4
+  },
+  starButton: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  starText: {
+    color: "#D5C7C1",
+    fontSize: 28,
+    fontWeight: "bold"
+  },
+  starTextActive: {
+    color: "#E57A58"
+  },
+  reviewInput: {
+    ...typography.body,
+    backgroundColor: "#FFF9F6",
+    borderColor: "#F2EBE8",
+    borderRadius: radius.default,
+    borderWidth: 1,
+    color: colors.onSurface,
+    minHeight: 82,
+    padding: spacing.sm,
+    textAlignVertical: "top"
+  },
+  reviewFooter: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.sm
+  },
+  charCount: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant
+  },
+  smallPrimaryButton: {
+    alignItems: "center",
+    backgroundColor: "#E57A58",
+    borderRadius: 20,
+    justifyContent: "center",
+    minHeight: 40,
+    paddingHorizontal: 16
+  },
+  smallPrimaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold"
+  },
+  reassignmentPanel: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F2EBE8",
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.base
+  },
+  reasonOption: {
+    borderColor: "#F2EBE8",
+    borderRadius: radius.default,
+    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm
+  },
+  reasonOptionActive: {
+    backgroundColor: "#FCEBE5",
+    borderColor: "#E57A58"
+  },
+  reasonText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    fontWeight: "bold"
+  },
+  reasonTextActive: {
+    color: "#96482e"
+  },
+  pendingReassignmentBox: {
+    alignItems: "center",
+    backgroundColor: "#FFF5F2",
+    borderColor: "#FFD9CE",
+    borderRadius: radius.default,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.sm
+  },
+  pendingReassignmentText: {
+    ...typography.body,
+    color: colors.onSurface,
+    fontWeight: "bold"
   },
   chwCard: {
     alignItems: "center",

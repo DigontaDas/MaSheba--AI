@@ -228,10 +228,27 @@ def install_admin_httpx(
                 if fail_audit_read:
                     return httpx.Response(404, json={"message": "relation admin_audit_events does not exist"})
                 return httpx.Response(200, json=[{"id": "audit-a", "actor_user_id": "00000000-0000-0000-0000-00000000ad01", "action": "admin.summary.read", "entity_type": "dashboard", "entity_id": None, "metadata": {}, "created_at": "2026-06-02T00:00:00Z"}])
+            if "/rest/v1/notification_events" in url:
+                return httpx.Response(200, json=[{
+                    "id": "notification-a",
+                    "recipient_user_id": "auth-linked",
+                    "event_type": "chat_message_created",
+                    "title": "New message",
+                    "body": "You have a new message.",
+                    "data": {"chat_message_id": "message-a"},
+                    "created_at": "2026-06-02T00:00:00Z",
+                }])
+            if "/rest/v1/notification_devices" in url:
+                return httpx.Response(200, json=[{
+                    "auth_user_id": "auth-linked",
+                    "expo_push_token": "ExponentPushToken[test-token]",
+                }])
             raise AssertionError(f"Unexpected GET url: {url}")
 
         async def post(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
             state["posts"].append({"url": url, "headers": headers, "json": json})
+            if "https://exp.host/--/api/v2/push/send" in url:
+                return httpx.Response(200, json={"data": [{"status": "ok"}]})
             if "/rest/v1/patients" in url:
                 return httpx.Response(201, json=[json | {"id": "patient-new", "created_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/master_qa" in url:
@@ -255,6 +272,8 @@ def install_admin_httpx(
                 return httpx.Response(200, json=[{"id": "qa-a", "trimester": "T1", "topic": json.get("topic", "Nutrition"), "question_bn": "প্রশ্ন", "answer_bn": "উত্তর", "question_en": "Question", "answer_en": "Answer", "severity": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/sms_failures" in url:
                 return httpx.Response(200, json=[{"id": "sms-a", "review_status": json["review_status"], "review_notes": json.get("review_notes"), "reviewed_at": "2026-06-02T00:00:00Z"}])
+            if "/rest/v1/notification_events" in url:
+                return httpx.Response(200, json=[{"id": "notification-a", **json}])
             raise AssertionError(f"Unexpected PATCH url: {url}")
 
         async def delete(self, url: str, headers: dict[str, str]) -> httpx.Response:
@@ -296,6 +315,32 @@ def test_inactive_or_missing_admin_is_forbidden(client: TestClient, monkeypatch:
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_process_notifications_sends_expo_push_and_marks_sent(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="super_admin")
+
+    response = client.post(
+        "/api/v1/admin/notifications/process",
+        headers={"Authorization": "Bearer admin-token"},
+        json={"limit": 10},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"processed": 1, "sent": 1, "failed": 0}
+
+    expo_post = next(post for post in state["posts"] if "https://exp.host/--/api/v2/push/send" in post["url"])
+    assert expo_post["json"] == [{
+        "to": "ExponentPushToken[test-token]",
+        "title": "New message",
+        "body": "You have a new message.",
+        "data": {"chat_message_id": "message-a"},
+    }]
+
+    event_patch = next(patch for patch in state["patches"] if "/rest/v1/notification_events" in patch["url"])
+    assert event_patch["json"]["status"] == "sent"
+    assert event_patch["json"]["provider_response"] == {"data": [{"status": "ok"}]}
+    assert event_patch["json"]["sent_at"]
 
 
 def test_admin_summary_returns_aggregate_payload(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -796,4 +841,3 @@ def test_assign_chw_unapproved_or_inactive_chw_fails(client: TestClient, monkeyp
         json={"chw_id": "chw-inactive", "age": 25},
     )
     assert response.status_code == 400
-

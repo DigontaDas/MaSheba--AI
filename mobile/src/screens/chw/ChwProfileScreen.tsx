@@ -17,6 +17,14 @@ type ChwProfileRow = {
   name: string | null;
 };
 
+type ChwReviewRow = {
+  id: string;
+  rating: number;
+  review_text: string | null;
+  created_at: string;
+  mother?: { name: string | null } | null;
+};
+
 export default function ChwProfileScreen() {
   const { language, setLanguage, t } = useLanguage();
   const copy = useCopy();
@@ -24,6 +32,9 @@ export default function ChwProfileScreen() {
   const [name, setName] = useState<string>("Rahela Begum");
   const [patientCount, setPatientCount] = useState(8);
   const [visitCount, setVisitCount] = useState(42);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [reviews, setReviews] = useState<ChwReviewRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -38,10 +49,16 @@ export default function ChwProfileScreen() {
       startOfWeek.setDate(startOfWeek.getDate() - diff);
       startOfWeek.setHours(0, 0, 0, 0);
 
-      const [patients, visitsThisWeek, profileResponse] = await Promise.all([
+      const [patients, visitsThisWeek, profileResponse, reviewResponse] = await Promise.all([
         getPatients(),
         getVisitCountForChwSince(session.chwId, startOfWeek.toISOString()),
-        supabase.from("chws").select("id,name").eq("id", session.chwId).maybeSingle<ChwProfileRow>()
+        supabase.from("chws").select("id,name").eq("id", session.chwId).maybeSingle<ChwProfileRow>(),
+        supabase
+          .from("chw_reviews")
+          .select("id,rating,review_text,created_at,mother:mothers(name)")
+          .eq("chw_id", session.chwId)
+          .neq("status", "removed")
+          .order("created_at", { ascending: false })
       ]);
 
       if (patients.length > 0) {
@@ -67,6 +84,13 @@ export default function ChwProfileScreen() {
         } else {
           setName(dbName);
         }
+      }
+
+      if (!reviewResponse.error && reviewResponse.data) {
+        const rows = reviewResponse.data as unknown as ChwReviewRow[];
+        setReviews(rows);
+        setReviewCount(rows.length);
+        setAverageRating(rows.length ? rows.reduce((total, item) => total + item.rating, 0) / rows.length : 0);
       }
     } catch (e) {
       setPatientCount(8);
@@ -216,6 +240,42 @@ export default function ChwProfileScreen() {
               <Text style={styles.statLabel}>{copy.chwProfile.visitsThisWeek}</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.reviewsSection}>
+          <View style={styles.sectionHeader}>
+            <Icon name="star" color="#70605A" size={16} />
+            <Text style={styles.sectionTitle}>
+              {language === "en" ? "Mother Reviews" : "মায়ের রিভিউ"}
+            </Text>
+          </View>
+          <View style={styles.ratingSummaryCard}>
+            <Text style={styles.ratingValue}>{averageRating.toFixed(1)} ★</Text>
+            <Text style={styles.ratingLabel}>
+              {language === "en"
+                ? `${formatNumber(reviewCount, language)} reviews`
+                : `${formatNumber(reviewCount, language)}টি রিভিউ`}
+            </Text>
+          </View>
+          {reviews.slice(0, 5).map((review) => {
+            const motherName = review.mother?.name?.trim();
+            const firstName = motherName ? motherName.split(/\s+/)[0] : language === "en" ? "Ma" : "মা";
+            return (
+              <View style={styles.reviewCard} key={review.id}>
+                <View style={styles.reviewCardHeader}>
+                  <Text style={styles.reviewAuthor}>{firstName}</Text>
+                  <Text style={styles.reviewStars}>{review.rating} ★</Text>
+                </View>
+                {review.review_text ? <Text style={styles.reviewText}>{review.review_text}</Text> : null}
+                <Text style={styles.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</Text>
+              </View>
+            );
+          })}
+          {reviews.length === 0 && (
+            <Text style={styles.noReviewsText}>
+              {language === "en" ? "No reviews yet." : "এখনও কোনো রিভিউ নেই।"}
+            </Text>
+          )}
         </View>
 
         {/* Actions Card List Panel */}
@@ -551,6 +611,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#70605A",
     fontWeight: "bold"
+  },
+  reviewsSection: {
+    gap: 12
+  },
+  ratingSummaryCard: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 4
+  },
+  ratingValue: {
+    color: "#96482e",
+    fontSize: 24,
+    fontWeight: "bold"
+  },
+  ratingLabel: {
+    color: "#70605A",
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  reviewCard: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+    padding: 14
+  },
+  reviewCardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8
+  },
+  reviewAuthor: {
+    color: "#4A3E39",
+    fontSize: 14,
+    fontWeight: "bold"
+  },
+  reviewStars: {
+    color: "#E57A58",
+    fontSize: 13,
+    fontWeight: "bold"
+  },
+  reviewText: {
+    color: "#70605A",
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18
+  },
+  reviewDate: {
+    color: "#A08E88",
+    fontSize: 11,
+    fontWeight: "600"
+  },
+  noReviewsText: {
+    color: "#A08E88",
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center"
   },
 
   // Actions card panel

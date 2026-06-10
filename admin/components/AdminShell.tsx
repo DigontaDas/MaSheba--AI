@@ -12,6 +12,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/dashboard", label: t.overview, icon: "map" },
     { href: "/dashboard/chws", label: "CHW Registry", icon: "assignment_turned_in" },
+    { href: "/dashboard/chw-reviews", label: "CHW Reviews", icon: "star" },
     { href: "/dashboard/patients", label: "Tracked Mothers", icon: "group" },
     { href: "/dashboard/requests", label: "Connection Requests", icon: "person_pin_circle" },
     { href: "/dashboard/qa", label: "Offline Q&A", icon: "menu_book" },

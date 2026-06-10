@@ -1,5 +1,5 @@
 import { ConnectionRequestsClient } from "@/components/ConnectionRequestsClient";
-import { getChws, getPendingRequests } from "@/utils/admin-api";
+import { getChws, getPendingRequests, getReassignmentRequests } from "@/utils/admin-api";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +8,7 @@ export default async function ConnectionRequestsPage() {
     getPendingRequests().catch(() => []),
     getChws().catch(() => []),
   ]);
+  const reassignments = await getReassignmentRequests().catch(() => []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -15,7 +16,7 @@ export default async function ConnectionRequestsPage() {
         title="Location-Based CHW Matching"
         description="View real-time coordinates of mothers requesting support and assign nearby Community Health Workers."
       />
-      <ConnectionRequestsClient initialRequests={requests} chws={chws} />
+      <ConnectionRequestsClient initialRequests={requests} initialReassignments={reassignments} chws={chws} />
     </div>
   );
 }

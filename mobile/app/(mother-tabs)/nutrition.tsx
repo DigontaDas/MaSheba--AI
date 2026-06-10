@@ -154,9 +154,9 @@ export default function NutritionScreen() {
       .catch(() => undefined);
 
     // Schedule water reminders (10:00, 14:00, 18:00)
-    scheduleReminder("💧 পানি পান করুন", "প্রতিদিন ৮ গ্লাস পানি পান করুন", 10, 0);
-    scheduleReminder("💧 পানি পান করুন", "প্রতিদিন ৮ গ্লাস পানি পান করুন", 14, 0);
-    scheduleReminder("💧 পানি পান করুন", "প্রতিদিন ৮ গ্লাস পানি পান করুন", 18, 0);
+    scheduleReminder("পানি 8 গ্লাস খেয়েছেন?", "আজকের পানি ট্র্যাকার আপডেট করুন", 10, 0);
+    scheduleReminder("পানি 8 গ্লাস খেয়েছেন?", "আজকের পানি ট্র্যাকার আপডেট করুন", 14, 0);
+    scheduleReminder("পানি 8 গ্লাস খেয়েছেন?", "আজকের পানি ট্র্যাকার আপডেট করুন", 18, 0);
 
     // Schedule nutrition reminder (09:00)
     scheduleReminder("🥗 পুষ্টিকর খাবার", "আজকের পুষ্টি চেকলিস্ট দেখুন", 9, 0);

@@ -19,6 +19,41 @@ export type ChwRow = {
   lng?: number | null;
 };
 
+export type ChwReviewSummary = {
+  chw_id: string;
+  chw_name: string;
+  average_rating: number;
+  review_count: number;
+  is_low_rated: boolean;
+};
+
+export type ChwReview = {
+  id: string;
+  mother_id: string;
+  chw_id: string;
+  rating: number;
+  review_text: string | null;
+  status: "active" | "flagged" | "removed";
+  moderation_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  mother_first_name: string;
+};
+
+export type ChwReassignmentRequest = {
+  id: string;
+  mother_id: string;
+  current_chw_id: string | null;
+  requested_chw_id: string | null;
+  reason: "not_responding" | "moved_area" | "other";
+  note: string | null;
+  status: "pending" | "assigned" | "dismissed" | "cancelled";
+  created_at: string;
+  resolved_at: string | null;
+  mother_name: string;
+  current_chw_name: string | null;
+};
+
 export type PendingChwRow = {
   id: string;
   name: string;

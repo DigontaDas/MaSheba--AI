@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { assignRequestChw, getPendingRequests } from "@/utils/admin-api";
-import type { ConnectionRequest, ChwRow } from "@/utils/admin-types";
+import { assignReassignmentRequest, assignRequestChw, dismissReassignmentRequest, getPendingRequests, getReassignmentRequests } from "@/utils/admin-api";
+import type { ChwReassignmentRequest, ConnectionRequest, ChwRow } from "@/utils/admin-types";
 import { createClient } from "@/utils/supabase/client";
 
 // Dynamically import the RequestsMap component with SSR disabled to prevent Leaflet window failures
@@ -14,14 +14,21 @@ const RequestsMap = dynamic(
 
 export function ConnectionRequestsClient({
   initialRequests,
+  initialReassignments,
   chws,
 }: {
   initialRequests: ConnectionRequest[];
+  initialReassignments: ChwReassignmentRequest[];
   chws: ChwRow[];
 }) {
+  const [activeQueue, setActiveQueue] = useState<"connections" | "reassignments">("connections");
   const [requests, setRequests] = useState<ConnectionRequest[]>(initialRequests);
+  const [reassignments, setReassignments] = useState<ChwReassignmentRequest[]>(initialReassignments);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
     initialRequests.length > 0 ? initialRequests[0].id : null
+  );
+  const [selectedReassignmentId, setSelectedReassignmentId] = useState<string | null>(
+    initialReassignments.length > 0 ? initialReassignments[0].id : null
   );
   const [assignedChwId, setAssignedChwId] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -40,6 +47,7 @@ export function ConnectionRequestsClient({
   const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
 
   const selectedRequest = requests.find((r) => r.id === selectedRequestId);
+  const selectedReassignment = reassignments.find((r) => r.id === selectedReassignmentId);
 
   useEffect(() => {
     if (!selectedRequest?.lat || !selectedRequest?.lng) {
@@ -128,7 +136,199 @@ export function ConnectionRequestsClient({
     }
   };
 
+  const refreshReassignments = async () => {
+    try {
+      const fresh = await getReassignmentRequests();
+      setReassignments(fresh);
+      if (fresh.length > 0 && (!selectedReassignmentId || !fresh.some((r) => r.id === selectedReassignmentId))) {
+        setSelectedReassignmentId(fresh[0].id);
+      }
+      if (fresh.length === 0) setSelectedReassignmentId(null);
+    } catch (err) {
+      console.error("Failed to refresh reassignment requests:", err);
+    }
+  };
+
+  const handleAssignReassignment = async () => {
+    if (!selectedReassignmentId || !assignedChwId) return;
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      await assignReassignmentRequest(selectedReassignmentId, assignedChwId);
+      const updated = reassignments.filter((item) => item.id !== selectedReassignmentId);
+      setReassignments(updated);
+      setSelectedReassignmentId(updated[0]?.id ?? null);
+      setAssignedChwId("");
+      setSuccessMsg("Mother reassigned to the selected CHW.");
+    } catch (err: any) {
+      setError(err.message || "Failed to reassign CHW.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDismissReassignment = async () => {
+    if (!selectedReassignmentId) return;
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      await dismissReassignmentRequest(selectedReassignmentId, "Dismissed in admin queue.");
+      const updated = reassignments.filter((item) => item.id !== selectedReassignmentId);
+      setReassignments(updated);
+      setSelectedReassignmentId(updated[0]?.id ?? null);
+      setSuccessMsg("Reassignment request dismissed.");
+    } catch (err: any) {
+      setError(err.message || "Failed to dismiss request.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
+    <div className="space-y-5">
+      <div className="inline-flex rounded-xl border border-outline-variant bg-surface p-1 shadow-sm">
+        <button
+          className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors ${
+            activeQueue === "connections" ? "bg-primary text-white" : "text-on-surface-variant hover:bg-surface-container"
+          }`}
+          onClick={() => setActiveQueue("connections")}
+          type="button"
+        >
+          New Connections ({requests.length})
+        </button>
+        <button
+          className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors ${
+            activeQueue === "reassignments" ? "bg-primary text-white" : "text-on-surface-variant hover:bg-surface-container"
+          }`}
+          onClick={() => setActiveQueue("reassignments")}
+          type="button"
+        >
+          Reassignment Requests ({reassignments.length})
+        </button>
+      </div>
+
+      {activeQueue === "reassignments" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 rounded-xl border border-outline-variant bg-surface overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <div>
+                <h3 className="font-headline-md text-[18px] font-bold text-on-surface">
+                  Reassignment Requests ({reassignments.length})
+                </h3>
+                <p className="font-label-sm text-xs text-on-surface-variant">
+                  Mothers asking to change their assigned health worker
+                </p>
+              </div>
+              <button
+                onClick={refreshReassignments}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-high transition-colors font-label-md text-xs text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                Refresh
+              </button>
+            </div>
+            <div className="divide-y divide-outline-variant/60 max-h-[520px] overflow-y-auto">
+              {reassignments.map((req) => (
+                <button
+                  className={`block w-full cursor-pointer p-4 text-left transition-colors ${
+                    req.id === selectedReassignmentId ? "bg-primary-container/10 border-l-4 border-primary" : "hover:bg-surface-container-lowest"
+                  }`}
+                  key={req.id}
+                  onClick={() => {
+                    setSelectedReassignmentId(req.id);
+                    setSuccessMsg(null);
+                    setError(null);
+                  }}
+                  type="button"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-on-surface">{req.mother_name}</p>
+                      <p className="text-xs text-on-surface-variant">
+                        Current CHW: {req.current_chw_name || "Not assigned"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-error-container/20 px-2 py-1 text-[10px] font-bold text-error">
+                      Pending
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-on-surface-variant">Reason: {reasonLabel(req.reason)}</p>
+                  {req.note && <p className="mt-1 text-xs italic text-on-surface-variant">&quot;{req.note}&quot;</p>}
+                  <p className="mt-1 text-xs text-outline">Requested: {new Date(req.created_at).toLocaleString()}</p>
+                </button>
+              ))}
+              {reassignments.length === 0 && (
+                <div className="p-8 text-center text-on-surface-variant font-body-md">
+                  <span className="material-symbols-outlined text-outline text-[40px] mb-2 block">check_circle</span>
+                  No pending reassignment requests.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-4 rounded-xl border border-outline-variant bg-surface p-5 shadow-sm space-y-5">
+            <h3 className="font-headline-md text-[18px] font-bold text-on-surface">Reassignment Panel</h3>
+            {successMsg && <div className="p-3 bg-secondary-container/20 border border-secondary text-on-secondary-container rounded-lg text-xs font-label-md">{successMsg}</div>}
+            {error && <div className="p-3 bg-error-container/20 border border-error text-error rounded-lg text-xs font-label-md">{error}</div>}
+            {selectedReassignment ? (
+              <div className="space-y-4">
+                <div className="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/60 space-y-2 text-xs font-label-sm">
+                  <p className="text-[10px] text-outline uppercase tracking-wider font-bold">Selected Request</p>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">Mother:</span>
+                    <span className="font-bold text-on-surface">{selectedReassignment.mother_name}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">Current CHW:</span>
+                    <span className="font-bold text-on-surface">{selectedReassignment.current_chw_name || "Not assigned"}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">Reason:</span>
+                    <span className="text-on-surface">{reasonLabel(selectedReassignment.reason)}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-on-surface">Assign New CHW</label>
+                  <select
+                    value={assignedChwId}
+                    onChange={(e) => setAssignedChwId(e.target.value)}
+                    className="w-full bg-background text-on-surface border border-outline-variant rounded-lg p-2.5 text-sm outline-none focus:border-primary transition-colors"
+                  >
+                    <option value="">-- Choose Active CHW --</option>
+                    {activeChws.map((c) => (
+                      <option key={c.chw_id} value={c.chw_id}>
+                        {c.name} ({c.union_name || "No Union"}, {c.upazila})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleAssignReassignment}
+                  disabled={loading || !assignedChwId}
+                  className="w-full bg-primary hover:bg-primary-container hover:text-on-primary-container text-white disabled:bg-surface-container disabled:text-outline py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm"
+                >
+                  {loading ? "Assigning..." : "Assign New CHW"}
+                </button>
+                <button
+                  onClick={handleDismissReassignment}
+                  disabled={loading}
+                  className="w-full border border-outline-variant bg-surface text-on-surface hover:bg-surface-container py-2.5 rounded-lg text-sm font-bold transition-all"
+                >
+                  Dismiss Request
+                </button>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-on-surface-variant font-label-md text-xs">
+                Select a reassignment request from the queue.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       {/* Left side: Requests List & Details */}
       <div className="lg:col-span-8 space-y-6">
@@ -420,5 +620,13 @@ export function ConnectionRequestsClient({
         </div>
       </div>
     </div>
+      )}
+    </div>
   );
+}
+
+function reasonLabel(reason: ChwReassignmentRequest["reason"]) {
+  if (reason === "not_responding") return "স্বাস্থ্যকর্মী যোগাযোগ করছেন না";
+  if (reason === "moved_area") return "ভিন্ন এলাকায় চলে গেছি";
+  return "অন্য কারণ";
 }
