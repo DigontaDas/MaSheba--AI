@@ -1,5 +1,6 @@
 import { RiskSummaryChart } from "@/components/RiskSummaryChart";
 import { UpazilaRiskMap } from "@/components/UpazilaRiskMap";
+import { EmergencyCalloutPanel } from "@/components/EmergencyCalloutPanel";
 import { getSummary } from "@/utils/admin-api";
 import { getTranslation } from "@/utils/translations";
 
@@ -20,6 +21,9 @@ export default async function DashboardPage() {
           {t.overview_subtitle}
         </p>
       </div>
+
+      {/* Emergency Callout Panel */}
+      <EmergencyCalloutPanel />
 
       {/* 1. Summary Metric Cards (Bento Style Row) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter" aria-label="Key Metrics">

@@ -384,14 +384,14 @@ export default function FindChwScreen() {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          currentCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-          setCoords(currentCoords);
-        } else {
-          setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল দেখাতে লোকেশন অনুমতি দরকার।" : "Location permission is needed to show nearby hospitals.");
+          const lastLoc = await Location.getLastKnownPositionAsync({});
+          if (lastLoc) {
+            currentCoords = { latitude: lastLoc.coords.latitude, longitude: lastLoc.coords.longitude };
+            setCoords(currentCoords);
+          }
         }
-      } catch (locErr) {
-        console.warn("Failed to get location automatically:", locErr);
+      } catch (lastLocErr) {
+        console.warn("Failed to get last known location:", lastLocErr);
       }
 
       if (!currentCoords && profile.location) {
@@ -403,21 +403,56 @@ export default function FindChwScreen() {
       }
 
       if (currentCoords) {
-        const [{ data, error }] = await Promise.all([
-          supabase.rpc("find_nearby_chws", {
-            mother_lat: currentCoords.latitude,
-            mother_lng: currentCoords.longitude,
-            radius_km: 10.0
-          }),
-          fetchHospitals(currentCoords.latitude, currentCoords.longitude)
-        ]);
+        try {
+          const [{ data, error }] = await Promise.all([
+            supabase.rpc("find_nearby_chws", {
+              mother_lat: currentCoords.latitude,
+              mother_lng: currentCoords.longitude,
+              radius_km: 10.0
+            }),
+            fetchHospitals(currentCoords.latitude, currentCoords.longitude)
+          ]);
+          if (!error && data) {
+            setNearbyChws(data);
+          }
+        } catch (fastLoadErr) {
+          console.warn("Fast load of health centers failed:", fastLoadErr);
+        }
+      }
 
-        if (error) throw error;
-        setNearbyChws(data || []);
-      } else {
-        setNearbyChws([]);
-        setHospitals([]);
-        setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল ও স্বাস্থ্যকর্মী দেখতে জিপিএস সচল করুন।" : "Please enable GPS to view nearby hospitals and health workers.");
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          const freshCoords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+          
+          const coordsDiff = !currentCoords || 
+            Math.abs(currentCoords.latitude - freshCoords.latitude) > 0.001 || 
+            Math.abs(currentCoords.longitude - freshCoords.longitude) > 0.001;
+
+          if (coordsDiff) {
+            setCoords(freshCoords);
+            const [{ data, error }] = await Promise.all([
+              supabase.rpc("find_nearby_chws", {
+                mother_lat: freshCoords.latitude,
+                mother_lng: freshCoords.longitude,
+                radius_km: 10.0
+              }),
+              fetchHospitals(freshCoords.latitude, freshCoords.longitude)
+            ]);
+            if (error) throw error;
+            setNearbyChws(data || []);
+          }
+        } else if (!currentCoords) {
+          setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল দেখাতে লোকেশন অনুমতি দরকার।" : "Location permission is needed to show nearby hospitals.");
+        }
+      } catch (locErr) {
+        console.warn("Failed to get high-accuracy location:", locErr);
+        if (!currentCoords) {
+          setNearbyChws([]);
+          setHospitals([]);
+          setHospitalsError(lang === "bn" ? "কাছের হাসপাতাল ও স্বাস্থ্যকর্মী দেখতে জিপিএস সচল করুন।" : "Please enable GPS to view nearby hospitals and health workers.");
+        }
       }
     } catch (err) {
       console.error("Failed to load health center data:", err);

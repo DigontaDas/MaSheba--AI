@@ -72,6 +72,12 @@ export async function getPatients(limit?: number): Promise<MotherRegistryRow[]> 
   return payload.patients;
 }
 
+export async function getEmergencies(): Promise<any[]> {
+  const payload = await adminFetch<{ emergencies: any[] }>("/api/v1/admin/emergencies");
+  return payload.emergencies;
+}
+
+
 export async function getQaItems(): Promise<QaItem[]> {
   const payload = await adminFetch<{ items: QaItem[] }>("/api/v1/admin/qa");
   return payload.items;

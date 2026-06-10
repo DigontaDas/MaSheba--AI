@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { MotherRegistryRow, RiskLevel, ChwRow } from "@/utils/admin-types";
+import type { MotherRegistryRow, RiskLevel, ChwRow, HeatmapRow } from "@/utils/admin-types";
 import { AssignChwModal } from "@/components/AssignChwModal";
+import { UpazilaRiskMap } from "@/components/UpazilaRiskMap";
+import { parseLocation } from "@/components/RequestsMap";
 
 type RiskFilter = "ALL" | RiskLevel | "UNASSESSED";
 
 type PatientsRegistryClientProps = {
   patients: MotherRegistryRow[];
   chws: ChwRow[];
+  heatmap: HeatmapRow[];
   t: any;
 };
 
@@ -20,7 +23,7 @@ const riskStyles: Record<RiskLevel, string> = {
 };
 
 
-export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryClientProps) {
+export function PatientsRegistryClient({ patients, chws, heatmap, t }: PatientsRegistryClientProps) {
   const router = useRouter();
   const [patientList, setPatientList] = useState(patients);
   const [prevPatients, setPrevPatients] = useState(patients);
@@ -28,6 +31,16 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
   const [searchQuery, setSearchQuery] = useState("");
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [targetMother, setTargetMother] = useState<MotherRegistryRow | null>(null);
+
+  const [focusedLocation, setFocusedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 4000);
+  };
 
   if (patients !== prevPatients) {
     setPatientList(patients);
@@ -80,6 +93,11 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
         </div>
       </div>
 
+      {/* Live Map Layer */}
+      <div id="registry-map-container" className="bg-surface rounded-xl overflow-hidden shadow-sm">
+        <UpazilaRiskMap rows={heatmap} focusedLocation={focusedLocation} />
+      </div>
+
       <div className="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
           <h3 className="font-headline-md text-[18px] font-bold text-on-surface">Tracked Mothers</h3>
@@ -119,6 +137,12 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                     <td className="whitespace-nowrap px-6 py-3.5">
                       <div className="font-bold text-on-surface">{row.name}</div>
                       <div className="text-[11px] font-semibold text-on-surface-variant tabular-nums">{row.patient_id ? `Patient ${row.patient_id}` : "No patient record yet"}</div>
+                      {row.location_name && (
+                        <div className="text-[10px] font-medium text-primary flex items-center gap-0.5 mt-0.5">
+                          <span className="material-symbols-outlined text-[12px]">location_on</span>
+                          {row.location_name}
+                        </div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-3.5 text-on-surface-variant font-semibold font-mono tabular-nums">{row.phone || "Not provided"}</td>
                     <td className="whitespace-nowrap px-6 py-3.5">
@@ -142,20 +166,38 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
                       )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-3.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTargetMother(row);
-                          setAssignModalOpen(true);
-                        }}
-                        className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
-                          row.link_status === "LINKED"
-                            ? "bg-surface text-on-surface border-outline hover:bg-surface-container-high"
-                            : "bg-primary text-on-primary border-primary hover:bg-surface-tint"
-                        }`}
-                      >
-                        {row.link_status === "LINKED" ? "Reassign" : "Assign CHW"}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTargetMother(row);
+                            setAssignModalOpen(true);
+                          }}
+                          className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold border transition-all cursor-pointer ${
+                            row.link_status === "LINKED"
+                              ? "bg-surface text-on-surface border-outline hover:bg-surface-container-high"
+                              : "bg-primary text-on-primary border-primary hover:bg-surface-tint"
+                          }`}
+                        >
+                          {row.link_status === "LINKED" ? "Reassign" : "Assign CHW"}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const loc = parseLocation(row.location);
+                            if (loc) {
+                              setFocusedLocation({ lat: loc.lat, lng: loc.lng });
+                              document.getElementById("registry-map-container")?.scrollIntoView({ behavior: "smooth" });
+                            } else {
+                              triggerToast("এই মায়ের অবস্থান পাওয়া যায়নি");
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold border border-outline hover:bg-surface-container-high cursor-pointer transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">map</span>
+                          Locate
+                        </button>
+                      </div>
                     </td>
                     <td suppressHydrationWarning className="whitespace-nowrap px-6 py-3.5 text-right text-on-surface-variant/80 text-xs font-semibold font-mono tabular-nums">
                       {new Date(row.updated_at || row.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
@@ -184,6 +226,13 @@ export function PatientsRegistryClient({ patients, chws, t }: PatientsRegistryCl
             router.refresh();
           }}
         />
+      )}
+
+      {showToast && (
+        <div className="fixed bottom-4 right-4 bg-error text-on-error border border-outline-variant/10 px-4 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 font-label-lg text-sm font-semibold select-none">
+          <span className="material-symbols-outlined text-[20px]">error</span>
+          <span>{toastMessage}</span>
+        </div>
       )}
     </div>
   );

@@ -171,6 +171,22 @@ export function AssignChwModal({
               {mother.chw_name ? `${mother.chw_name} (${mother.chw_id})` : "No CHW currently assigned"}
             </p>
           </div>
+          <div className="col-span-2">
+            <p className="text-on-surface-variant font-bold uppercase tracking-wider">Mother's Saved Location</p>
+            <div className="flex items-center justify-between mt-0.5">
+              <p className="font-semibold text-on-surface">
+                {mother.location_name || "No location name provided"}
+              </p>
+              <a
+                href="/dashboard/map"
+                target="_blank"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+              >
+                <span className="material-symbols-outlined text-[14px]">map</span>
+                Locate on Map
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Form */}

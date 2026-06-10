@@ -132,7 +132,8 @@ async def _supabase_get(settings: Settings, path: str, *, select: str = "*", que
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(url, headers=_service_headers(settings))
     if response.status_code >= 400:
-        raise AdminAuthError(status.HTTP_502_BAD_GATEWAY, "DATABASE_QUERY_FAILED", f"Failed to query {path}.")
+        print(f"Supabase GET failed for {path} with status {response.status_code}: {response.text}")
+        raise AdminAuthError(status.HTTP_502_BAD_GATEWAY, "DATABASE_QUERY_FAILED", f"Failed to query {path}. {response.text}")
     return response.json()
 
 
@@ -343,7 +344,7 @@ async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[di
     mothers = await _supabase_get(
         settings,
         "mothers",
-        select="id,auth_user_id,name,phone,verification_status,patient_id,gestational_age_weeks,location,created_at,updated_at",
+        select="id,auth_user_id,name,phone,verification_status,patient_id,gestational_age_weeks,location,age,location_name,created_at,updated_at,chw_phone",
         query=page.query,
     )
     patient_ids = sorted({mother.get("patient_id") for mother in mothers if mother.get("patient_id")})
@@ -384,11 +385,13 @@ async def _load_mother_registry(settings: Settings, page: CursorPage) -> list[di
                 "patient_id": mother.get("patient_id"),
                 "chw_id": chw_id,
                 "chw_name": chw.get("name") if chw else None,
-                "age": patient.get("age") if patient else None,
+                "chw_phone": mother.get("chw_phone"),
+                "age": mother.get("age") if mother.get("age") is not None else (patient.get("age") if patient else None),
                 "gestational_age_weeks": patient.get("gestational_age_weeks") if patient and patient.get("gestational_age_weeks") is not None else mother.get("gestational_age_weeks"),
                 "last_risk_level": patient.get("last_risk_level") if patient else None,
                 "link_status": "LINKED" if patient else "UNLINKED",
                 "location": mother.get("location"),
+                "location_name": mother.get("location_name"),
                 "created_at": mother.get("created_at"),
                 "updated_at": mother.get("updated_at") or mother.get("created_at"),
             }
@@ -738,6 +741,32 @@ async def get_patients(
         mothers = await _load_mother_registry(settings, page)
         await audit(settings, admin, "admin.patients.read", "mother")
         return {"patients": mothers, "page": _page(mothers, page)}
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.get("/emergencies", response_model=None)
+async def get_emergencies(
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        page = CursorPage(query="&limit=1000", order="updated_at.desc", limit=1000, fields=("updated_at", "id"), direction="desc")
+        mothers = await _load_mother_registry(settings, page)
+        emergencies = [
+            {
+                "mother_id": m["id"],
+                "name": m["name"],
+                "phone": m["phone"],
+                "gestational_age_weeks": m["gestational_age_weeks"],
+                "location_name": m["location_name"],
+                "chw_name": m["chw_name"],
+                "chw_phone": m["chw_phone"],
+            }
+            for m in mothers
+            if m.get("last_risk_level") == "HIGH"
+        ]
+        return {"emergencies": emergencies}
     except AdminAuthError as error:
         return _handle_admin_error(error)
 
@@ -1517,3 +1546,47 @@ async def assign_connection_request(
         return updated_request
     except AdminAuthError as error:
         return _handle_admin_error(error)
+
+
+@router.get("/chws/{chw_id}/certificate", response_model=None)
+async def get_chw_certificate(
+    chw_id: str,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> Response | JSONResponse:
+    try:
+        chws = await _supabase_get(
+            settings,
+            "chws",
+            select="certificate_url",
+            query=f"&id=eq.{quote(chw_id)}",
+        )
+        if not chws or not chws[0].get("certificate_url"):
+            return JSONResponse(status_code=404, content={"error": "Certificate not found or not provided."})
+        
+        cert_url = chws[0]["certificate_url"]
+        
+        if "/storage/v1/object/" in cert_url and "/certificates/" in cert_url:
+            filename = cert_url.split("/certificates/")[-1].split("?")[0]
+            storage_url = f"{_base_url(settings)}/storage/v1/object/certificates/{filename}"
+            headers = _service_headers(settings)
+            
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.get(storage_url, headers=headers)
+                
+            if response.status_code >= 400:
+                storage_url_auth = f"{_base_url(settings)}/storage/v1/object/authenticated/certificates/{filename}"
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    response = await client.get(storage_url_auth, headers=headers)
+            
+            if response.status_code < 400:
+                content_type = response.headers.get("content-type", "application/octet-stream")
+                return Response(content=response.content, media_type=content_type)
+        
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=cert_url)
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Failed to retrieve certificate: {str(e)}"})
+

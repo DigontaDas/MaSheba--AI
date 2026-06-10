@@ -7,6 +7,16 @@ import { formatBilingualChw, getTranslation } from "@/utils/translations";
 
 type Translation = ReturnType<typeof getTranslation>;
 
+function getValidUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+
 export function ChwDirectoryClient({
   chws,
   pendingChws = [],
@@ -499,7 +509,7 @@ export function ChwDirectoryClient({
                   </h4>
                   {selectedChw.certificate_url ? (
                     <a
-                      href={selectedChw.certificate_url}
+                      href={`/api/admin/chws/${selectedChw.chw_id}/certificate`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2.5 bg-primary-container/20 hover:bg-primary-container/35 text-primary border border-primary-container/50 rounded-lg p-3 font-semibold text-sm transition-colors text-center justify-center cursor-pointer"
@@ -646,7 +656,7 @@ export function ChwDirectoryClient({
                   </h4>
                   {selectedPending.certificate_url ? (
                     <a
-                      href={selectedPending.certificate_url}
+                      href={`/api/admin/chws/${selectedPending.id}/certificate`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2.5 bg-primary-container/20 hover:bg-primary-container/35 text-primary border border-primary-container/50 rounded-lg p-3 font-semibold text-sm transition-colors text-center justify-center cursor-pointer"

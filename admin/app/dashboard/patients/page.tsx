@@ -1,13 +1,14 @@
 import { PatientsRegistryClient } from "@/components/PatientsRegistryClient";
-import { getPatients, getChws } from "@/utils/admin-api";
+import { getPatients, getChws, getSummary } from "@/utils/admin-api";
 import { getTranslation } from "@/utils/translations";
 
 export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
-  const [patients, chws] = await Promise.all([
+  const [patients, chws, summary] = await Promise.all([
     getPatients(),
     getChws(),
+    getSummary(),
   ]);
   const t = getTranslation();
 
@@ -17,7 +18,7 @@ export default async function PatientsPage() {
         <h2 className="font-headline-lg text-headline-lg text-on-background">{t.tracked_mothers}</h2>
         <p className="mt-1 font-body-md text-body-md text-on-surface-variant">{t.tracked_mothers_desc}</p>
       </div>
-      <PatientsRegistryClient patients={patients} chws={chws} t={t} />
+      <PatientsRegistryClient patients={patients} chws={chws} heatmap={summary.heatmap} t={t} />
     </div>
   );
 }

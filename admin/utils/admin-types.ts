@@ -98,6 +98,7 @@ export type MotherRegistryRow = {
   last_risk_level: RiskLevel | null;
   link_status: "LINKED" | "UNLINKED";
   location?: any;
+  location_name?: string | null;
   created_at: string;
   updated_at: string;
 };

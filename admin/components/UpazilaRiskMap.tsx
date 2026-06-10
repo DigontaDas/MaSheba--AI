@@ -18,7 +18,7 @@ const RequestsMap = dynamic(
   }
 );
 
-export function UpazilaRiskMap({ rows }: { rows: HeatmapRow[] }) {
+export function UpazilaRiskMap({ rows, focusedLocation = null }: { rows: HeatmapRow[]; focusedLocation?: { lat: number; lng: number } | null }) {
   const [selectedRow, setSelectedRow] = useState<HeatmapRow | null>(null);
   const [mothers, setMothers] = useState<MotherRegistryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,7 @@ export function UpazilaRiskMap({ rows }: { rows: HeatmapRow[] }) {
           mothers={mothers}
           selectedRequestId={null}
           onSelectRequest={() => {}}
+          focusedLocation={focusedLocation}
         />
       </div>
 

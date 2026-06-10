@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -116,8 +116,40 @@ const getMotherGestationalAge = (req: ConnectionRequest, index: number): number 
  */
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
+  const prevCenter = useRef<[number, number] | null>(null);
   useEffect(() => {
-    map.setView(center, 13);
+    if (
+      !center ||
+      (prevCenter.current &&
+        prevCenter.current[0] === center[0] &&
+        prevCenter.current[1] === center[1])
+    ) return;
+    prevCenter.current = center;
+    try {
+      map.setView(center, 13);
+    } catch (e) {
+      // Map may have been unmounted — ignore
+    }
+  }, [center, map]);
+  return null;
+}
+
+function FlyToView({ center }: { center: [number, number] }) {
+  const map = useMap();
+  const prevCenter = useRef<[number, number] | null>(null);
+  useEffect(() => {
+    if (
+      !center ||
+      (prevCenter.current &&
+        prevCenter.current[0] === center[0] &&
+        prevCenter.current[1] === center[1])
+    ) return;
+    prevCenter.current = center;
+    try {
+      map.flyTo(center, 15, { animate: true, duration: 0.8 });
+    } catch (e) {
+      // Map may have been unmounted — ignore
+    }
   }, [center, map]);
   return null;
 }
@@ -128,12 +160,14 @@ export function RequestsMap({
   mothers = [],
   selectedRequestId = null,
   onSelectRequest = () => {},
+  focusedLocation = null,
 }: {
   requests?: ConnectionRequest[];
   chws?: ChwRow[];
   mothers?: MotherRegistryRow[];
   selectedRequestId?: string | null;
   onSelectRequest?: (id: string) => void;
+  focusedLocation?: { lat: number; lng: number } | null;
 }) {
   const [districts, setDistricts] = useState<any>(null);
   const [upazilas, setUpazilas] = useState<any>(null);
@@ -218,6 +252,10 @@ export function RequestsMap({
 
         {selectedRequest && selectedRequest.lat && selectedRequest.lng && (
           <ChangeView center={[selectedRequest.lat, selectedRequest.lng]} />
+        )}
+
+        {focusedLocation && (
+          <FlyToView center={[focusedLocation.lat, focusedLocation.lng]} />
         )}
 
         {/* Mother pins */}
