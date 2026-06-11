@@ -150,8 +150,20 @@ def test_live_admin_can_approve_and_reject_chw_verifications() -> None:
         reject_email = f"ci-chw-reject-{run_id}@maasheba.test"
 
         admin_user_id = supabase.create_auth_user(admin_email, password, {"role": "admin", "name": "CI Admin"})
-        approve_user_id = supabase.create_auth_user(approve_email, password, {"role": "chw", "name": "CI CHW Approve"})
-        reject_user_id = supabase.create_auth_user(reject_email, password, {"role": "chw", "name": "CI CHW Reject"})
+        approve_user_id = supabase.create_auth_user(approve_email, password, {
+            "role": "chw",
+            "name": "CI CHW Approve",
+            "union_name": "CI Union",
+            "upazila": "CI Upazila",
+            "district": "CI District",
+        })
+        reject_user_id = supabase.create_auth_user(reject_email, password, {
+            "role": "chw",
+            "name": "CI CHW Reject",
+            "union_name": "CI Union",
+            "upazila": "CI Upazila",
+            "district": "CI District",
+        })
 
         # Clean up any trigger-created rows to avoid unique constraint violations on auth_user_id
         supabase.delete_rows("chws", f"auth_user_id=eq.{approve_user_id}")

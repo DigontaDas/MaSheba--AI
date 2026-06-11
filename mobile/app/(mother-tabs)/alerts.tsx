@@ -97,9 +97,9 @@ const styles = StyleSheet.create({
   emergencyItem: {
     alignItems: "flex-start",
     backgroundColor: colors.surfaceContainerLowest,
-    borderColor: colors.outlineVariant,
+    borderColor: "#C4A99A",
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: 1.5,
     flexDirection: "row",
     gap: spacing.sm,
     padding: spacing.base
@@ -115,6 +115,8 @@ const styles = StyleSheet.create({
   },
   symptomCard: {
     backgroundColor: colors.surfaceContainerLow,
+    borderColor: "#C4A99A",
+    borderWidth: 1.5,
     borderRadius: radius.card,
     gap: spacing.xs,
     padding: spacing.cardPadding
@@ -130,6 +132,8 @@ const styles = StyleSheet.create({
   },
   qaCard: {
     backgroundColor: colors.errorContainer,
+    borderColor: "#FDA4AF",
+    borderWidth: 1.5,
     borderRadius: radius.card,
     gap: spacing.xs,
     padding: spacing.base
