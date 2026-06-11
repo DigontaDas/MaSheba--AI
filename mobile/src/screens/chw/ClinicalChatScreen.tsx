@@ -307,6 +307,25 @@ export default function ClinicalChatScreen() {
     };
   }, [isRecording, pulseAnim]);
 
+  const flatListRef = useRef<FlatList>(null);
+  const aiFlatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (messages.length > 0 && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (aiMessages.length > 0 && aiFlatListRef.current) {
+      setTimeout(() => {
+        aiFlatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [aiMessages]);
+
   // Cleanup speech on mode change or unmount
   useEffect(() => {
     return () => {
@@ -690,18 +709,16 @@ export default function ClinicalChatScreen() {
       <View style={styles.chipsWrapper}>
         <View style={styles.chipsRow}>
           {suggestions.map((item) => {
-            const handlePress = () => {
-              void sendQuickReply(item);
-            };
             return (
               <Pressable
                 accessibilityLabel={item}
                 key={item}
-                onPress={handlePress}
-                style={[
+                onPress={() => void sendQuickReply(item)}
+                style={({ pressed }) => [
                   styles.chip,
                   styles.chipInactive,
-                  { borderColor: "#E57A58", flex: 1, marginHorizontal: 4 }
+                  { borderColor: "#E57A58", flex: 1, marginHorizontal: 4 },
+                  pressed && { opacity: 0.6, backgroundColor: "#FCEBE5" }
                 ]}
               >
                 <Text style={[styles.chipText, { color: "#65230C" }]}>
@@ -803,13 +820,14 @@ export default function ClinicalChatScreen() {
             renderEmptyCard()
           ) : (
             <FlatList
+              ref={flatListRef}
               disableVirtualization
               data={selectedMother ? messages : []}
               keyExtractor={motherKeyExtractor}
               renderItem={renderMotherItem}
               style={{ flex: 1 }}
               contentContainerStyle={styles.messageList}
-              removeClippedSubviews={true}
+              removeClippedSubviews={false}
               maxToRenderPerBatch={8}
               windowSize={5}
             />
@@ -845,13 +863,14 @@ export default function ClinicalChatScreen() {
             renderEmptyCard()
           ) : (
             <FlatList
+              ref={aiFlatListRef}
               disableVirtualization
               data={aiMessages}
               keyExtractor={aiKeyExtractor}
               renderItem={renderAiItem}
               style={{ flex: 1 }}
               contentContainerStyle={styles.messageList}
-              removeClippedSubviews={true}
+              removeClippedSubviews={false}
               maxToRenderPerBatch={8}
               windowSize={5}
               ListFooterComponent={isAiLoading ? <TypingIndicator /> : null}
@@ -1269,11 +1288,11 @@ const styles = StyleSheet.create({
     gap: 8
   },
   chip: {
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    height: 32,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    height: 44,
     alignItems: "center",
     justifyContent: "center"
   },
