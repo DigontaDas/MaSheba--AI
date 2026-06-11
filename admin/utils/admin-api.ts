@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdminBearerToken } from "@/utils/admin-auth";
-import type { AuditEvent, ChwReassignmentRequest, ChwReview, ChwReviewSummary, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest } from "@/utils/admin-types";
+import type { AuditEvent, ChwReassignmentRequest, ChwReview, ChwReviewSummary, ChwRow, MotherRegistryRow, PendingChwRow, QaItem, SmsFailure, SummaryPayload, ConnectionRequest, Hospital } from "@/utils/admin-types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || "http://localhost:8000";
 
@@ -193,3 +193,29 @@ export async function dismissReassignmentRequest(requestId: string, reason?: str
     body: JSON.stringify({ reason }),
   });
 }
+
+export async function getHospitals(): Promise<Hospital[]> {
+  const payload = await adminFetch<{ hospitals: Hospital[] }>("/api/v1/admin/hospitals");
+  return payload.hospitals;
+}
+
+export async function createHospital(payload: JsonObject): Promise<Hospital> {
+  return adminFetch<Hospital>("/api/v1/admin/hospitals", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateHospital(id: string, payload: JsonObject): Promise<Hospital> {
+  return adminFetch<Hospital>(`/api/v1/admin/hospitals/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteHospital(id: string): Promise<void> {
+  await adminFetch(`/api/v1/admin/hospitals/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+

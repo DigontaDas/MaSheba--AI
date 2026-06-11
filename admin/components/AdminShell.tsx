@@ -16,6 +16,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
     { href: "/dashboard/patients", label: "Tracked Mothers", icon: "group" },
     { href: "/dashboard/requests", label: "Connection Requests", icon: "person_pin_circle" },
     { href: "/dashboard/qa", label: "Offline Q&A", icon: "menu_book" },
+    { href: "/dashboard/hospitals", label: "Emergency Contacts", icon: "local_hospital" },
     { href: "/dashboard/telemetry", label: "Telemetry Logs", icon: "analytics" },
     { href: "/dashboard/audit", label: "Audit Ledger", icon: "history" },
     { href: "/dashboard/exports", label: "Reports & Exports", icon: "description" },

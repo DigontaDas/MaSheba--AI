@@ -164,3 +164,18 @@ export type ConnectionRequest = {
   assigned_chw_name?: string | null;
   assigned_at?: string | null;
 };
+
+export type Hospital = {
+  id: string;
+  name: string;
+  type: "government" | "private" | "clinic" | "ambulance" | "blood_bank" | "other";
+  district: string | null;
+  upazila: string | null;
+  address: string | null;
+  phone: string | null;
+  is_partner: boolean;
+  lat: number | null;
+  lng: number | null;
+  created_at: string;
+};
+

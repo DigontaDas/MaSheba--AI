@@ -1610,3 +1610,158 @@ async def get_chw_certificate(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Failed to retrieve certificate: {str(e)}"})
 
+
+class HospitalCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    type: Literal["government", "private", "clinic", "ambulance", "blood_bank", "other"]
+    district: str | None = Field(default=None, max_length=100)
+    upazila: str | None = Field(default=None, max_length=100)
+    address: str | None = Field(default=None, max_length=500)
+    phone: str | None = Field(default=None, max_length=50)
+    is_partner: bool = Field(default=False)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+
+class HospitalUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    type: Literal["government", "private", "clinic", "ambulance", "blood_bank", "other"] | None = None
+    district: str | None = Field(default=None, max_length=100)
+    upazila: str | None = Field(default=None, max_length=100)
+    address: str | None = Field(default=None, max_length=500)
+    phone: str | None = Field(default=None, max_length=50)
+    is_partner: bool | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
+
+    def update_payload(self) -> dict[str, Any]:
+        return self.model_dump(exclude_none=True)
+
+
+@router.get("/hospitals", response_model=None)
+async def get_hospitals(
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        rows = await _supabase_get(
+            settings,
+            "hospitals",
+            select="id,name,type,district,upazila,address,phone,location,is_partner,created_at",
+            query="&order=name.asc",
+        )
+        hospitals = []
+        for r in rows:
+            lat, lng = _parse_location(r.get("location"))
+            hospitals.append({
+                "id": r["id"],
+                "name": r["name"],
+                "type": r["type"],
+                "district": r.get("district"),
+                "upazila": r.get("upazila"),
+                "address": r.get("address"),
+                "phone": r.get("phone"),
+                "is_partner": r.get("is_partner", False),
+                "lat": lat,
+                "lng": lng,
+                "created_at": r.get("created_at"),
+            })
+        await audit(settings, admin, "admin.hospitals.read", "hospitals")
+        return {"hospitals": hospitals}
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.post("/hospitals", status_code=status.HTTP_201_CREATED, response_model=None)
+async def create_hospital(
+    request: HospitalCreateRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "create emergency contacts/hospitals")
+        payload = request.model_dump(exclude={"lat", "lng"})
+        if request.lat is not None and request.lng is not None:
+            payload["location"] = f"POINT({request.lng} {request.lat})"
+        else:
+            payload["location"] = None
+        
+        created = await _supabase_post(settings, "hospitals", payload)
+        lat, lng = _parse_location(created.get("location"))
+        response_data = {
+            "id": created["id"],
+            "name": created["name"],
+            "type": created["type"],
+            "district": created.get("district"),
+            "upazila": created.get("upazila"),
+            "address": created.get("address"),
+            "phone": created.get("phone"),
+            "is_partner": created.get("is_partner", False),
+            "lat": lat,
+            "lng": lng,
+            "created_at": created.get("created_at"),
+        }
+        await audit(settings, admin, "admin.hospitals.create", "hospitals", created.get("id"), {"name": request.name})
+        return response_data
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.patch("/hospitals/{hospital_id}", response_model=None)
+async def update_hospital(
+    hospital_id: str,
+    request: HospitalUpdateRequest,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _require_super_admin(admin, "update emergency contacts/hospitals")
+        payload = request.update_payload()
+        
+        has_lat = "lat" in payload
+        has_lng = "lng" in payload
+        lat_val = payload.pop("lat", None)
+        lng_val = payload.pop("lng", None)
+        
+        if (has_lat or has_lng):
+            if lat_val is not None and lng_val is not None:
+                payload["location"] = f"POINT({lng_val} {lat_val})"
+            elif lat_val is None and lng_val is None:
+                payload["location"] = None
+        
+        updated = await _supabase_patch(settings, "hospitals", hospital_id, payload)
+        lat, lng = _parse_location(updated.get("location"))
+        response_data = {
+            "id": updated["id"],
+            "name": updated["name"],
+            "type": updated["type"],
+            "district": updated.get("district"),
+            "upazila": updated.get("upazila"),
+            "address": updated.get("address"),
+            "phone": updated.get("phone"),
+            "is_partner": updated.get("is_partner", False),
+            "lat": lat,
+            "lng": lng,
+            "created_at": updated.get("created_at"),
+        }
+        await audit(settings, admin, "admin.hospitals.update", "hospitals", hospital_id, payload)
+        return response_data
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+
+@router.delete("/hospitals/{hospital_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def delete_hospital(
+    hospital_id: str,
+    settings: Settings = Depends(get_settings),
+    admin: AdminContext = Depends(require_admin),
+) -> Response | JSONResponse:
+    try:
+        _require_super_admin(admin, "delete emergency contacts/hospitals")
+        await _supabase_delete(settings, "hospitals", hospital_id)
+        await audit(settings, admin, "admin.hospitals.delete", "hospitals", hospital_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except AdminAuthError as error:
+        return _handle_admin_error(error)
+
+

@@ -220,6 +220,8 @@ def install_admin_httpx(
                 ])
             if "/rest/v1/master_qa" in url:
                 return httpx.Response(200, json=[{"id": "qa-a", "trimester": "T1", "topic": "Nutrition", "question_bn": "প্রশ্ন", "answer_bn": "উত্তর", "question_en": "Question", "answer_en": "Answer", "severity": "LOW", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}])
+            if "/rest/v1/hospitals" in url:
+                return httpx.Response(200, json=[{"id": "hosp-a", "name": "Narsingdi Hospital", "type": "government", "district": "Narsingdi", "upazila": "Narsingdi Sadar", "address": "Sadar Road", "phone": "01700000000", "location": "POINT(90.7153 23.9097)", "is_partner": True, "created_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/sms_failures" in url:
                 if fail_sms_read:
                     return httpx.Response(404, json={"message": "relation sms_failures does not exist"})
@@ -254,6 +256,9 @@ def install_admin_httpx(
             if "/rest/v1/master_qa" in url:
                 body = json | {"id": "qa-new", "created_at": "2026-06-02T00:00:00Z", "updated_at": "2026-06-02T00:00:00Z"}
                 return httpx.Response(201, json=[body])
+            if "/rest/v1/hospitals" in url:
+                body = json | {"id": "hosp-new", "created_at": "2026-06-02T00:00:00Z"}
+                return httpx.Response(201, json=[body])
             if "/rest/v1/admin_audit_events" in url:
                 if fail_audit_writes:
                     return httpx.Response(404, json={"message": "relation admin_audit_events does not exist"})
@@ -274,6 +279,20 @@ def install_admin_httpx(
                 return httpx.Response(200, json=[{"id": "sms-a", "review_status": json["review_status"], "review_notes": json.get("review_notes"), "reviewed_at": "2026-06-02T00:00:00Z"}])
             if "/rest/v1/notification_events" in url:
                 return httpx.Response(200, json=[{"id": "notification-a", **json}])
+            if "/rest/v1/hospitals" in url:
+                mock_hospital = {
+                    "id": "hosp-a",
+                    "name": "Narsingdi Hospital",
+                    "type": "government",
+                    "district": "Narsingdi",
+                    "upazila": "Narsingdi Sadar",
+                    "address": "Sadar Road",
+                    "phone": "01700000000",
+                    "location": "POINT(90.7153 23.9097)",
+                    "is_partner": True,
+                    "created_at": "2026-06-02T00:00:00Z"
+                }
+                return httpx.Response(200, json=[mock_hospital | json])
             raise AssertionError(f"Unexpected PATCH url: {url}")
 
         async def put(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
@@ -283,6 +302,8 @@ def install_admin_httpx(
         async def delete(self, url: str, headers: dict[str, str]) -> httpx.Response:
             state["deletes"].append({"url": url, "headers": headers})
             if "/rest/v1/master_qa" in url:
+                return httpx.Response(204)
+            if "/rest/v1/hospitals" in url:
                 return httpx.Response(204)
             raise AssertionError(f"Unexpected DELETE url: {url}")
 
@@ -845,3 +866,66 @@ def test_assign_chw_unapproved_or_inactive_chw_fails(client: TestClient, monkeyp
         json={"chw_id": "chw-inactive", "age": 25},
     )
     assert response.status_code == 400
+
+
+def test_admin_can_crud_hospitals(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="super_admin")
+    headers = {"Authorization": "Bearer admin-token"}
+
+    # List hospitals
+    get_res = client.get("/api/v1/admin/hospitals", headers=headers)
+    assert get_res.status_code == 200
+    assert get_res.json()["hospitals"][0]["name"] == "Narsingdi Hospital"
+
+    # Create hospital
+    create_res = client.post(
+        "/api/v1/admin/hospitals",
+        headers=headers,
+        json={
+            "name": "New Clinic",
+            "type": "clinic",
+            "district": "Narsingdi",
+            "upazila": "Palash",
+            "address": "Palash Bazar",
+            "phone": "01711111111",
+            "is_partner": True,
+            "lat": 23.9,
+            "lng": 90.6
+        }
+    )
+    assert create_res.status_code == 201
+    assert create_res.json()["id"] == "hosp-new"
+    assert create_res.json()["lat"] == 23.9
+    assert create_res.json()["lng"] == 90.6
+
+    # Update hospital
+    update_res = client.patch(
+        "/api/v1/admin/hospitals/hosp-a",
+        headers=headers,
+        json={"name": "Updated Hospital"}
+    )
+    assert update_res.status_code == 200
+    assert update_res.json()["name"] == "Updated Hospital"
+
+    # Delete hospital
+    delete_res = client.delete("/api/v1/admin/hospitals/hosp-a", headers=headers)
+    assert delete_res.status_code == 204
+    assert state["deletes"][0]["url"].endswith("hospitals?id=eq.hosp-a")
+
+
+def test_non_super_admin_cannot_write_hospitals(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = install_admin_httpx(monkeypatch, role="admin")
+    headers = {"Authorization": "Bearer admin-token"}
+
+    # Create hospital should fail for normal admin
+    create_res = client.post(
+        "/api/v1/admin/hospitals",
+        headers=headers,
+        json={"name": "New Clinic", "type": "clinic"}
+    )
+    assert create_res.status_code == 403
+
+    # Delete hospital should fail for normal admin
+    delete_res = client.delete("/api/v1/admin/hospitals/hosp-a", headers=headers)
+    assert delete_res.status_code == 403
+
