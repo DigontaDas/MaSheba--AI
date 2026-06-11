@@ -131,6 +131,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const togglePlay = () => {
     if (!iframeRef.current?.contentWindow) return;
@@ -236,28 +237,6 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
 
   return (
     <div className="docs-shell" style={{ background: "var(--bg)", color: "var(--text)", fontFamily: "var(--font-dm-sans), system-ui, sans-serif", minHeight: "100vh" }}>
-      {/* ── AVAILABILITY BANNER ─────────────────────────────── */}
-      <div
-        className="docs-no-print"
-        style={{
-          background: "rgba(196,85,42,.07)",
-          borderBottom: "1px solid rgba(196,85,42,.15)",
-          padding: "10px 60px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 12,
-          fontFamily: "var(--font-dm-mono), monospace",
-          fontSize: 12,
-          color: "var(--text2)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="docs-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
-          <span>Documentation window active · June 10 00:00 — June 14 23:59 · BuildFest 2026 Judging Period · Team DareDevil</span>
-        </div>
-      </div>
-
       {/* ── BRAC University-Style Video Banner ──────────────── */}
       <div
         ref={videoContainerRef}
@@ -265,11 +244,12 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
         style={{
           position: "relative",
           width: "100%",
-          height: "70vh",
-          minHeight: "450px",
-          maxHeight: "750px",
+          height: isExpanded ? "95vh" : "70vh",
+          minHeight: isExpanded ? "600px" : "450px",
+          maxHeight: isExpanded ? "1080px" : "750px",
           background: "#2c1a0e",
           overflow: "hidden",
+          transition: "height 0.4s ease-in-out, min-height 0.4s ease-in-out, max-height 0.4s ease-in-out",
         }}
       >
         <iframe
@@ -281,13 +261,28 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
             left: "50%",
             width: "100vw",
             height: "56.25vw", /* 16:9 aspect ratio */
-            minHeight: "70vh",
-            minWidth: "124.44vh", /* 16:9 ratio calculated from minHeight */
+            minHeight: isExpanded ? "95vh" : "70vh",
+            minWidth: isExpanded ? "168.88vh" : "124.44vh", /* 16:9 ratio calculated from minHeight */
             transform: `translate(-50%, -50%) scale(${1.15 + (1 - scrollProgress) * 0.05}) translateY(${scrollProgress * 50}px)`,
             opacity: 1 - scrollProgress * 0.6,
             border: "none",
             pointerEvents: "none",
-            transition: "opacity 0.1s ease-out",
+            transition: "opacity 0.1s ease-out, min-height 0.4s ease-in-out, min-width 0.4s ease-in-out",
+          }}
+        />
+
+        {/* Background Click-Catcher */}
+        <div
+          onClick={() => setIsExpanded(!isExpanded)}
+          title="Click to toggle expanded video view"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            cursor: "pointer",
+            zIndex: 1,
           }}
         />
 
@@ -325,9 +320,10 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
             transition: "opacity 0.1s ease-out, transform 0.1s ease-out",
             color: "#fff",
             textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+            pointerEvents: "none", // Let clicks pass through empty spaces to click-catcher
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, pointerEvents: "auto" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/icon.png"
@@ -340,10 +336,10 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
               MaSheba AI
             </span>
           </div>
-          <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(32px, 5vw, 54px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 12, maxWidth: 800 }}>
+          <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(32px, 5vw, 54px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 12, maxWidth: 800, pointerEvents: "auto" }}>
             Every Mother Deserves a Safety Net
           </h2>
-          <p style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "clamp(14px, 2vw, 18px)", fontWeight: 300, maxWidth: 640, lineHeight: 1.6, opacity: 0.95, color: "#fdf5ef" }}>
+          <p style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "clamp(14px, 2vw, 18px)", fontWeight: 300, maxWidth: 640, lineHeight: 1.6, opacity: 0.95, color: "#fdf5ef", pointerEvents: "auto" }}>
             An offline-first, on-device AI maternal health platform built to ensure continuous, empathetic care for expecting mothers in rural Bangladesh.
           </p>
 
@@ -366,6 +362,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
               cursor: "pointer",
               boxShadow: "0 4px 15px rgba(196, 85, 42, 0.4)",
               transition: "transform 0.2s, background-color 0.2s",
+              pointerEvents: "auto",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -476,6 +473,37 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
               </svg>
             )}
           </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: "rgba(44, 26, 14, 0.6)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "50%",
+              width: 44,
+              height: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(196, 85, 42, 0.8)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(44, 26, 14, 0.6)"; }}
+            title={isExpanded ? "Collapse View" : "Expand View"}
+          >
+            {isExpanded ? (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4A.5.5 0 0 0 5 4.5v-4a.5.5 0 0 1 .5-.5zm5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10 5V.5a.5.5 0 0 1 .5-.5zM0 10.5a.5.5 0 0 1 .5-.5h4a1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zm10 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4z"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
@@ -513,7 +541,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
               </span>
             </div>
             <span style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, fontFamily: "var(--font-dm-mono), monospace", display: "block" }}>
-              মা-সেবা · v1.0
+              মা-সেবা · v0.1.3
             </span>
             <div
               style={{
@@ -589,35 +617,6 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
             <div style={{ position: "absolute", bottom: "-20%", left: "20%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(56,189,248,.04) 0%, transparent 70%)", pointerEvents: "none" }} />
 
             <div style={{ position: "relative", zIndex: 1 }}>
-              {/* App Icon on the right side of the hero */}
-              <div
-                className="docs-hero-logo docs-no-print"
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  right: "40px",
-                  transform: "translateY(-50%)",
-                  width: "140px",
-                  height: "140px",
-                  borderRadius: "28px",
-                  overflow: "hidden",
-                  boxShadow: "0 20px 40px rgba(196,85,42,0.12), 0 1px 3px rgba(0,0,0,0.1)",
-                  border: "4px solid #fff",
-                  background: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/icon.png"
-                  alt="MaaSheba AI App Icon"
-                  width={140}
-                  height={140}
-                  style={{ objectFit: "cover" }}
-                />
-              </div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--font-dm-mono), monospace", fontSize: 11, color: "var(--teal)", letterSpacing: ".1em", textTransform: "uppercase" as const, marginBottom: 20, flexWrap: "wrap" as const }}>
                 <EyebrowTag>BuildFest 2026</EyebrowTag>
                 <EyebrowTag>Team DareDevil</EyebrowTag>
@@ -881,7 +880,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
             {/* Changelog */}
             <Section sectionRef={registerRef("changelog")} id="changelog" num="17" label="Changelog" title="Release History">
               <ChangelogEntry
-                version="v1.2.0"
+                version="v0.1.3"
                 date="June 11, 2026"
                 title="Admin Console Upgrades + Bug Fixes"
                 items={[
@@ -897,7 +896,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
                 ]}
               />
               <ChangelogEntry
-                version="v1.0.0"
+                version="v0.1.0"
                 date="May 27, 2026"
                 title="Initial BuildFest Submission"
                 items={[
