@@ -192,14 +192,35 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
           padding: "10px 60px",
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
           gap: 12,
           fontFamily: "var(--font-dm-mono), monospace",
           fontSize: 12,
           color: "var(--text2)",
         }}
       >
-        <span className="docs-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
-        <span>Documentation window active · June 10 00:00 — June 14 23:59 · BuildFest 2026 Judging Period · Team DareDevil</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="docs-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
+          <span>Documentation window active · June 10 00:00 — June 14 23:59 · BuildFest 2026 Judging Period · Team DareDevil</span>
+        </div>
+        <a
+          href="/docs/admin"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            background: "rgba(150,72,46,0.12)",
+            border: "1px solid rgba(150,72,46,0.25)",
+            color: "var(--teal)",
+            fontSize: 11,
+            fontWeight: 600,
+            textDecoration: "none",
+            padding: "4px 12px",
+            borderRadius: 6,
+          }}
+        >
+          ⚙️ Docs Config
+        </a>
       </div>
 
       <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -222,9 +243,19 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
         >
           {/* Logo */}
           <div style={{ padding: "28px 20px 20px", borderBottom: "1px solid var(--border)", marginBottom: 12 }}>
-            <span style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 800, color: "var(--teal)", letterSpacing: -0.5, display: "block" }}>
-              MaSheba AI
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icon.png"
+                alt="MaaSheba AI"
+                width={28}
+                height={28}
+                style={{ borderRadius: 6, flexShrink: 0, boxShadow: "0 1px 4px rgba(0,0,0,.15)" }}
+              />
+              <span style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 800, color: "var(--teal)", letterSpacing: -0.5 }}>
+                MaSheba AI
+              </span>
+            </div>
             <span style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, fontFamily: "var(--font-dm-mono), monospace", display: "block" }}>
               মা-সেবা · v1.0
             </span>
@@ -277,6 +308,9 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             </span>
             <a href="https://github.com/DigontaDas/MaSheba--AI" target="_blank" rel="noopener noreferrer" style={navLinkStyle(false)}>
               <span style={{ fontSize: 14, width: 16, textAlign: "center" as const }}>⌨️</span>GitHub
+            </a>
+            <a href="/presentation.pdf" target="_blank" rel="noopener noreferrer" style={navLinkStyle(false)}>
+              <span style={{ fontSize: 14, width: 16, textAlign: "center" as const }}>📈</span>Presentation Slides
             </a>
           </nav>
         </aside>
@@ -344,10 +378,20 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                   📄 Export PDF
                 </button>
                 <a
-                  href="/docs/admin"
+                  href="https://maasheba-admin.vercel.app/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{ borderRadius: 8, background: "var(--teal)", padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "#000", textDecoration: "none" }}
                 >
                   ⚙️ Admin Panel
+                </a>
+                <a
+                  href="/presentation.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ borderRadius: 8, border: "1px solid var(--border2)", background: "var(--bg3)", padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--text)", textDecoration: "none" }}
+                >
+                  📈 Presentation Slides
                 </a>
               </div>
             </div>
@@ -426,6 +470,9 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                 <TractionCard title="ML Pipeline Complete" text="XGBoost trained on Kaggle maternal health datasets, exported to ONNX, validated against WHO clinical thresholds, benchmarked on target hardware." />
                 <TractionCard title="Admin Dashboard Live" text="Next.js 14 deployed on Vercel. Risk summary charts, CHW list, upazila-level aggregation — all served via SSR from Supabase." />
                 <TractionCard title="Figma Design Approved" text="Full mobile UI design complete. High-contrast accessibility-first layouts optimised for 360px screens on cheap Android devices." />
+                <TractionCard title="Emergency Operations Panel" text="HIGH risk mothers surface instantly on the admin dashboard with pulsing red alerts and auto-refresh every 60 seconds. Zero manual scanning needed." />
+                <TractionCard title="CHW Reviews System Live" text="Mothers can rate and review their assigned CHW. Admin moderates reviews. Aggregate rating view per CHW live in the admin console." />
+                <TractionCard title="Hospital Registry Deployed" text="PostGIS-powered nearby hospital lookup via get_nearby_hospitals() RPC. Seed hospitals loaded. 'Find Care' tab in active development." />
               </div>
             </Section>
 
@@ -552,6 +599,22 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             {/* Changelog */}
             <Section sectionRef={registerRef("changelog")} id="changelog" num="17" label="Changelog" title="Release History">
               <ChangelogEntry
+                version="v1.2.0"
+                date="June 11, 2026"
+                title="Admin Console Upgrades + Bug Fixes"
+                items={[
+                  "Emergency Callout Panel — HIGH risk mothers with pulsing alerts, 60s auto-refresh",
+                  "Interactive Map Focus — click any patient to fly map to their GPS location",
+                  "Telemetry RAG Log Viewer — severity badges (EMERGENCY/HIGH/MODERATE/LOW) + retry highlighting",
+                  "CHW Reviews system — DB, API, mobile Q&A screen, admin moderation view",
+                  "CHW Reassignment Requests — mother-initiated requests with admin assign/dismiss workflow",
+                  "Push notification infrastructure — device tokens, DB triggers, Expo push processor",
+                  "Hospital Registry — PostGIS nearby search RPC + seed data deployed",
+                  "Bug fix: CHW certificate secure proxy (signed URL bypass for private RLS bucket)",
+                  "Bug fix: Leaflet _leaflet_pos TypeError in map component (useRef guard + try/catch)",
+                ]}
+              />
+              <ChangelogEntry
                 version="v1.0.0"
                 date="May 27, 2026"
                 title="Initial BuildFest Submission"
@@ -592,7 +655,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
               <a href="https://github.com/DigontaDas/MaSheba--AI" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text3)", textDecoration: "none" }}>
                 GitHub
               </a>
-              <a href="/docs/admin" style={{ color: "var(--text3)", textDecoration: "none" }}>
+              <a href="https://maasheba-admin.vercel.app/login" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text3)", textDecoration: "none" }}>
                 Admin
               </a>
             </div>

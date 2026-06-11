@@ -42,11 +42,31 @@ const defaultTeam: TeamMember[] = [
 ];
 
 const defaultFeatures: FeatureRow[] = [
-  { feature: "Offline risk assessment", status: "Live", notes: "On-device risk badge." },
-  { feature: "ONNX model", status: "Live", notes: "XGBoost ONNX package." },
-  { feature: "Outbox sync", status: "Live", notes: "SQLite WAL queue and retry." },
-  { feature: "Bangla AI chat", status: "Live", notes: "Groq to Gemini to offline cascade." },
-  { feature: "Full RAG pipeline", status: "Planned", notes: "WHO/DGHS pgvector retrieval." },
+  { feature: "Offline risk assessment", status: "Live", notes: "On-device intake and risk badge for CHW visits." },
+  { feature: "ONNX model", status: "Live", notes: "XGBoost model packaged for low-end Android inference." },
+  { feature: "Outbox sync", status: "Live", notes: "SQLite WAL queue retries events when connectivity returns." },
+  { feature: "Bangla AI chat", status: "Live", notes: "Groq-first LLM cascade with Gemini fallback and local safety checks." },
+  { feature: "Offline Q&A", status: "Live", notes: "Seeded maternal health answers available without network." },
+  { feature: "Medicine verify", status: "Live", notes: "Offline medicine and dosage guidance workflow." },
+  { feature: "FCM push", status: "Live", notes: "Push alerts for care reminders and admin broadcasts." },
+  { feature: "Admin dashboard", status: "Live", notes: "Next.js dashboard with Supabase analytics views." },
+  { feature: "Emergency auto-referral", status: "Live", notes: "Keyword detection triggers hospital referral alert." },
+  { feature: "Nutrition guidance", status: "Live", notes: "Trimester-specific dietary recommendations." },
+  { feature: "Mother dashboard", status: "Live", notes: "Personal pregnancy progress tracker and visit history." },
+  { feature: "Emergency Callout Panel", status: "Live", notes: "AUTO-refresh HIGH risk panel on admin dashboard." },
+  { feature: "Interactive Map Focus", status: "Live", notes: "Click-to-fly map centering on patient GPS coords." },
+  { feature: "Telemetry Log Viewer", status: "Live", notes: "Color-coded SMS failure log with severity tabs." },
+  { feature: "CHW Certificate Proxy", status: "Live", notes: "Signed URL proxy for private RLS bucket downloads." },
+  { feature: "CHW Reviews", status: "Live", notes: "Mother-submitted CHW ratings with admin moderation." },
+  { feature: "CHW Reassignment", status: "Live", notes: "Mother-initiated CHW change with admin workflow." },
+  { feature: "Push Notifications", status: "Live", notes: "Expo tokens, DB triggers, notification processor." },
+  { feature: "Hospital Registry", status: "Live", notes: "PostGIS nearby search RPC + seed hospitals deployed." },
+  { feature: "Full RAG pipeline", status: "Planned", notes: "WHO and DGHS guideline chunks embedded in pgvector." },
+  { feature: "Whisper voice input", status: "Planned", notes: "Bangla voice capture for hands-free CHW intake." },
+  { feature: "Coqui TTS", status: "Planned", notes: "Audio guidance for low-literacy mother journeys." },
+  { feature: "SMS/IVR alerts", status: "Planned", notes: "Fallback alerts for households without data connectivity." },
+  { feature: "Geographic heat maps", status: "Planned", notes: "Upazila-level risk and compliance visualization." },
+  { feature: "On-device LLM", status: "Planned", notes: "Fine-tuned Llama 3.1 8B in GGUF 4-bit format." },
 ];
 
 function toDatetimeLocal(value?: string) {
@@ -93,7 +113,7 @@ export function AdminPanelClient({
   const [isPublic, setIsPublic] = useState(source?.is_public ?? true);
   const [startAt, setStartAt] = useState(toDatetimeLocal(source?.start_at) || "2026-06-10T00:00");
   const [endAt, setEndAt] = useState(toDatetimeLocal(source?.end_at) || "2026-06-14T23:59");
-  const [youtubeUrl, setYoutubeUrl] = useState(source?.youtube_url ?? "https://www.youtube.com/embed/jImLDadVTL0");
+  const [youtubeUrl, setYoutubeUrl] = useState(source?.youtube_url ?? "https://youtu.be/7gTyzUfNzds");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(source?.team_members ?? defaultTeam);
   const [featureJson, setFeatureJson] = useState(JSON.stringify(source?.feature_matrix ?? defaultFeatures, null, 2));
 
@@ -194,7 +214,9 @@ export function AdminPanelClient({
 
   if (!isAdmin) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
+      <main className="min-h-screen bg-slate-950 text-slate-100">
+        <VideoBanner />
+        <div className="flex items-center justify-center px-6 py-10">
         <form onSubmit={handleLogin} className="w-full max-w-md rounded-md border border-slate-800 bg-slate-900 p-6">
           <p className="text-sm font-semibold text-emerald-300">MaaSheba AI</p>
           <h1 className="mt-1 text-2xl font-semibold text-white">Docs Admin</h1>
@@ -221,12 +243,15 @@ export function AdminPanelClient({
             {isPending ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <VideoBanner />
+      <div className="px-4 py-8">
       <div className="mx-auto max-w-5xl">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
@@ -236,6 +261,7 @@ export function AdminPanelClient({
             <h1 className="text-2xl font-semibold text-white">Documentation Settings</h1>
           </div>
           <div className="flex gap-2">
+            <a href="https://maasheba-admin.vercel.app/login" target="_blank" rel="noopener noreferrer" className="rounded-md bg-emerald-400 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300">Live Admin Panel</a>
             <a href="/docs" className="rounded-md border border-slate-700 px-3 py-2 text-sm font-semibold hover:bg-slate-900">View docs</a>
             <button onClick={handleLogout} className="rounded-md border border-rose-400/30 px-3 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-400/10">Sign out</button>
           </div>
@@ -301,7 +327,175 @@ export function AdminPanelClient({
           </div>
         </section>
       </div>
+      </div>
     </main>
+  );
+}
+
+/* ── Video Banner ─────────────────────────────────────────────────── */
+function VideoBanner() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        background: "#000",
+        overflow: "hidden",
+      }}
+    >
+      {/* Cinematic header bar */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%)",
+          padding: "18px 28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icon.png"
+            alt="MaaSheba AI"
+            width={28}
+            height={28}
+            style={{ borderRadius: 6, flexShrink: 0 }}
+          />
+          <div>
+            <span
+              style={{
+                fontFamily: "system-ui, sans-serif",
+                fontSize: 15,
+                fontWeight: 700,
+                color: "#fff",
+                letterSpacing: -0.3,
+              }}
+            >
+              MaaSheba AI
+            </span>
+            <span
+              style={{
+                display: "block",
+                fontSize: 11,
+                color: "rgba(255,255,255,0.55)",
+                fontFamily: "monospace",
+                letterSpacing: 0.5,
+              }}
+            >
+              মা-সেবা · Live Product Demo
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(0,212,170,0.18)",
+              border: "1px solid rgba(0,212,170,0.4)",
+              color: "#00d4aa",
+              fontSize: 11,
+              fontFamily: "monospace",
+              padding: "3px 10px",
+              borderRadius: 20,
+            }}
+          >
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: "#00d4aa",
+                display: "inline-block",
+                animation: "pulse 2s infinite",
+              }}
+            />
+            Autoplay · Muted
+          </span>
+          <a
+            href="https://drive.usercontent.google.com/download?id=1wbtQKfZaXLzkXWx3RXm3gzczs9bzhfaM&export=download&authuser=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff",
+              fontSize: 11,
+              fontFamily: "monospace",
+              padding: "3px 10px",
+              borderRadius: 20,
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+          >
+            ⬇ Download MP4
+          </a>
+          <a
+            href="https://maasheba-admin.vercel.app/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(0,212,170,0.18)",
+              border: "1px solid rgba(0,212,170,0.4)",
+              color: "#00d4aa",
+              fontSize: 11,
+              fontFamily: "monospace",
+              padding: "3px 10px",
+              borderRadius: 20,
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+          >
+            ⚙️ Live Admin Panel
+          </a>
+        </div>
+      </div>
+
+      {/* YouTube looping embed */}
+      <div style={{ position: "relative", paddingTop: "42.25%" /* 21:9 cinematic */ }}>
+        <iframe
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            border: "none",
+            display: "block",
+          }}
+          src="https://www.youtube.com/embed/7gTyzUfNzds?autoplay=1&mute=1&loop=1&playlist=7gTyzUfNzds&controls=0&disablekb=1&modestbranding=1&rel=0&showinfo=0"
+          title="MaaSheba AI — Product Demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+
+      {/* Bottom gradient fade */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 60,
+          background: "linear-gradient(to top, #020617 0%, transparent 100%)",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
   );
 }
 

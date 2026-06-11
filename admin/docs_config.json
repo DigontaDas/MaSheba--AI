@@ -2,7 +2,7 @@
   "is_public": true,
   "start_at": "2026-05-01T00:00:00.000Z",
   "end_at": "2026-12-31T23:59:59.000Z",
-  "youtube_url": "https://www.youtube.com/embed/demo",
+  "youtube_url": "https://www.youtube.com/embed/7gTyzUfNzds",
   "team_members": [
     {
       "name": "Mihir Das",
@@ -97,6 +97,46 @@
       "notes": "Personal pregnancy progress tracker and visit history."
     },
     {
+      "feature": "Emergency Callout Panel",
+      "status": "Live",
+      "notes": "AUTO-refresh HIGH risk panel on admin dashboard."
+    },
+    {
+      "feature": "Interactive Map Focus",
+      "status": "Live",
+      "notes": "Click-to-fly map centering on patient GPS coords."
+    },
+    {
+      "feature": "Telemetry Log Viewer",
+      "status": "Live",
+      "notes": "Color-coded SMS failure log with severity tabs."
+    },
+    {
+      "feature": "CHW Certificate Proxy",
+      "status": "Live",
+      "notes": "Signed URL proxy for private RLS bucket downloads."
+    },
+    {
+      "feature": "CHW Reviews",
+      "status": "Live",
+      "notes": "Mother-submitted CHW ratings with admin moderation."
+    },
+    {
+      "feature": "CHW Reassignment",
+      "status": "Live",
+      "notes": "Mother-initiated CHW change with admin workflow."
+    },
+    {
+      "feature": "Push Notifications",
+      "status": "Live",
+      "notes": "Expo tokens, DB triggers, notification processor."
+    },
+    {
+      "feature": "Hospital Registry",
+      "status": "Live",
+      "notes": "PostGIS nearby search RPC + seed hospitals deployed."
+    },
+    {
       "feature": "Full RAG pipeline",
       "status": "Planned",
       "notes": "WHO and DGHS guideline chunks embedded in pgvector."
@@ -128,5 +168,5 @@
     }
   ],
   "draft_config": null,
-  "updated_at": "2026-05-28T19:02:00.000Z"
+  "updated_at": "2026-06-11T16:44:00.000Z"
 }
