@@ -333,6 +333,35 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
             <div style={{ position: "absolute", bottom: "-20%", left: "20%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(56,189,248,.04) 0%, transparent 70%)", pointerEvents: "none" }} />
 
             <div style={{ position: "relative", zIndex: 1 }}>
+              {/* App Icon on the right side of the hero */}
+              <div
+                className="docs-hero-logo docs-no-print"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  right: "40px",
+                  transform: "translateY(-50%)",
+                  width: "140px",
+                  height: "140px",
+                  borderRadius: "28px",
+                  overflow: "hidden",
+                  boxShadow: "0 20px 40px rgba(150,72,46,0.12), 0 1px 3px rgba(0,0,0,0.1)",
+                  border: "4px solid #fff",
+                  background: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icon.png"
+                  alt="MaaSheba AI App Icon"
+                  width={140}
+                  height={140}
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--font-dm-mono), monospace", fontSize: 11, color: "var(--teal)", letterSpacing: ".1em", textTransform: "uppercase" as const, marginBottom: 20, flexWrap: "wrap" as const }}>
                 <EyebrowTag>BuildFest 2026</EyebrowTag>
                 <EyebrowTag>Team DareDevil</EyebrowTag>
@@ -368,9 +397,8 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
                 <Stat value="3M+" label="target users (BD)" />
               </div>
 
-              {/* Health badge + actions */}
+              {/* Actions */}
               <div className="docs-no-print" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 28, flexWrap: "wrap" as const }}>
-                <HealthBadge health={health} />
                 <button
                   onClick={() => window.print()}
                   style={{ borderRadius: 8, border: "1px solid var(--border2)", background: "var(--bg3)", padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--text)", cursor: "pointer" }}
@@ -670,6 +698,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
           .docs-shell section[style] { padding-left: 28px !important; padding-right: 28px !important; }
           .docs-shell footer { padding-left: 28px !important; padding-right: 28px !important; }
           .docs-shell .docs-avail { padding-left: 28px !important; padding-right: 28px !important; }
+          .docs-hero-logo { display: none !important; }
         }
         @media (max-width: 900px) {
           .docs-grid-5 { grid-template-columns: repeat(3, 1fr) !important; }
