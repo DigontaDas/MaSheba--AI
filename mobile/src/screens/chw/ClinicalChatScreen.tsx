@@ -688,7 +688,7 @@ export default function ClinicalChatScreen() {
     const suggestions = ["ডাক্তার দেখান", "হাসপাতালে যান", "বিশ্রাম নিন"];
     return (
       <View style={styles.chipsWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+        <View style={styles.chipsRow}>
           {suggestions.map((item) => {
             const handlePress = () => {
               void sendQuickReply(item);
@@ -701,7 +701,7 @@ export default function ClinicalChatScreen() {
                 style={[
                   styles.chip,
                   styles.chipInactive,
-                  { borderColor: "#E57A58" }
+                  { borderColor: "#E57A58", flex: 1, marginHorizontal: 4 }
                 ]}
               >
                 <Text style={[styles.chipText, { color: "#65230C" }]}>
@@ -710,7 +710,7 @@ export default function ClinicalChatScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
     );
   };
@@ -1258,6 +1258,11 @@ const styles = StyleSheet.create({
   chipsWrapper: {
     backgroundColor: "transparent",
     paddingVertical: 6
+  },
+  chipsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 12
   },
   chipsScroll: {
     paddingHorizontal: 16,

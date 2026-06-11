@@ -56,7 +56,8 @@ const styles = StyleSheet.create({
   },
   marker: {
     ...typography.caption,
-    fontFamily: fontFamily.medium,
+    fontFamily: undefined,
+    fontWeight: "bold",
     fontSize: 13,
     color: colors.onSurface
   }

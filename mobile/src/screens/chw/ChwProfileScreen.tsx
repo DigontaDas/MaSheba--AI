@@ -103,6 +103,28 @@ export default function ChwProfileScreen() {
 
       const locationPoint = `POINT(${loc.coords.longitude} ${loc.coords.latitude})`;
       setLocation(locationPoint);
+
+      // Reverse geocode to auto-fill input fields
+      try {
+        const addressList = await Location.reverseGeocodeAsync({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude
+        });
+
+        if (addressList && addressList.length > 0) {
+          const addr = addressList[0];
+          const detectedDistrict = addr.district || addr.subregion || addr.region || "";
+          const detectedUpazila = addr.city || addr.subregion || "";
+          const detectedUnion = addr.name || addr.street || addr.subregion || "";
+
+          setDistrict(detectedDistrict);
+          setUpazila(detectedUpazila);
+          setUnionName(detectedUnion);
+        }
+      } catch (geocodingErr) {
+        console.warn("Reverse geocoding failed:", geocodingErr);
+      }
+
       Alert.alert(
         language === "en" ? "Success" : "সফলতা",
         language === "en"
