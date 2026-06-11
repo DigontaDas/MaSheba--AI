@@ -16,6 +16,7 @@ import { getPregnancyWeeks } from "@/utils/pregnancy";
 import * as Network from "expo-network";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+import { translateErrorMessage } from "../(auth)/login";
 
 function getEDD(lmpDateStr: string | null | undefined): string {
   if (!lmpDateStr) return "-";
@@ -231,7 +232,7 @@ export default function ProfileScreen() {
     } catch (err: any) {
       Alert.alert(
         language === "bn" ? "সিঙ্ক ব্যর্থ" : "Sync Failed",
-        err?.message || (language === "bn" ? "কোনো সমস্যা হয়েছে" : "An error occurred")
+        translateErrorMessage(err?.message || (language === "bn" ? "কোনো সমস্যা হয়েছে" : "An error occurred"), language)
       );
     } finally {
       setSyncLoading(false);

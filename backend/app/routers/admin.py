@@ -538,6 +538,26 @@ async def update_chw_verification(
             "rejection_reason": None if request.verification_status == "APPROVED" else request.rejection_reason.strip(),
         }
         updated = await _supabase_patch(settings, "chws", chw_id, payload)
+        if request.verification_status == "APPROVED" and updated.get("auth_user_id"):
+            auth_user_id = updated["auth_user_id"]
+            auth_url = f"{_base_url(settings)}/auth/v1/admin/users/{auth_user_id}"
+            auth_payload = {
+                "email_confirm": True,
+                "phone_confirm": True,
+                "user_metadata": {
+                    "verification_status": "APPROVED",
+                    "is_active": True
+                }
+            }
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.put(auth_url, headers=_service_headers(settings), json=auth_payload)
+                    resp.raise_for_status()
+            except Exception as auth_sync_error:
+                import logging
+                logging.getLogger(__name__).error(
+                    f"Failed to confirm and sync metadata for CHW Auth user {auth_user_id}: {auth_sync_error}"
+                )
         await audit(settings, admin, "admin.chw.verification.update", "chw", chw_id, payload)
         return updated
     except AdminAuthError as error:

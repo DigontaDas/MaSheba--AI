@@ -203,6 +203,45 @@ const translations = {
 
 const DUMMY_CERT_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
+export function translateErrorMessage(errMsg: string, lang: "bn" | "en"): string {
+  if (lang !== "bn") return errMsg;
+  const cleanMsg = errMsg.trim();
+  if (cleanMsg.includes("Invalid login credentials")) {
+    return "ইমেইল বা পাসওয়ার্ড সঠিক নয়";
+  }
+  if (cleanMsg.includes("already registered") || cleanMsg.includes("already exists")) {
+    return "এই ইমেইল বা ফোন নম্বরটি ইতিপূর্বে নিবন্ধিত হয়েছে। অনুগ্রহ করে লগইন করুন বা অন্যটি ব্যবহার করুন।";
+  }
+  if (cleanMsg.includes("Not logged in")) {
+    return "লগইন করা হয়নি, আবার চেষ্টা করুন";
+  }
+  if (cleanMsg.includes("User not found")) {
+    return "ব্যবহারকারী পাওয়া যায়নি";
+  }
+  if (cleanMsg.includes("Email not confirmed")) {
+    return "ইমেইল যাচাই করা হয়নি";
+  }
+  if (cleanMsg.includes("Verification pending") || cleanMsg.includes("YOUR_REGISTRATION_PENDING")) {
+    return "যাচাইকরণ প্রক্রিয়াধীন আছে";
+  }
+  if (cleanMsg.includes("Unable to sign in")) {
+    return "লগইন করা সম্ভব হয়নি, অনুগ্রহ করে আবার চেষ্টা করুন";
+  }
+  if (cleanMsg.includes("Sign up failed")) {
+    return "নিবন্ধন ব্যর্থ হয়েছে";
+  }
+  if (cleanMsg.includes("Authenticated user has no health worker profile")) {
+    return "ব্যবহারকারীর কোনো স্বাস্থ্যকর্মী প্রোফাইল পাওয়া যায়নি";
+  }
+  if (cleanMsg.includes("YOUR_ACCOUNT_INACTIVE")) {
+    return "আপনার অ্যাকাউন্টটি বর্তমানে নিষ্ক্রিয় রয়েছে। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন।";
+  }
+  if (cleanMsg.includes("YOUR_REGISTRATION_DENIED")) {
+    return "আপনার অ্যাকাউন্টটি অ্যাডমিন দ্বারা প্রত্যাখ্যাত হয়েছে।";
+  }
+  return errMsg;
+}
+
 export default function LoginScreen() {
   const { language: lang, setLanguage } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
@@ -421,7 +460,7 @@ export default function LoginScreen() {
             } else {
               msg = lang === "bn" ? "লগইন ব্যর্থ হয়েছে" : "Login failed";
             }
-            setError(msg);
+            setError(translateErrorMessage(msg, lang));
           }
         }
         return;
@@ -527,7 +566,7 @@ export default function LoginScreen() {
     } catch (loginError) {
       const msg = loginError instanceof Error ? loginError.message : "লগইন ব্যর্থ হয়েছে";
       // console.error("Login error:", msg)
-      setError(msg);
+      setError(translateErrorMessage(msg, lang));
     } finally {
       setLoadingAction(null);
     }
@@ -735,7 +774,7 @@ export default function LoginScreen() {
       }
     } catch (signupError) {
       const msg = signupError instanceof Error ? signupError.message : "নিবন্ধন ব্যর্থ হয়েছে";
-      setError(msg);
+      setError(translateErrorMessage(msg, lang));
     } finally {
       setLoadingAction(null);
     }
@@ -844,7 +883,7 @@ export default function LoginScreen() {
         [{ text: lang === "bn" ? "ঠিক আছে" : "OK", onPress: () => router.replace("/(mother-tabs)/home") }]
       );
     } catch (err: any) {
-      setError(err?.message || "Offline registration failed");
+      setError(translateErrorMessage(err?.message || "Offline registration failed", lang));
     } finally {
       setLoadingAction(null);
     }

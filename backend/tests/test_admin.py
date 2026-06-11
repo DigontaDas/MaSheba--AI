@@ -276,6 +276,10 @@ def install_admin_httpx(
                 return httpx.Response(200, json=[{"id": "notification-a", **json}])
             raise AssertionError(f"Unexpected PATCH url: {url}")
 
+        async def put(self, url: str, headers: dict[str, str], json: dict[str, Any]) -> httpx.Response:
+            state.setdefault("puts", []).append({"url": url, "headers": headers, "json": json})
+            return httpx.Response(200, json={})
+
         async def delete(self, url: str, headers: dict[str, str]) -> httpx.Response:
             state["deletes"].append({"url": url, "headers": headers})
             if "/rest/v1/master_qa" in url:

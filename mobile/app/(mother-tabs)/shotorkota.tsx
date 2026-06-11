@@ -271,33 +271,31 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    justifyContent: "space-between"
+    flexDirection: "column",
+    gap: 10
   },
   gridCard: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F3EAE6",
+    borderColor: "#E5D5CF",
     borderWidth: 1,
     borderRadius: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    width: "48%",
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8
+    gap: 12
   },
   gridCardText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
     color: "#70605A",
     flex: 1,
-    lineHeight: 16
+    lineHeight: 20
   },
   accordionContainer: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#F3EAE6",
+    borderColor: "#E5D5CF",
     borderWidth: 1,
     borderRadius: 16,
     overflow: "hidden"
