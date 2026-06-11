@@ -276,8 +276,8 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#E5D5CF",
-    borderWidth: 1,
+    borderColor: "#C4A99A",
+    borderWidth: 1.5,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -295,10 +295,9 @@ const styles = StyleSheet.create({
   },
   accordionContainer: {
     backgroundColor: "#FFFFFF",
-    borderColor: "#E5D5CF",
-    borderWidth: 1,
-    borderRadius: 16,
-    overflow: "hidden"
+    borderColor: "#C4A99A",
+    borderWidth: 1.5,
+    borderRadius: 16
   },
   accordionHeader: {
     flexDirection: "row",
@@ -315,10 +314,12 @@ const styles = StyleSheet.create({
   },
   accordionBody: {
     padding: 16,
-    paddingTop: 0,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#FFF9F6",
-    backgroundColor: "#FFF9F6"
+    borderTopColor: "#E5D5CF",
+    backgroundColor: "#FFF9F6",
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14
   },
   accordionBulletText: {
     fontSize: 14,
