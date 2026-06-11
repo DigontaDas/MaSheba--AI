@@ -127,27 +127,33 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
 
   // Video states and refs
   const videoContainerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
 
   const togglePlay = () => {
-    if (!videoRef.current) return;
+    if (!iframeRef.current?.contentWindow) return;
+    const contentWindow = iframeRef.current.contentWindow;
     if (isPlaying) {
-      videoRef.current.pause();
+      contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
       setIsPlaying(false);
     } else {
-      videoRef.current.play().catch(() => {});
+      contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
       setIsPlaying(true);
     }
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
-    const nextMuted = !videoRef.current.muted;
-    videoRef.current.muted = nextMuted;
-    setIsMuted(nextMuted);
+    if (!iframeRef.current?.contentWindow) return;
+    const contentWindow = iframeRef.current.contentWindow;
+    if (isMuted) {
+      contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+      setIsMuted(false);
+    } else {
+      contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+      setIsMuted(true);
+    }
   };
 
   useEffect(() => {
@@ -160,19 +166,17 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
       const progress = Math.min(Math.max(scrolled / height, 0), 1);
       setScrollProgress(progress);
       
-      if (videoRef.current) {
-        if (progress >= 0.70) {
-          if (!videoRef.current.muted) {
-            videoRef.current.muted = true;
-            setIsMuted(true);
-          }
+      if (progress >= 0.70) {
+        if (!isMuted && iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+          setIsMuted(true);
         }
       }
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isMuted]);
 
   // Health check polling
   useEffect(() => {
@@ -268,20 +272,22 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
           overflow: "hidden",
         }}
       >
-        <video
-          ref={videoRef}
-          src="https://drive.usercontent.google.com/download?id=1wbtQKfZaXLzkXWx3RXm3gzczs9bzhfaM&export=download&authuser=1"
-          autoPlay
-          loop
-          muted={isMuted}
-          playsInline
+        <iframe
+          ref={iframeRef}
+          src="https://www.youtube.com/embed/7gTyzUfNzds?autoplay=1&mute=1&loop=1&playlist=7gTyzUfNzds&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&enablejsapi=1"
           style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: `scale(${1 + (1 - scrollProgress) * 0.05}) translateY(${scrollProgress * 100}px)`,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: "100vw",
+            height: "56.25vw", /* 16:9 aspect ratio */
+            minHeight: "70vh",
+            minWidth: "124.44vh", /* 16:9 ratio calculated from minHeight */
+            transform: `translate(-50%, -50%) scale(${1.15 + (1 - scrollProgress) * 0.05}) translateY(${scrollProgress * 50}px)`,
             opacity: 1 - scrollProgress * 0.6,
-            transition: "transform 0.1s ease-out, opacity 0.1s ease-out",
+            border: "none",
+            pointerEvents: "none",
+            transition: "opacity 0.1s ease-out",
           }}
         />
 
