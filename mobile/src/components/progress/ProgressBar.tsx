@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useCopy } from "@/data/useCopy";
-import { colors, radius, spacing, typography } from "@/theme";
+import { colors, fontFamily, radius, spacing, typography } from "@/theme";
 
 export function ProgressBar({
   value,
@@ -56,6 +56,8 @@ const styles = StyleSheet.create({
   },
   marker: {
     ...typography.caption,
-    color: colors.onSurfaceVariant
+    fontFamily: fontFamily.medium,
+    fontSize: 13,
+    color: colors.onSurface
   }
 });

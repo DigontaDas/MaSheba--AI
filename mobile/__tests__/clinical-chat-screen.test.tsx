@@ -196,24 +196,20 @@ describe("ClinicalChatScreen CHW AI mode", () => {
     expect(JSON.stringify(tree.toJSON())).toContain(copy.clinicalChat.clinicalAiOfflineRequired);
     expect(aiInput(tree)?.props.editable).toBe(false);
 
-    pressByText(tree.root, "পুষ্টি");
     pressByText(tree.root, copy.clinicalChat.clinicalBP);
 
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockSearchQa).not.toHaveBeenCalled();
   });
 
-  it("prefills CHW clinical chip templates without changing mother mode chip behavior", async () => {
+  it("sends quick-replies immediately in mother mode", async () => {
     const tree = await renderTree();
 
-    pressByText(tree.root, "জরুরি");
-    const motherInput = tree.root.findAllByType(TextInput).find((input) => input.props.placeholder === "মাকে বার্তা লিখুন...");
-    expect(motherInput?.props.value).toBe("জরুরি");
-
-    pressByText(tree.root, "CHW AI");
-    pressByText(tree.root, "স্বাভাবিক");
-
-    expect(aiInput(tree)?.props.value).toBe(copy.clinicalChat.clinicalChipTemplates.normal);
+    pressByText(tree.root, "ডাক্তার দেখান");
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      message: "ডাক্তার দেখান",
+      category: "স্বাভাবিক"
+    }));
   });
 
   it("records CHW AI voice with tap start and tap stop before sending audio", async () => {

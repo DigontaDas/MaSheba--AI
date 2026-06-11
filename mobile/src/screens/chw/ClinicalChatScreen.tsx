@@ -522,7 +522,24 @@ export default function ClinicalChatScreen() {
         senderType: "chw",
         senderId: chwId,
         message: text,
-        category
+        category: "স্বাভাবিক"
+      });
+      setMessages((current) => [...current, sent]);
+    } catch {
+      Alert.alert("বার্তা পাঠানো যায়নি", "ইন্টারনেট বা ডাটাবেস সংযোগ পরীক্ষা করুন।", [{ text: "ঠিক আছে" }]);
+    }
+  };
+
+  const sendQuickReply = async (text: string) => {
+    if (!chwId || !selectedMother) return;
+    try {
+      const sent = await sendMessage({
+        chwId,
+        motherId: selectedMother.id,
+        senderType: "chw",
+        senderId: chwId,
+        message: text,
+        category: "স্বাভাবিক"
       });
       setMessages((current) => [...current, sent]);
     } catch {
@@ -623,12 +640,6 @@ export default function ClinicalChatScreen() {
     );
   }, [aiMessages, selectedMother]);
 
-  const getClinicalChipTemplate = (item: ChatCategory) => {
-    if (item === "জরুরি") return copy.clinicalChat.clinicalChipTemplates.urgent;
-    if (item === "স্বাভাবিক") return copy.clinicalChat.clinicalChipTemplates.normal;
-    if (item === "পুষ্টি") return copy.clinicalChat.clinicalChipTemplates.nutrition;
-    return copy.clinicalChat.clinicalChipTemplates.warning;
-  };
 
   const motherKeyExtractor = useCallback((item: ChatMessage) => item.id, []);
   const aiKeyExtractor = useCallback((item: AiMessage) => item.id, []);
@@ -671,36 +682,30 @@ export default function ClinicalChatScreen() {
   };
 
   // ----------------------------------------------------
-  // Render Quick Replies Categories List
+  // Render Mother Quick Reply Suggestions
   // ----------------------------------------------------
-  const renderQuickReplies = () => {
-    const chips: ChatCategory[] = ["জরুরি", "স্বাভাবিক", "পুষ্টি", "সতর্কতা"];
+  const renderMotherSuggestions = () => {
+    const suggestions = ["ডাক্তার দেখান", "হাসপাতালে যান", "বিশ্রাম নিন"];
     return (
       <View style={styles.chipsWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
-          {chips.map((item) => {
-            const isActive = mode === "mothers" ? category === item : false;
-            const handleChipPress = () => {
-              if (mode === "mothers") {
-                setCategory(item);
-                setMessageInput(item);
-              } else {
-                if (!online) return;
-                setAiInput(getClinicalChipTemplate(item));
-              }
+          {suggestions.map((item) => {
+            const handlePress = () => {
+              void sendQuickReply(item);
             };
             return (
               <Pressable
-                accessibilityLabel={categoryLabel(item)}
+                accessibilityLabel={item}
                 key={item}
-                onPress={handleChipPress}
+                onPress={handlePress}
                 style={[
                   styles.chip,
-                  isActive ? styles.chipActive : styles.chipInactive
+                  styles.chipInactive,
+                  { borderColor: "#E57A58" }
                 ]}
               >
-                <Text style={[styles.chipText, isActive ? styles.chipTextActive : styles.chipTextInactive]}>
-                  {categoryLabel(item)}
+                <Text style={[styles.chipText, { color: "#65230C" }]}>
+                  {item}
                 </Text>
               </Pressable>
             );
@@ -709,6 +714,7 @@ export default function ClinicalChatScreen() {
       </View>
     );
   };
+
 
   // ----------------------------------------------------
   // Center Empty Card Component
@@ -801,6 +807,7 @@ export default function ClinicalChatScreen() {
               data={selectedMother ? messages : []}
               keyExtractor={motherKeyExtractor}
               renderItem={renderMotherItem}
+              style={{ flex: 1 }}
               contentContainerStyle={styles.messageList}
               removeClippedSubviews={true}
               maxToRenderPerBatch={8}
@@ -809,7 +816,7 @@ export default function ClinicalChatScreen() {
           )}
 
           {/* Quick replies chips above input bar */}
-          {renderQuickReplies()}
+          {renderMotherSuggestions()}
 
           <View style={styles.inputRow}>
             <TextInput
@@ -842,6 +849,7 @@ export default function ClinicalChatScreen() {
               data={aiMessages}
               keyExtractor={aiKeyExtractor}
               renderItem={renderAiItem}
+              style={{ flex: 1 }}
               contentContainerStyle={styles.messageList}
               removeClippedSubviews={true}
               maxToRenderPerBatch={8}
@@ -850,9 +858,8 @@ export default function ClinicalChatScreen() {
             />
           )}
 
-          {/* Food Cards & Quick replies chips stacked above input bar */}
+          {/* Food Cards stacked above input bar */}
           {renderClinicalGuideCards()}
-          {renderQuickReplies()}
 
           <View style={styles.inputRow}>
             {isRecording ? (
@@ -1078,7 +1085,7 @@ const styles = StyleSheet.create({
   messageList: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 144, // pb = inputHeight + chipsHeight + 16px
+    paddingBottom: 16,
     gap: 12
   },
 
@@ -1249,10 +1256,6 @@ const styles = StyleSheet.create({
   // Horizontal Quick Reply Chips Row
   // ----------------------------------------------------
   chipsWrapper: {
-    position: "absolute",
-    bottom: 80, // Sits directly above input bar
-    left: 0,
-    right: 0,
     backgroundColor: "transparent",
     paddingVertical: 6
   },
@@ -1293,10 +1296,6 @@ const styles = StyleSheet.create({
   // Horizontal Food Baby suggestion Cards Row
   // ----------------------------------------------------
   foodCardsWrapper: {
-    position: "absolute",
-    bottom: 118, // Sits directly above quick chips row
-    left: 0,
-    right: 0,
     backgroundColor: "transparent",
     paddingVertical: 4
   },

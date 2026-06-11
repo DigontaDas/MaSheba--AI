@@ -191,6 +191,8 @@ export default function FindChwScreen() {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
   const [hospitalsError, setHospitalsError] = useState<string | null>(null);
+  const [submittedChwId, setSubmittedChwId] = useState<string | null>(null);
+  const [generalRequestSubmitted, setGeneralRequestSubmitted] = useState(false);
 
   const assignedChwName = pendingRequest?.chws?.name
     ? formatChwName(pendingRequest.chws.name, lang)
@@ -471,7 +473,7 @@ export default function FindChwScreen() {
     if (!motherId) return;
     setSubmitting(true);
     try {
-      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : null;
+      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : "POINT(90.7176 23.9205)";
       const { error } = await supabase.from("connection_requests").insert({
         mother_id: motherId,
         mother_location: pointWkt,
@@ -480,13 +482,17 @@ export default function FindChwScreen() {
 
       if (error) throw error;
 
+      setGeneralRequestSubmitted(true);
       Alert.alert(
         lang === "bn" ? "অনুরোধ পাঠানো হয়েছে" : "Request Submitted",
         lang === "bn" ? "অ্যাডমিন শীঘ্রই একজন স্বাস্থ্যকর্মী নিয়োগ করবেন।" : "An administrator will assign a health worker shortly."
       );
       await fetchRequestStatus(motherId);
     } catch (err: any) {
-      Alert.alert(lang === "bn" ? "ব্যর্থ হয়েছে" : "Submission Failed", err.message || "Something went wrong");
+      Alert.alert(
+        lang === "bn" ? "অনুরোধ ব্যর্থ হয়েছে" : "Submission Failed",
+        lang === "bn" ? "অনুরোধ পাঠানো সম্ভব হয়নি। ইন্টারনেট সংযোগ বা ডেটাবেজ চেক করুন।" : (err.message || "Something went wrong")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -496,7 +502,7 @@ export default function FindChwScreen() {
     if (!motherId) return;
     setSubmitting(true);
     try {
-      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : null;
+      const pointWkt = coords ? `POINT(${coords.longitude} ${coords.latitude})` : "POINT(90.7176 23.9205)";
       const { error } = await supabase.from("connection_requests").insert({
         mother_id: motherId,
         mother_location: pointWkt,
@@ -506,6 +512,7 @@ export default function FindChwScreen() {
 
       if (error) throw error;
 
+      setSubmittedChwId(chwId);
       Alert.alert(
         lang === "bn" ? "অনুরোধ পাঠানো হয়েছে" : "Request Submitted",
         lang === "bn"
@@ -515,7 +522,10 @@ export default function FindChwScreen() {
       const profile = await getCurrentMotherProfile();
       await fetchRequestStatus(motherId, profile);
     } catch (err: any) {
-      Alert.alert(lang === "bn" ? "ব্যর্থ হয়েছে" : "Submission Failed", err.message || "Something went wrong");
+      Alert.alert(
+        lang === "bn" ? "অনুরোধ ব্যর্থ হয়েছে" : "Submission Failed",
+        lang === "bn" ? "অনুরোধ পাঠানো সম্ভব হয়নি। ইন্টারনেট সংযোগ বা ডেটাবেজ চেক করুন।" : (err.message || "Something went wrong")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -752,11 +762,19 @@ export default function FindChwScreen() {
                 </View>
                 {!pendingRequest && (
                   <Pressable 
-                    style={[styles.chatButton, { backgroundColor: '#4A6047' }]} 
+                    style={[
+                      styles.chatButton, 
+                      { backgroundColor: submittedChwId === chw.chw_id ? '#A0A0A0' : '#4A6047' }
+                    ]} 
+                    disabled={submitting || submittedChwId === chw.chw_id}
                     onPress={() => handleRequestSpecificChw(chw.chw_id, chw.name)}
                   >
-                    <Icon name="person-add" color="#FFFFFF" size={16} />
-                    <Text style={styles.chatButtonText}>{lang === "bn" ? "অনুরোধ" : "Request"}</Text>
+                    <Icon name={submittedChwId === chw.chw_id ? "check" : "person-add"} color="#FFFFFF" size={16} />
+                    <Text style={styles.chatButtonText}>
+                      {submittedChwId === chw.chw_id 
+                        ? (lang === "bn" ? "অনুরোধ পাঠানো হয়েছে ✓" : "Request Sent ✓") 
+                        : (lang === "bn" ? "অনুরোধ" : "Request")}
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -768,9 +786,20 @@ export default function FindChwScreen() {
           <Icon name="location-off" color="#A08E88" size={42} />
           <Text style={styles.emptyText}>{lang === "bn" ? "১০ কিমির মধ্যে কোনো স্বাস্থ্যকর্মী পাওয়া যায়নি।" : "No active health workers found within 10 km."}</Text>
           {!pendingRequest && (
-            <Pressable style={styles.requestButton} disabled={submitting} onPress={handleRequestChw}>
+            <Pressable 
+              style={[
+                styles.requestButton, 
+                generalRequestSubmitted && { backgroundColor: '#A0A0A0' }
+              ]} 
+              disabled={submitting || generalRequestSubmitted} 
+              onPress={handleRequestChw}
+            >
               <Text style={styles.requestButtonText}>
-                {submitting ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...") : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a health worker")}
+                {submitting 
+                  ? (lang === "bn" ? "অনুরোধ পাঠানো হচ্ছে..." : "Submitting...") 
+                  : generalRequestSubmitted 
+                    ? (lang === "bn" ? "অনুরোধ পাঠানো হয়েছে ✓" : "Request Sent ✓")
+                    : (lang === "bn" ? "স্বাস্থ্যকর্মীর জন্য অনুরোধ করুন" : "Request a health worker")}
               </Text>
             </Pressable>
           )}

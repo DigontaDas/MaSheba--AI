@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View, Image, Platform } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View, Image, Platform, TextInput, ActivityIndicator } from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import * as Location from "expo-location";
 import { Icon } from "@/components/ui/Icon";
 import { clearRoleSession } from "@/auth/roleSession";
 import { getSession, clearSession } from "@/auth/secureSession";
@@ -15,6 +16,10 @@ import { formatNumber } from "@/utils/localizedFormat";
 type ChwProfileRow = {
   id: string;
   name: string | null;
+  district: string | null;
+  upazila: string | null;
+  union_name: string | null;
+  location: string | null;
 };
 
 type ChwReviewRow = {
@@ -37,6 +42,129 @@ export default function ChwProfileScreen() {
   const [reviews, setReviews] = useState<ChwReviewRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Location details states
+  const [district, setDistrict] = useState("");
+  const [upazila, setUpazila] = useState("");
+  const [unionName, setUnionName] = useState("");
+  const [location, setLocation] = useState<string | null>(null);
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const parseCoordinates = (locVal: any): { lat: number; lng: number } | null => {
+    if (!locVal) return null;
+    if (typeof locVal === "string") {
+      const match = locVal.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
+      if (match) {
+        return { lng: parseFloat(match[1]), lat: parseFloat(match[2]) };
+      }
+    } else if (typeof locVal === "object") {
+      if (Array.isArray(locVal.coordinates) && locVal.coordinates.length >= 2) {
+        return { lng: locVal.coordinates[0], lat: locVal.coordinates[1] };
+      }
+      if (typeof locVal.lat === "number" && typeof locVal.lng === "number") {
+        return { lat: locVal.lat, lng: locVal.lng };
+      }
+      if (typeof locVal.latitude === "number" && typeof locVal.longitude === "number") {
+        return { lat: locVal.latitude, lng: locVal.longitude };
+      }
+    }
+    return null;
+  };
+
+  const formatCoordinates = (locVal: any) => {
+    const coords = parseCoordinates(locVal);
+    if (!coords) return language === "en" ? "Not set" : "সেট করা নেই";
+    return `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+  };
+
+  const displayLocation = () => {
+    const parts = [unionName, upazila, district].filter(Boolean);
+    if (parts.length > 0) return parts.join(", ");
+    return language === "en" ? "Not set" : "সেট করা নেই";
+  };
+
+  const fetchCurrentGps = async () => {
+    setIsGpsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          language === "en" ? "Permission Denied" : "অনুমতি অস্বীকৃত",
+          language === "en"
+            ? "MaaSheba needs location permissions to update your GPS coordinates."
+            : "জিপিএস স্থানাঙ্ক আপডেট করতে মাসেবা অ্যাপের লোকেশন অনুমতি প্রয়োজন।"
+        );
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const locationPoint = `POINT(${loc.coords.longitude} ${loc.coords.latitude})`;
+      setLocation(locationPoint);
+      Alert.alert(
+        language === "en" ? "Success" : "সফলতা",
+        language === "en"
+          ? `GPS coordinates retrieved successfully: ${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`
+          : `জিপিএস স্থানাঙ্ক সফলভাবে পাওয়া গেছে: ${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`
+      );
+    } catch (err) {
+      console.error("Error fetching GPS:", err);
+      Alert.alert(
+        language === "en" ? "Error" : "ত্রুটি",
+        language === "en"
+          ? "Failed to get current GPS location. Please make sure location services are enabled."
+          : "বর্তমান জিপিএস অবস্থান পাওয়া যায়নি। অনুগ্রহ করে আপনার জিপিএস চালু আছে কিনা নিশ্চিত করুন।"
+      );
+    } finally {
+      setIsGpsLoading(false);
+    }
+  };
+
+  const saveLocation = async () => {
+    setIsSaving(true);
+    try {
+      const session = await getSession();
+      if (!session) {
+        Alert.alert(
+          language === "en" ? "Session Expired" : "সেশন শেষ",
+          language === "en" ? "Please log in again." : "অনুগ্রহ করে আবার লগইন করুন।"
+        );
+        return;
+      }
+
+      const { error } = await supabase
+        .from("chws")
+        .update({
+          district: district.trim() || null,
+          upazila: upazila.trim() || null,
+          union_name: unionName.trim() || null,
+          location: location || null
+        })
+        .eq("id", session.chwId);
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert(
+        language === "en" ? "Success" : "সফলতা",
+        language === "en" ? "Location updated successfully." : "অবস্থান সফলভাবে আপডেট করা হয়েছে।"
+      );
+    } catch (err: any) {
+      console.error("Error saving location:", err);
+      Alert.alert(
+        language === "en" ? "Error" : "ত্রুটি",
+        language === "en"
+          ? `Failed to save location: ${err.message || err}`
+          : "অবস্থান সংরক্ষণ করতে ব্যর্থ হয়েছে।"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const load = useCallback(async () => {
     setLoadError(null);
     try {
@@ -52,7 +180,7 @@ export default function ChwProfileScreen() {
       const [patients, visitsThisWeek, profileResponse, reviewResponse] = await Promise.all([
         getPatients(),
         getVisitCountForChwSince(session.chwId, startOfWeek.toISOString()),
-        supabase.from("chws").select("id,name").eq("id", session.chwId).maybeSingle<ChwProfileRow>(),
+        supabase.from("chws").select("id,name,district,upazila,union_name,location").eq("id", session.chwId).maybeSingle<ChwProfileRow>(),
         supabase
           .from("chw_reviews")
           .select("id,rating,review_text,created_at,mother:mothers(name)")
@@ -73,17 +201,24 @@ export default function ChwProfileScreen() {
         setVisitCount(42);
       }
 
-      if (!profileResponse.error && profileResponse.data?.name) {
+      if (!profileResponse.error && profileResponse.data) {
         const dbName = profileResponse.data.name;
-        if (dbName === "CHW_A") {
-          setName(language === "en" ? "Rahela Begum" : "রাহেলা বেগম");
-        } else if (dbName === "CHW_B") {
-          setName(language === "en" ? "Mst. Sufia Khatun" : "মোসাঃ সুফিয়া খাতুন");
-        } else if (dbName.startsWith("CHW_")) {
-          setName(language === "en" ? `Health Worker ${dbName.replace("CHW_", "")}` : `স্বাস্থ্যকর্মী ${dbName.replace("CHW_", "")}`);
-        } else {
-          setName(dbName);
+        if (dbName) {
+          if (dbName === "CHW_A") {
+            setName(language === "en" ? "Rahela Begum" : "রাহেলা বেগম");
+          } else if (dbName === "CHW_B") {
+            setName(language === "en" ? "Mst. Sufia Khatun" : "মোসাঃ সুফিয়া খাতুন");
+          } else if (dbName.startsWith("CHW_")) {
+            setName(language === "en" ? `Health Worker ${dbName.replace("CHW_", "")}` : `স্বাস্থ্যকর্মী ${dbName.replace("CHW_", "")}`);
+          } else {
+            setName(dbName);
+          }
         }
+        
+        setDistrict(profileResponse.data.district || "");
+        setUpazila(profileResponse.data.upazila || "");
+        setUnionName(profileResponse.data.union_name || "");
+        setLocation(profileResponse.data.location || null);
       }
 
       if (!reviewResponse.error && reviewResponse.data) {
@@ -276,6 +411,99 @@ export default function ChwProfileScreen() {
               {language === "en" ? "No reviews yet." : "এখনও কোনো রিভিউ নেই।"}
             </Text>
           )}
+        </View>
+
+        {/* Location Update Section */}
+        <View style={styles.locationSection}>
+          <View style={styles.sectionHeader}>
+            <Icon name="location-on" color="#70605A" size={16} />
+            <Text style={styles.sectionTitle}>
+              {language === "en" ? "Update Location" : "অবস্থান আপডেট করুন"}
+            </Text>
+          </View>
+          <View style={styles.locationCard}>
+            {/* District Input */}
+            <Text style={styles.inputLabel}>{language === "en" ? "District" : "জেলা"}</Text>
+            <TextInput
+              style={styles.locationInput}
+              value={district}
+              onChangeText={setDistrict}
+              placeholder={language === "en" ? "Enter District" : "জেলা লিখুন"}
+              placeholderTextColor="#A08E88"
+            />
+
+            {/* Upazila Input */}
+            <Text style={styles.inputLabel}>{language === "en" ? "Upazila" : "উপজেলা"}</Text>
+            <TextInput
+              style={styles.locationInput}
+              value={upazila}
+              onChangeText={setUpazila}
+              placeholder={language === "en" ? "Enter Upazila" : "উপজেলা লিখুন"}
+              placeholderTextColor="#A08E88"
+            />
+
+            {/* Union Input */}
+            <Text style={styles.inputLabel}>{language === "en" ? "Union / Area" : "ইউনিয়ন / এলাকা"}</Text>
+            <TextInput
+              style={styles.locationInput}
+              value={unionName}
+              onChangeText={setUnionName}
+              placeholder={language === "en" ? "Enter Union or Area" : "ইউনিয়ন বা এলাকা লিখুন"}
+              placeholderTextColor="#A08E88"
+            />
+
+            {/* GPS Coordinates Display */}
+            <View style={styles.gpsDisplayRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>{language === "en" ? "GPS Coordinates" : "জিপিএস স্থানাঙ্ক"}</Text>
+                <Text style={styles.gpsValueText}>
+                  {formatCoordinates(location)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => void fetchCurrentGps()}
+                disabled={isGpsLoading}
+                style={({ pressed }) => [
+                  styles.gpsBtn,
+                  pressed && styles.btnPressed,
+                  isGpsLoading && styles.btnDisabled
+                ]}
+              >
+                {isGpsLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Icon name="gps-fixed" color="#FFFFFF" size={14} />
+                    <Text style={styles.gpsBtnText}>
+                      {language === "en" ? "Get GPS" : "জিপিএস নিন"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Save Button */}
+            <Pressable
+              onPress={() => void saveLocation()}
+              disabled={isSaving}
+              style={({ pressed }) => [
+                styles.saveBtn,
+                pressed && styles.btnPressed,
+                isSaving && styles.btnDisabled
+              ]}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Icon name="save" color="#FFFFFF" size={18} />
+                  <Text style={styles.saveBtnText}>
+                    {language === "en" ? "Save Changes" : "পরিবর্তন সংরক্ষণ করুন"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Actions Card List Panel */}
@@ -731,5 +959,92 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#F5ECE9"
+  },
+  locationSection: {
+    gap: 12
+  },
+  locationCard: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F5ECE9",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    elevation: 3,
+    shadowColor: "#E57A58",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    gap: 14
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#70605A",
+    fontFamily: "Hind Siliguri"
+  },
+  locationInput: {
+    backgroundColor: "#FFF9F6",
+    borderColor: "#F5ECE9",
+    borderRadius: 12,
+    borderWidth: 1,
+    color: "#4A3E39",
+    fontSize: 14,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    fontFamily: "Hind Siliguri"
+  },
+  gpsDisplayRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFF9F6",
+    borderColor: "#F5ECE9",
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12
+  },
+  gpsValueText: {
+    fontSize: 13,
+    color: "#4A3E39",
+    fontWeight: "600",
+    marginTop: 4,
+    fontFamily: "Hind Siliguri"
+  },
+  gpsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#70605A",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6
+  },
+  gpsBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+    fontFamily: "Hind Siliguri"
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E57A58",
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+    marginTop: 4
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+    fontFamily: "Hind Siliguri"
+  },
+  btnPressed: {
+    opacity: 0.8
+  },
+  btnDisabled: {
+    opacity: 0.6
   }
 });
