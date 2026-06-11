@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Hospital } from "@/utils/admin-types";
+import { deleteHospital } from "@/utils/admin-api";
 
 export function HospitalManager({ items }: { items: Hospital[] }) {
   const router = useRouter();
@@ -72,11 +73,7 @@ export function HospitalManager({ items }: { items: Hospital[] }) {
     setError(null);
     startTransition(async () => {
       try {
-        const res = await fetch(`/dashboard/hospitals/${id}`, { method: "DELETE" });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Failed to delete hospital.");
-        }
+        await deleteHospital(id);
         router.refresh();
       } catch (err: any) {
         setError(err.message || "An unexpected error occurred.");
