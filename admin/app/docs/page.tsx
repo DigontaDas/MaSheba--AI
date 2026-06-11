@@ -54,7 +54,7 @@ const defaultConfig: DocsConfig = {
   is_public: true,
   start_at: "2026-05-01T00:00:00+06:00",
   end_at: "2026-12-31T23:59:59+06:00",
-  youtube_url: "https://www.youtube.com/embed/7gTyzUfNzds",
+  youtube_url: "/presentation.pdf",
   team_members: defaultTeam,
   feature_matrix: defaultFeatures,
 };
@@ -166,7 +166,7 @@ export default async function DocsPage() {
 
   return (
     <DocsView
-      youtubeUrl={config.youtube_url ?? defaultConfig.youtube_url!}
+      presentationUrl={config.youtube_url ?? defaultConfig.youtube_url ?? "/presentation.pdf"}
       teamMembers={config.team_members ?? defaultTeam}
       features={features}
       backendHealthUrl={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://maasheba-backend.onrender.com"}/health`}

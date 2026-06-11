@@ -294,8 +294,8 @@ export function AdminPanelClient({
             </Field>
           </div>
 
-          <Field label="YouTube demo video URL">
-            <input type="url" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} className="input" />
+          <Field label="Presentation Slide URL">
+            <input type="text" value={youtubeUrl} onChange={(event) => setYoutubeUrl(event.target.value)} className="input" placeholder="/presentation.pdf" />
           </Field>
 
           <div>

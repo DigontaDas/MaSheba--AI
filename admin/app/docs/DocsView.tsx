@@ -21,7 +21,7 @@ export type FeatureRow = {
 };
 
 type DocsViewProps = {
-  youtubeUrl: string;
+  presentationUrl: string;
   teamMembers: TeamMember[];
   features: FeatureRow[];
   backendHealthUrl: string;
@@ -119,7 +119,7 @@ function initialsFor(member: TeamMember) {
 
 /* ─── MAIN COMPONENT ──────────────────────────────────────── */
 
-export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }: DocsViewProps) {
+export function DocsView({ presentationUrl, teamMembers, features, backendHealthUrl }: DocsViewProps) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("problem");
   const [health, setHealth] = useState<"checking" | "online" | "offline">("checking");
@@ -309,7 +309,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
             <a href="https://github.com/DigontaDas/MaSheba--AI" target="_blank" rel="noopener noreferrer" style={navLinkStyle(false)}>
               <span style={{ fontSize: 14, width: 16, textAlign: "center" as const }}>⌨️</span>GitHub
             </a>
-            <a href="/presentation.pdf" target="_blank" rel="noopener noreferrer" style={navLinkStyle(false)}>
+            <a href={presentationUrl} target="_blank" rel="noopener noreferrer" style={navLinkStyle(false)}>
               <span style={{ fontSize: 14, width: 16, textAlign: "center" as const }}>📈</span>Presentation Slides
             </a>
           </nav>
@@ -386,7 +386,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                   ⚙️ Admin Panel
                 </a>
                 <a
-                  href="/presentation.pdf"
+                  href={presentationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ borderRadius: 8, border: "1px solid var(--border2)", background: "var(--bg3)", padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--text)", textDecoration: "none" }}
@@ -435,7 +435,7 @@ export function DocsView({ youtubeUrl, teamMembers, features, backendHealthUrl }
                 <div style={{ aspectRatio: "16/9", overflow: "hidden", borderRadius: 8, border: "1px solid var(--border)", background: "#000" }}>
                   <iframe
                     style={{ width: "100%", height: "100%", border: "none" }}
-                    src={embedYoutube(youtubeUrl)}
+                    src={embedYoutube("https://youtu.be/7gTyzUfNzds")}
                     title="MaSheba AI product demo"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
