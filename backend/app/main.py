@@ -1,7 +1,11 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-from app.routers.chat import router as chat_router
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+
+from app.routers.chat import router as chat_router, limiter
 from app.routers.admin import AdminAuthError, error_response, router as admin_router
 from app.routers.health import router as health_router
 from app.routers.sync import router as sync_router
@@ -11,10 +15,19 @@ from app.routers.ussd import router as ussd_router
 from app.routers.verification import router as verification_router
 from app.routers.hospitals import router as hospitals_router
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Set up rate limiter state at startup
+    _app.state.limiter = limiter
+    yield
+
+
 app = FastAPI(
     title="MaaSheba AI Backend",
     version="0.1.0",
     description="Backend sync API for the MaaSheba AI hackathon submission.",
+    lifespan=lifespan,
 )
 
 # CORS configuration
@@ -37,10 +50,19 @@ app.add_middleware(
 )
 
 
-
 @app.exception_handler(AdminAuthError)
 async def admin_auth_error_handler(_request, exc: AdminAuthError):
     return error_response(exc.status_code, exc.code, exc.message)
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "অতিরিক্ত অনুরোধ করা হয়েছে। অনুগ্রহ করে এক মিনিট পর আবার চেষ্টা করুন।"
+        },
+    )
 
 
 app.include_router(health_router)

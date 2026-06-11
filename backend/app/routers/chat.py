@@ -5,12 +5,10 @@ import os
 import sys
 import uuid
 from fastapi import APIRouter, HTTPException, File, UploadFile, Request, Depends, Header
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import httpx
 
 from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
 from app.core.config import Settings, get_settings
 from app.services.chat_service import get_chat_response, get_voice_chat_response
 
@@ -59,22 +57,6 @@ def get_user_id_limit_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=get_user_id_limit_key)
-
-
-# Startup Event: Dynamically register the exception handler on FastAPI app
-@router.on_event("startup")
-def register_rate_limit_handlers():
-    from app.main import app
-    app.state.limiter = limiter
-
-    @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
-        return JSONResponse(
-            status_code=429,
-            content={
-                "detail": "অতিরিক্ত অনুরোধ করা হয়েছে। অনুগ্রহ করে এক মিনিট পর আবার চেষ্টা করুন।"
-            }
-        )
 
 
 # Dependency to extract Supabase user UUID if present in Authorization header

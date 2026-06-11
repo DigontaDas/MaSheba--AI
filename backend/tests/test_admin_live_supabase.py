@@ -243,7 +243,12 @@ def test_live_admin_can_approve_and_reject_chw_verifications() -> None:
             if admin_user_id:
                 supabase.delete_rows("admin_audit_events", f"actor_user_id=eq.{admin_user_id}")
             supabase.delete_rows("chws", f"id=in.({approve_chw_id},{reject_chw_id})")
-            supabase.delete_rows("chws", f"auth_user_id=in.({approve_user_id},{reject_user_id})")
+            if approve_user_id and reject_user_id:
+                supabase.delete_rows("chws", f"auth_user_id=in.({approve_user_id},{reject_user_id})")
+            elif approve_user_id:
+                supabase.delete_rows("chws", f"auth_user_id=eq.{approve_user_id}")
+            elif reject_user_id:
+                supabase.delete_rows("chws", f"auth_user_id=eq.{reject_user_id}")
             if admin_user_id:
                 supabase.delete_rows("admin_users", f"auth_user_id=eq.{admin_user_id}")
                 supabase.delete_rows("mothers", f"auth_user_id=eq.{admin_user_id}")
