@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
   // ----------------------------------------------------
   bubbleWrapper: {
     marginVertical: 4,
-    width: "100%"
+    alignSelf: "stretch"
   },
   bubbleLeft: {
     alignItems: "flex-start"
