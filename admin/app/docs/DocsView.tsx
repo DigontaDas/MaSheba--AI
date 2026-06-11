@@ -125,6 +125,55 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
   const [health, setHealth] = useState<"checking" | "online" | "offline">("checking");
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
+  // Video states and refs
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    const nextMuted = !videoRef.current.muted;
+    videoRef.current.muted = nextMuted;
+    setIsMuted(nextMuted);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!videoContainerRef.current) return;
+      const rect = videoContainerRef.current.getBoundingClientRect();
+      const height = rect.height;
+      const scrolled = window.scrollY;
+      
+      const progress = Math.min(Math.max(scrolled / height, 0), 1);
+      setScrollProgress(progress);
+      
+      if (videoRef.current) {
+        if (progress >= 0.70) {
+          if (!videoRef.current.muted) {
+            videoRef.current.muted = true;
+            setIsMuted(true);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   // Health check polling
   useEffect(() => {
     let mounted = true;
@@ -187,12 +236,12 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
       <div
         className="docs-no-print"
         style={{
-          background: "rgba(150,72,46,.07)",
-          borderBottom: "1px solid rgba(150,72,46,.15)",
+          background: "rgba(196,85,42,.07)",
+          borderBottom: "1px solid rgba(196,85,42,.15)",
           padding: "10px 60px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
           gap: 12,
           fontFamily: "var(--font-dm-mono), monospace",
           fontSize: 12,
@@ -203,24 +252,225 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
           <span className="docs-pulse" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
           <span>Documentation window active · June 10 00:00 — June 14 23:59 · BuildFest 2026 Judging Period · Team DareDevil</span>
         </div>
-        <a
-          href="/docs/admin"
+      </div>
+
+      {/* ── BRAC University-Style Video Banner ──────────────── */}
+      <div
+        ref={videoContainerRef}
+        className="docs-no-print"
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "70vh",
+          minHeight: "450px",
+          maxHeight: "750px",
+          background: "#2c1a0e",
+          overflow: "hidden",
+        }}
+      >
+        <video
+          ref={videoRef}
+          src="https://drive.usercontent.google.com/download?id=1wbtQKfZaXLzkXWx3RXm3gzczs9bzhfaM&export=download&authuser=1"
+          autoPlay
+          loop
+          muted={isMuted}
+          playsInline
           style={{
-            display: "inline-flex",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: `scale(${1 + (1 - scrollProgress) * 0.05}) translateY(${scrollProgress * 100}px)`,
+            opacity: 1 - scrollProgress * 0.6,
+            transition: "transform 0.1s ease-out, opacity 0.1s ease-out",
+          }}
+        />
+
+        {/* Gradient Overlay for blending video with terracotta theme */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "linear-gradient(to bottom, rgba(44, 26, 14, 0.4) 0%, rgba(44, 26, 14, 0.2) 50%, var(--bg) 100%)",
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+        />
+
+        {/* Branding Overlay Content */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
             alignItems: "center",
-            gap: 5,
-            background: "rgba(150,72,46,0.12)",
-            border: "1px solid rgba(150,72,46,0.25)",
-            color: "var(--teal)",
-            fontSize: 11,
-            fontWeight: 600,
-            textDecoration: "none",
-            padding: "4px 12px",
-            borderRadius: 6,
+            textAlign: "center",
+            padding: "0 20px",
+            zIndex: 3,
+            opacity: 1 - scrollProgress * 1.5,
+            transform: `translateY(${-scrollProgress * 40}px)`,
+            transition: "opacity 0.1s ease-out, transform 0.1s ease-out",
+            color: "#fff",
+            textShadow: "0 2px 10px rgba(0,0,0,0.5)",
           }}
         >
-          ⚙️ Docs Config
-        </a>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icon.png"
+              alt="MaSheba AI Icon"
+              width={48}
+              height={48}
+              style={{ borderRadius: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}
+            />
+            <span style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 24, fontWeight: 800, color: "var(--bg)", letterSpacing: -0.5 }}>
+              MaSheba AI
+            </span>
+          </div>
+          <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(32px, 5vw, 54px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 12, maxWidth: 800 }}>
+            Every Mother Deserves a Safety Net
+          </h2>
+          <p style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "clamp(14px, 2vw, 18px)", fontWeight: 300, maxWidth: 640, lineHeight: 1.6, opacity: 0.95, color: "#fdf5ef" }}>
+            An offline-first, on-device AI maternal health platform built to ensure continuous, empathetic care for expecting mothers in rural Bangladesh.
+          </p>
+
+          <button
+            onClick={() => {
+              const problemSection = document.getElementById("problem");
+              if (problemSection) {
+                problemSection.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+            style={{
+              marginTop: 24,
+              background: "var(--teal)",
+              border: "none",
+              borderRadius: 30,
+              padding: "12px 28px",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(196, 85, 42, 0.4)",
+              transition: "transform 0.2s, background-color 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+          >
+            Explore Documentation ↓
+          </button>
+        </div>
+
+        {/* Bouncing Scroll Indicator */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 3,
+            opacity: 1 - scrollProgress * 2,
+            transition: "opacity 0.1s ease-out",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            color: "rgba(255, 255, 255, 0.7)",
+            fontFamily: "var(--font-dm-mono), monospace",
+            fontSize: 10,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            pointerEvents: "none",
+          }}
+        >
+          <span>Scroll Down</span>
+          <div className="docs-pulse" style={{ fontSize: 16 }}>↓</div>
+        </div>
+
+        {/* Video Controls Overlay */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 24,
+            right: 24,
+            display: "flex",
+            gap: 12,
+            zIndex: 10,
+            opacity: 1 - scrollProgress * 1.2,
+            transition: "opacity 0.1s ease-out",
+          }}
+        >
+          <button
+            onClick={togglePlay}
+            style={{
+              background: "rgba(44, 26, 14, 0.6)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "50%",
+              width: 44,
+              height: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(196, 85, 42, 0.8)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(44, 26, 14, 0.6)"; }}
+            title={isPlaying ? "Pause Video" : "Play Video"}
+          >
+            {isPlaying ? (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{ marginLeft: 2 }}>
+                <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+              </svg>
+            )}
+          </button>
+          <button
+            onClick={toggleMute}
+            style={{
+              background: "rgba(44, 26, 14, 0.6)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "50%",
+              width: 44,
+              height: 44,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(196, 85, 42, 0.8)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(44, 26, 14, 0.6)"; }}
+            title={isMuted ? "Unmute Video" : "Mute Video"}
+          >
+            {isMuted ? (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06zm7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0z"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M11.536 14.01A8.473 8.473 0 0 0 14 8c0-2.29-.91-4.365-2.383-5.88a.5.5 0 0 0-.735.679A7.476 7.476 0 0 1 13 8c0 2.02-.707 3.878-1.878 5.337a.5.5 0 0 0 .414.673z"/>
+                <path d="M9.736 11.77a5.53 5.53 0 0 0 1.647-3.77 5.53 5.53 0 0 0-1.647-3.77.5.5 0 0 0-.735.678 4.53 4.53 0 0 1 1.35 3.092 4.53 4.53 0 0 1-1.35 3.092.5.5 0 0 0 .735.678zm-1.802-1.9a3.333 3.333 0 0 0 .99-2.37 3.333 3.333 0 0 0-.99-2.37.5.5 0 0 0-.735.677 2.333 2.333 0 0 1 .65 1.693 2.333 2.333 0 0 1-.65 1.693.5.5 0 0 0 .735.678zM6.283 5.29L4.116 7H1.5A.5.5 0 0 0 1 7.5v1A.5.5 0 0 0 1.5 9h2.616l2.167 1.71a.5.5 0 0 0 .817-.39v-4.82a.5.5 0 0 0-.817-.39z"/>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -264,8 +514,8 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5,
-                background: "rgba(150,72,46,.12)",
-                border: "1px solid rgba(150,72,46,.25)",
+                background: "rgba(196,85,42,.12)",
+                border: "1px solid rgba(196,85,42,.25)",
                 color: "var(--teal)",
                 fontSize: 10,
                 fontFamily: "var(--font-dm-mono), monospace",
@@ -321,7 +571,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
           {/* ── HERO ──────────────────────────────────────────── */}
           <section
             style={{
-              background: "linear-gradient(135deg, var(--bg2) 0%, #fff0f0 50%, #ffe9e8 100%)",
+              background: "linear-gradient(135deg, var(--bg2) 0%, var(--bg) 50%, var(--bg2) 100%)",
               borderBottom: "1px solid var(--border)",
               padding: "72px 60px 60px",
               position: "relative",
@@ -345,7 +595,7 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
                   height: "140px",
                   borderRadius: "28px",
                   overflow: "hidden",
-                  boxShadow: "0 20px 40px rgba(150,72,46,0.12), 0 1px 3px rgba(0,0,0,0.1)",
+                  boxShadow: "0 20px 40px rgba(196,85,42,0.12), 0 1px 3px rgba(0,0,0,0.1)",
                   border: "4px solid #fff",
                   background: "#fff",
                   display: "flex",
@@ -727,7 +977,7 @@ function navLinkStyle(isActive: boolean): React.CSSProperties {
     borderRadius: 7,
     fontSize: 13,
     color: isActive ? "var(--teal)" : "var(--text2)",
-    background: isActive ? "rgba(150,72,46,.1)" : "transparent",
+    background: isActive ? "rgba(196,85,42,.1)" : "transparent",
     cursor: "pointer",
     transition: "all .15s",
     textDecoration: "none",
@@ -753,7 +1003,7 @@ function NavGroup({ label, items, active, setActive }: { label: string; items: N
 
 function EyebrowTag({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ background: "rgba(150,72,46,.12)", border: "1px solid rgba(150,72,46,.2)", padding: "3px 10px", borderRadius: 20 }}>
+    <span style={{ background: "rgba(196,85,42,.12)", border: "1px solid rgba(196,85,42,.2)", padding: "3px 10px", borderRadius: 20 }}>
       {children}
     </span>
   );
@@ -845,14 +1095,14 @@ function PitchCard({ num, title, highlight, children }: { num: string; title: st
   return (
     <div
       style={{
-        background: highlight ? "linear-gradient(135deg, var(--card), rgba(150,72,46,.04))" : "var(--card)",
-        border: `1px solid ${highlight ? "rgba(150,72,46,.3)" : "var(--border)"}`,
+        background: highlight ? "linear-gradient(135deg, var(--card), rgba(196,85,42,.04))" : "var(--card)",
+        border: `1px solid ${highlight ? "rgba(196,85,42,.3)" : "var(--border)"}`,
         borderRadius: 12,
         padding: 28,
         transition: "border-color .2s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 36, fontWeight: 800, color: highlight ? "rgba(150,72,46,.3)" : "var(--border2)", letterSpacing: -2, marginBottom: 12, lineHeight: 1 }}>{num}</div>
+      <div style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 36, fontWeight: 800, color: highlight ? "rgba(196,85,42,.3)" : "var(--border2)", letterSpacing: -2, marginBottom: 12, lineHeight: 1 }}>{num}</div>
       <h3 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</h3>
       <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.65 }}>{children}</p>
     </div>
@@ -900,7 +1150,7 @@ function TeamCard({ member }: { member: TeamMember }) {
         textAlign: "center",
         transition: "border-color .2s, transform .2s",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(150,72,46,.35)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(196,85,42,.35)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       {member.avatar_url ? (
@@ -1086,8 +1336,8 @@ function CascadeFlow() {
 }
 
 function CascadeStep({ label, name, note, variant }: { label: string; name: string; note: string; variant: "primary" | "fb1" | "fb2" | "offline" }) {
-  const borderColors = { primary: "rgba(150,72,46,.3)", fb1: "rgba(68,99,113,.25)", fb2: "rgba(232,137,106,.25)", offline: "rgba(186,26,26,.2)" };
-  const bgColors = { primary: "rgba(150,72,46,.05)", fb1: "var(--card)", fb2: "var(--card)", offline: "rgba(186,26,26,.03)" };
+  const borderColors = { primary: "rgba(196,85,42,.3)", fb1: "rgba(68,99,113,.25)", fb2: "rgba(232,137,106,.25)", offline: "rgba(186,26,26,.2)" };
+  const bgColors = { primary: "rgba(196,85,42,.05)", fb1: "var(--card)", fb2: "var(--card)", offline: "rgba(186,26,26,.03)" };
   return (
     <div style={{ background: bgColors[variant], border: `1px solid ${borderColors[variant]}`, borderRadius: 10, padding: "16px 20px", flex: 1, minWidth: 140 }}>
       <div style={{ fontFamily: "var(--font-dm-mono), monospace", fontSize: 10, color: "var(--text3)", letterSpacing: ".08em", textTransform: "uppercase" as const, marginBottom: 6 }}>{label}</div>

@@ -148,17 +148,11 @@ export default async function DocsPage() {
             Documentation not currently available
           </h1>
           <p className="mt-4 text-sm leading-6 text-slate-300">
-            Public access is controlled by the docs release window and admin visibility toggle.
+            Public access is controlled by the docs release window.
           </p>
           <div className="mt-6 rounded-md border border-slate-800 bg-slate-900 px-4 py-3 text-xs text-slate-400">
             Window: {startAt.toLocaleString()} to {endAt.toLocaleString()}
           </div>
-          <a
-            href="/docs/admin"
-            className="mt-6 rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-          >
-            Open admin panel
-          </a>
         </div>
       </main>
     );

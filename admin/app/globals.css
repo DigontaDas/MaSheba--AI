@@ -20,21 +20,21 @@ body {
 
 /* ─── DOCS LIGHT WARM THEME TOKENS (MASHEBA MOBILE BRAND) ─── */
 .docs-shell {
-  --bg: #fff8f7; /* colors.background - Soft pinkish warm white */
-  --bg2: #fff0f0; /* colors.surfaceContainerLow - Soft warm pink-white */
-  --bg3: #ffe9e8; /* colors.surfaceContainer - Light cream input backplate */
-  --card: #ffffff; /* colors.surfaceContainerLowest - Clean solid white for cards */
-  --border: #dac1ba; /* colors.outlineVariant - Warm rose border outline */
-  --border2: #87726c; /* colors.outline - Warm brown active borders */
-  --teal: #96482e; /* colors.primary - Terracotta / Warm Brick Red */
-  --teal2: #e8896a; /* colors.primaryContainer - Light Terracotta highlight */
+  --bg: #fdf5ef; /* Soft warm cream background */
+  --bg2: #f6ebe3; /* Slightly darker warm cream surface */
+  --bg3: #ebdcd2; /* Darker cream input backplate */
+  --card: #ffffff; /* Clean solid white for cards */
+  --border: #d8c8bc; /* Warm taupe border outline */
+  --border2: #b89a88; /* Warm taupe active borders */
+  --teal: #c4552a; /* Terracotta / Amber Orange primary */
+  --teal2: #e89578; /* Light Terracotta highlight */
   --amber: #f59e0b; /* Warning gold */
-  --red: #ba1a1a; /* colors.error - Error Red */
-  --green: #4b6546; /* colors.secondary - Soft Moss Green */
-  --blue: #446371; /* colors.tertiary - Steel Blue */
-  --text: #271818; /* colors.onBackground - Dark charcoal brown */
-  --text2: #54433d; /* colors.onSurfaceVariant - Muted dark charcoal brown */
-  --text3: #87726c; /* colors.outline - Outlines and subtitles */
+  --red: #ba1a1a; /* Error Red */
+  --green: #4b6546; /* Soft Moss Green */
+  --blue: #446371; /* Steel Blue */
+  --text: #2c1a0e; /* Dark brown text */
+  --text2: #523f33; /* Muted dark brown text */
+  --text3: #b89a88; /* Outlines and subtitles */
   color-scheme: light;
 }
 
@@ -69,7 +69,7 @@ body {
 
 /* ─── DOCS SELECTION ──────────────────────────────────────── */
 .docs-shell ::selection {
-  background: #96482e;
+  background: #c4552a;
   color: #fff;
 }
 
