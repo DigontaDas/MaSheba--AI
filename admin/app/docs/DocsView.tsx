@@ -471,13 +471,11 @@ export function DocsView({ presentationUrl, teamMembers, features, backendHealth
                 </div>
               </div>
             </Section>
-
-            {/* Market */}
-            <Section sectionRef={registerRef("market")} id="market" num="03" label="Reaching Families Everywhere" title="Nurturing Expecting Mothers at Scale" sub="MaSheba's architecture is crafted to scale gently, reaching every expecting family in rural Bangladesh and expanding to support remote maternal health programs globally.">
+            <Section sectionRef={registerRef("market")} id="market" num="03" label="Market & Model" title="Nurturing Expecting Mothers at Scale" sub="MaSheba's architecture is crafted to scale gently, reaching every expecting family in rural Bangladesh and integrating directly with national health services.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
                 <Card icon="🤰" title="3M+ Expected Mothers" text="Nurturing active pregnancies across remote communities at any given time — our core focus of care." />
                 <Card icon="👩‍⚕️" title="60,000+ Caring Angels" text="Dedicated Community Health Workers bringing maternal checkups directly to front doors." />
-                <Card icon="🌍" title="Global Embrace" text="Designed with universal constraints in mind to protect mothers in India, Sub-Saharan Africa, and low-resource settings." />
+                <Card icon="💼" title="B2G & B2NGO SaaS" text="BDT 500 (~$4.50 USD) monthly license per CHW, targeted at the Bangladesh Ministry of Health and NGOs like BRAC, Save the Children, and icddr,b." />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <Card title="Sustainable Care Model" text="Phase 1: Free deployment, community-driven. Phase 2: Government health department partnerships — regional support licenses. Phase 3: National integration. Phase 4: Licensing to global maternal health NGOs (WHO, UNFPA)." />
