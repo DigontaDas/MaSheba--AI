@@ -914,7 +914,7 @@ def test_admin_can_crud_hospitals(client: TestClient, monkeypatch: pytest.Monkey
 
 
 def test_non_super_admin_cannot_write_hospitals(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    state = install_admin_httpx(monkeypatch, role="admin")
+    install_admin_httpx(monkeypatch, role="admin")
     headers = {"Authorization": "Bearer admin-token"}
 
     # Create hospital should fail for normal admin
